@@ -949,8 +949,16 @@
       max-width: 360px;
       color: inherit;
       text-decoration: none;
-      position: relative;
-      overflow: hidden;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 150ms ease, background 150ms ease, transform 120ms ease;
+    }
+
+    .message-attachment:hover,
+    .message-attachment:focus-visible {
+      transform: translateY(-1px);
+      border-color: color-mix(in srgb, var(--brand), var(--line) 42%);
+      background: color-mix(in srgb, var(--panel), var(--brand) 8%);
     }
 
     .message-attachment-preview,
@@ -975,42 +983,6 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-    }
-
-    .attachment-overlay {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      justify-content: flex-end;
-      gap: 6px;
-      align-items: center;
-      padding: 7px;
-      background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--panel), black 18%) 42%);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 150ms ease;
-    }
-
-    .message-attachment:hover .attachment-overlay,
-    .message-attachment:focus-within .attachment-overlay {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .attachment-action {
-      min-height: 30px;
-      padding: 5px 8px;
-      border: 0;
-      border-radius: 9px;
-      color: var(--text);
-      background: color-mix(in srgb, var(--panel-3), black 12%);
-      font-size: 12px;
-      font-weight: 900;
-      white-space: nowrap;
-    }
-
-    .attachment-action:hover {
-      background: color-mix(in srgb, var(--brand), var(--panel-3) 68%);
     }
 
     .image-modal {
@@ -2879,8 +2851,13 @@
       wrap.className = "message-attachments";
       attachments.forEach((item) => {
         const hasPreview = Boolean(item.previewUrl);
-        const row = document.createElement("div");
+        const row = document.createElement(hasPreview ? "button" : "div");
         row.className = "message-attachment";
+        if (hasPreview) {
+          row.type = "button";
+          row.title = "预览 " + (item.name || "参考图");
+          row.addEventListener("click", () => openImagePreview(item.previewUrl, item.name || "参考图"));
+        }
         let preview;
         if (hasPreview) {
           preview = document.createElement("div");
@@ -2900,35 +2877,12 @@
         name.textContent = item.name || "参考图";
         const size = document.createElement("div");
         size.className = "message-attachment-size";
-        size.textContent = hasPreview ? "悬浮查看操作" : formatBytes(item.size || 0);
+        size.textContent = hasPreview ? "点击预览" : formatBytes(item.size || 0);
         text.append(name, size);
         row.append(preview, text);
-        if (hasPreview) row.appendChild(renderAttachmentActions(item.previewUrl, item.name || "参考图"));
         wrap.appendChild(row);
       });
       return wrap;
-    }
-
-    function renderAttachmentActions(url, name) {
-      const actions = document.createElement("div");
-      actions.className = "attachment-overlay";
-      const preview = document.createElement("button");
-      preview.type = "button";
-      preview.className = "attachment-action";
-      preview.textContent = "预览";
-      preview.addEventListener("click", () => openImagePreview(url, name));
-      const open = document.createElement("button");
-      open.type = "button";
-      open.className = "attachment-action";
-      open.textContent = "新标签页打开";
-      open.addEventListener("click", () => openInNewTab(url));
-      const download = document.createElement("button");
-      download.type = "button";
-      download.className = "attachment-action";
-      download.textContent = "下载";
-      download.addEventListener("click", () => downloadImage(url, name || "reference-image"));
-      actions.append(preview, open, download);
-      return actions;
     }
 
     function renderTask(task) {
