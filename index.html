@@ -709,6 +709,45 @@
       color: var(--muted);
     }
 
+    .message-footer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: flex-end;
+      margin-top: 7px;
+      color: var(--subtle);
+      font-size: 12px;
+    }
+
+    .message-footer-info,
+    .message-footer-actions {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .message-action-button {
+      display: inline-grid;
+      place-items: center;
+      width: 25px;
+      height: 25px;
+      border: 0;
+      border-radius: 8px;
+      color: var(--subtle);
+      background: transparent;
+    }
+
+    .message-action-button:hover {
+      color: var(--text);
+      background: var(--panel-2);
+    }
+
+    .message-action-button svg {
+      width: 17px;
+      height: 17px;
+    }
+
     .message-actions {
       display: flex;
       flex-wrap: wrap;
@@ -789,9 +828,9 @@
 
     .thinking-block {
       display: grid;
-      gap: 8px;
+      gap: 6px;
       width: 100%;
-      margin: 0 0 12px;
+      margin: 0 0 6px;
       padding: 10px 12px;
       border: 1px solid var(--line);
       border-left: 3px solid color-mix(in srgb, var(--brand), var(--brand-2) 30%);
@@ -1883,7 +1922,8 @@
       previewIndex: 0,
       openHistoryMenuId: null,
       renamingSessionId: null,
-      optionsOpen: false
+      optionsOpen: false,
+      editingMessageId: null
     };
 
     const els = {
@@ -2111,10 +2151,9 @@
         try {
           setBusy(true);
           const mode = state.mode;
-          if (mode === "text") await handleText(prompt);
-          if (mode === "image") await handleImage(prompt);
-          if (mode === "video") await handleVideo(prompt);
+          await submitPrompt(prompt, state.editingMessageId);
           els.promptInput.value = "";
+          state.editingMessageId = null;
           clearModeAttachments(mode);
         } catch (error) {
           showRequestError(error);
@@ -2275,6 +2314,7 @@
       state.activeSessionId = id;
       state.openHistoryMenuId = null;
       state.renamingSessionId = null;
+      state.editingMessageId = null;
       state.mode = session.mode;
       state.attachments = emptyAttachments();
       applySettings(session.settings);
@@ -2342,6 +2382,7 @@
 
     function setMode(mode) {
       if (!MODE_CONFIG[mode]) return;
+      if (state.mode !== mode) state.editingMessageId = null;
       state.mode = mode;
       const session = activeSession();
       if (session) {
@@ -2352,6 +2393,27 @@
       renderMode();
       renderAttachments();
       renderSuggestions();
+      renderHistory();
+    }
+
+    async function submitPrompt(prompt, replaceFromId) {
+      if (replaceFromId) removeMessagesFrom(replaceFromId);
+      const mode = state.mode;
+      if (mode === "text") await handleText(prompt);
+      if (mode === "image") await handleImage(prompt);
+      if (mode === "video") await handleVideo(prompt);
+    }
+
+    function removeMessagesFrom(id) {
+      const session = activeSession();
+      if (!session) return;
+      const index = session.messages.findIndex((message) => message.id === id);
+      if (index === -1) return;
+      session.messages.splice(index);
+      if (index === 0) session.title = "新的对话";
+      session.updatedAt = Date.now();
+      saveSessions();
+      renderThread();
       renderHistory();
     }
 
@@ -3226,6 +3288,78 @@
       scrollToBottom();
     }
 
+    async function copyMessage(message) {
+      await copyText(messageCopyText(message));
+      toast("消息已复制");
+    }
+
+    function messageCopyText(message) {
+      const lines = [];
+      if (message.content) lines.push(message.content);
+      if (message.result && message.result.url) {
+        if (message.result.url.startsWith("data:image/")) {
+          lines.push("图片结果为 Base64 数据，可在页面中预览。");
+        } else {
+          lines.push((message.result.kind === "video" ? "视频：" : "图片：") + message.result.url);
+        }
+      }
+      const urls = (message.attachments || [])
+        .map((item) => item.previewUrl)
+        .filter((url) => url && !url.startsWith("data:image/"));
+      if (urls.length) lines.push("参考图：\n" + urls.join("\n"));
+      if (message.task) {
+        const ids = [message.task.videoId ? "video_id: " + message.task.videoId : "", message.task.taskId ? "task_id: " + message.task.taskId : ""].filter(Boolean);
+        if (ids.length) lines.push(ids.join("\n"));
+      }
+      return lines.join("\n\n") || "空消息";
+    }
+
+    function startEditMessage(id) {
+      if (state.busy) {
+        toast("当前还在生成中，请稍后再编辑");
+        return;
+      }
+      const session = activeSession();
+      const message = session && session.messages.find((item) => item.id === id);
+      if (!message || message.role !== "user") return;
+      setMode(message.mode);
+      restoreMessageInputs(message);
+      state.editingMessageId = message.id;
+      els.promptInput.value = message.content || "";
+      els.promptInput.focus();
+      toast("已进入编辑模式，修改后发送即可重新生成");
+    }
+
+    function restoreMessageInputs(message) {
+      const urls = [];
+      const local = [];
+      (message.attachments || []).forEach((item) => {
+        const previewUrl = item.previewUrl || "";
+        if (previewUrl.startsWith("data:image/")) {
+          local.push({
+            id: makeId(),
+            name: item.name || "本地图片",
+            type: item.type || "image/*",
+            size: item.size || 0,
+            dataUrl: previewUrl
+          });
+        } else if (previewUrl) {
+          urls.push(previewUrl);
+        }
+      });
+      state.attachments[message.mode] = local.slice(0, MAX_ATTACHMENTS);
+      if (message.mode === "text") els.textImageUrl.value = urls.join("\n");
+      if (message.mode === "image") els.imageInputs.value = urls.join("\n");
+      if (message.mode === "video") {
+        els.videoImage.value = urls[0] || "";
+        els.videoExtraImages.value = urls.slice(1).join("\n");
+      }
+      renderAttachments();
+      if ((message.attachments || []).length && !local.length && !urls.length) {
+        toast("这条消息里的本地图片没有长期保存，需要重新上传");
+      }
+    }
+
     function showRequestError(error) {
       const session = activeSession();
       const loading = session ? [...session.messages].reverse().find((message) => message.role === "assistant" && message.status === "loading") : null;
@@ -3257,55 +3391,74 @@
       avatar.textContent = message.role === "user" ? "你" : "A";
       const bubble = document.createElement("div");
       bubble.className = "bubble";
-      const meta = document.createElement("div");
-      meta.className = "meta";
-      renderMessageMeta(meta, message);
       const body = document.createElement("div");
       body.className = "message-body";
       body.textContent = message.content || "";
-      bubble.append(meta, body);
+      bubble.appendChild(body);
       if (message.thinking) bubble.insertBefore(renderThinking(message.thinking), body);
       if (message.attachments && message.attachments.length) bubble.appendChild(renderMessageAttachments(message.attachments));
       if (message.task) bubble.appendChild(renderTask(message.task));
       if (message.result) bubble.appendChild(renderResult(message.result));
       if (state.advancedMode && state.showDebug && message.raw) bubble.appendChild(renderRaw(message.raw, message.id));
+      bubble.appendChild(renderMessageFooter(message));
       article.append(avatar, bubble);
       return article;
     }
 
-    function renderMessageMeta(meta, message) {
-      meta.innerHTML = "";
+    function renderMessageFooter(message) {
+      const footer = document.createElement("div");
+      footer.className = "message-footer";
+      const info = document.createElement("div");
+      info.className = "message-footer-info";
       if (state.advancedMode) {
         const tag = document.createElement("span");
         tag.className = "mode-tag";
         tag.textContent = MODE_CONFIG[message.mode].tag;
-        const time = document.createElement("span");
-        time.textContent = new Date(message.createdAt).toLocaleString();
         const status = document.createElement("span");
         status.textContent = statusLabel(message.status);
         status.className = message.status === "error" ? "error-text" : "";
-        meta.append(tag, time, status);
-      } else {
-        const time = document.createElement("span");
-        time.textContent = formatFriendlyTime(message.createdAt);
-        meta.appendChild(time);
+        info.append(tag, status);
       }
+      const time = document.createElement("span");
+      time.textContent = formatMessageTime(message.createdAt);
+      info.appendChild(time);
       const usage = formatUsage(message.usage);
       if (usage) {
         const tokens = document.createElement("span");
         tokens.textContent = usage;
-        meta.appendChild(tokens);
+        info.appendChild(tokens);
       }
+      const actions = document.createElement("div");
+      actions.className = "message-footer-actions";
+      actions.appendChild(renderMessageAction("复制", "copy", () => copyMessage(message)));
+      if (message.role === "user") {
+        actions.appendChild(renderMessageAction("编辑", "edit", () => startEditMessage(message.id)));
+      }
+      footer.append(info, actions);
+      return footer;
+    }
+
+    function renderMessageAction(label, icon, handler) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "message-action-button";
+      button.title = label;
+      button.setAttribute("aria-label", label);
+      button.innerHTML = icon === "copy"
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="13" height="13" rx="2"></rect><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>';
+      button.addEventListener("click", handler);
+      return button;
     }
 
     function updateLiveMessage(message) {
       const node = document.querySelector('[data-message-id="' + message.id + '"]');
       if (!node) return false;
-      const meta = node.querySelector(".meta");
-      if (meta) renderMessageMeta(meta, message);
       upsertThinking(node, message.thinking || "");
       const body = node.querySelector(".message-body");
       if (body) body.textContent = message.content || "";
+      const footer = node.querySelector(".message-footer");
+      if (footer) footer.replaceWith(renderMessageFooter(message));
       const raw = node.querySelector(".raw-block");
       if (raw && message.raw) raw.textContent = stringify(message.raw);
       const task = node.querySelector(".task-progress");
@@ -3725,15 +3878,10 @@
       }[status] || status;
     }
 
-    function formatFriendlyTime(value) {
+    function formatMessageTime(value) {
       const time = new Date(value).getTime();
       if (!Number.isFinite(time)) return "";
-      const diff = Date.now() - time;
-      if (diff < 60000) return "刚刚";
-      if (diff < 3600000) return Math.floor(diff / 60000) + " 分钟前";
-      const sameDay = startOfDay(time) === startOfDay(Date.now());
-      if (sameDay) return new Date(time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      return new Date(time).toLocaleDateString([], { month: "2-digit", day: "2-digit" });
+      return new Date(time).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
     }
 
     function formatUsage(usage) {
@@ -3781,8 +3929,12 @@
 
     async function copyText(text) {
       if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(text);
-        return;
+        try {
+          await navigator.clipboard.writeText(text);
+          return;
+        } catch (error) {
+          // Fall back for browsers that expose Clipboard API but deny this page.
+        }
       }
       const ta = document.createElement("textarea");
       ta.value = text;
