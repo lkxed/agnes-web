@@ -309,6 +309,10 @@
       gap: 4px;
     }
 
+    .history-row.menu-open {
+      z-index: 6;
+    }
+
     .history-item {
       min-width: 0;
       min-height: 38px;
@@ -328,15 +332,96 @@
       background: var(--panel-2);
     }
 
-    .history-delete {
+    .history-title {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .history-pin {
+      display: inline-grid;
+      place-items: center;
+      width: 16px;
+      margin-right: 6px;
+      color: var(--brand);
+      vertical-align: -2px;
+    }
+
+    .history-pin svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .history-menu-button {
       opacity: 0;
       width: 30px;
       height: 30px;
     }
 
-    .history-row:hover .history-delete,
-    .history-row.active .history-delete {
+    .history-row:hover .history-menu-button,
+    .history-row.active .history-menu-button,
+    .history-row.menu-open .history-menu-button {
       opacity: 1;
+    }
+
+    .history-menu {
+      position: absolute;
+      top: 34px;
+      right: 0;
+      z-index: 8;
+      display: grid;
+      gap: 4px;
+      min-width: 156px;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: color-mix(in srgb, var(--panel-3), var(--bg) 2%);
+      box-shadow: var(--shadow);
+    }
+
+    .history-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      min-height: 38px;
+      padding: 8px 10px;
+      border: 0;
+      border-radius: 10px;
+      color: var(--text);
+      background: transparent;
+      font-size: 15px;
+      text-align: left;
+    }
+
+    .history-menu-item:hover {
+      background: color-mix(in srgb, var(--panel-2), white 5%);
+    }
+
+    .history-menu-item.danger {
+      color: var(--danger);
+    }
+
+    .history-menu-item svg {
+      width: 20px;
+      height: 20px;
+      flex: none;
+    }
+
+    .history-rename-input {
+      min-width: 0;
+      height: 38px;
+      padding: 7px 10px;
+      border: 1px solid color-mix(in srgb, var(--brand), transparent 45%);
+      border-radius: var(--radius);
+      color: var(--text);
+      background: var(--panel-2);
+      outline: none;
+      font: inherit;
+    }
+
+    .history-rename-input:focus {
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand), transparent 78%);
     }
 
     .sidebar-footer {
@@ -1823,7 +1908,9 @@
       advancedMode: false,
       showDebug: false,
       previewItems: [],
-      previewIndex: 0
+      previewIndex: 0,
+      openHistoryMenuId: null,
+      renamingSessionId: null
     };
 
     const els = {
@@ -1945,7 +2032,15 @@
 
       els.historySearchInput.addEventListener("input", () => {
         state.historyQuery = els.historySearchInput.value.trim().toLowerCase();
+        state.openHistoryMenuId = null;
+        state.renamingSessionId = null;
         renderHistory();
+      });
+
+      document.addEventListener("click", (event) => {
+        if (!els.historyList.contains(event.target)) {
+          closeHistoryMenu();
+        }
       });
 
       els.modePills.forEach((pill) => {
@@ -2062,6 +2157,7 @@
         title: "新的对话",
         createdAt: Date.now(),
         updatedAt: Date.now(),
+        pinnedAt: 0,
         mode: "text",
         messages: [],
         settings: defaultSettings()
@@ -2117,11 +2213,12 @@
           title: session.title || "新的对话",
           createdAt: session.createdAt || Date.now(),
           updatedAt: session.updatedAt || Date.now(),
+          pinnedAt: Number(session.pinnedAt) || 0,
           mode: MODE_CONFIG[session.mode] ? session.mode : "text",
           messages: Array.isArray(session.messages) ? session.messages : [],
           settings: { ...defaultSettings(), ...(session.settings || {}) }
         }))
-        .sort((a, b) => b.updatedAt - a.updatedAt);
+        .sort(compareSessions);
       if (state.activeSessionId && !state.sessions.some((session) => session.id === state.activeSessionId)) {
         state.activeSessionId = state.sessions[0] ? state.sessions[0].id : null;
       }
@@ -2199,6 +2296,8 @@
       const session = state.sessions.find((item) => item.id === id);
       if (!session) return;
       state.activeSessionId = id;
+      state.openHistoryMenuId = null;
+      state.renamingSessionId = null;
       state.mode = session.mode;
       state.attachments = emptyAttachments();
       applySettings(session.settings);
@@ -2208,10 +2307,13 @@
     }
 
     function deleteSession(id) {
+      state.openHistoryMenuId = null;
+      state.renamingSessionId = null;
       state.sessions = state.sessions.filter((session) => session.id !== id);
       if (!state.sessions.length) {
         createSession(false);
       } else if (state.activeSessionId === id) {
+        state.sessions.sort(compareSessions);
         state.activeSessionId = state.sessions[0].id;
       }
       const session = activeSession();
@@ -2222,6 +2324,43 @@
       }
       saveSessions();
       renderAll();
+    }
+
+    function closeHistoryMenu() {
+      if (!state.openHistoryMenuId) return;
+      state.openHistoryMenuId = null;
+      renderHistory();
+    }
+
+    function renameSession(id, title) {
+      if (state.renamingSessionId !== id) return;
+      const session = state.sessions.find((item) => item.id === id);
+      if (!session) return;
+      const nextTitle = title.trim();
+      if (!nextTitle) {
+        state.renamingSessionId = null;
+        renderHistory();
+        return;
+      }
+      session.title = nextTitle.slice(0, 80);
+      session.updatedAt = Date.now();
+      state.renamingSessionId = null;
+      state.openHistoryMenuId = null;
+      saveSessions();
+      renderAll();
+      toast("已重命名对话");
+    }
+
+    function togglePinSession(id) {
+      const session = state.sessions.find((item) => item.id === id);
+      if (!session) return;
+      session.pinnedAt = session.pinnedAt ? 0 : Date.now();
+      session.updatedAt = Date.now();
+      state.openHistoryMenuId = null;
+      state.sessions.sort(compareSessions);
+      saveSessions();
+      renderAll();
+      toast(session.pinnedAt ? "已置顶对话" : "已取消置顶");
     }
 
     function setMode(mode) {
@@ -2332,32 +2471,101 @@
         group.appendChild(heading);
         items.forEach((session) => {
           const row = document.createElement("div");
-          row.className = "history-row" + (session.id === state.activeSessionId ? " active" : "");
-          const button = document.createElement("button");
-          button.type = "button";
-          button.className = "history-item";
-          button.textContent = session.title || "新的对话";
-          button.addEventListener("click", () => activateSession(session.id));
-          const del = document.createElement("button");
-          del.type = "button";
-          del.className = "icon-button history-delete";
-          del.title = "删除对话";
-          del.setAttribute("aria-label", "删除对话");
-          del.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path></svg>';
-          del.addEventListener("click", (event) => {
+          row.className = [
+            "history-row",
+            session.id === state.activeSessionId ? "active" : "",
+            session.id === state.openHistoryMenuId ? "menu-open" : ""
+          ].filter(Boolean).join(" ");
+
+          if (session.id === state.renamingSessionId) {
+            const input = document.createElement("input");
+            input.className = "history-rename-input";
+            input.value = session.title || "新的对话";
+            input.maxLength = 80;
+            input.setAttribute("aria-label", "重命名对话");
+            input.addEventListener("click", (event) => event.stopPropagation());
+            input.addEventListener("keydown", (event) => {
+              if (event.key === "Enter") renameSession(session.id, input.value);
+              if (event.key === "Escape") {
+                state.renamingSessionId = null;
+                renderHistory();
+              }
+            });
+            input.addEventListener("blur", () => renameSession(session.id, input.value));
+            row.appendChild(input);
+            setTimeout(() => {
+              input.focus();
+              input.select();
+            }, 0);
+          } else {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "history-item";
+            button.innerHTML = `${session.pinnedAt ? '<span class="history-pin" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"></path><path d="M8 3h8l-1 7 4 4v2H5v-2l4-4-1-7Z"></path></svg></span>' : ""}<span class="history-title">${escapeHtml(session.title || "新的对话")}</span>`;
+            button.addEventListener("click", () => activateSession(session.id));
+            row.appendChild(button);
+          }
+
+          const menuButton = document.createElement("button");
+          menuButton.type = "button";
+          menuButton.className = "icon-button history-menu-button";
+          menuButton.title = "对话操作";
+          menuButton.setAttribute("aria-label", "对话操作");
+          menuButton.setAttribute("aria-expanded", String(session.id === state.openHistoryMenuId));
+          menuButton.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg>';
+          menuButton.addEventListener("click", (event) => {
             event.stopPropagation();
-            deleteSession(session.id);
+            state.renamingSessionId = null;
+            state.openHistoryMenuId = state.openHistoryMenuId === session.id ? null : session.id;
+            renderHistory();
           });
-          row.append(button, del);
+          row.appendChild(menuButton);
+
+          if (session.id === state.openHistoryMenuId) {
+            row.appendChild(renderHistoryMenu(session));
+          }
           group.appendChild(row);
         });
         els.historyList.appendChild(group);
       });
     }
 
+    function renderHistoryMenu(session) {
+      const menu = document.createElement("div");
+      menu.className = "history-menu";
+      menu.setAttribute("role", "menu");
+      menu.addEventListener("click", (event) => event.stopPropagation());
+
+      const rename = document.createElement("button");
+      rename.type = "button";
+      rename.className = "history-menu-item";
+      rename.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg><span>重命名</span>';
+      rename.addEventListener("click", () => {
+        state.openHistoryMenuId = null;
+        state.renamingSessionId = session.id;
+        renderHistory();
+      });
+
+      const pin = document.createElement("button");
+      pin.type = "button";
+      pin.className = "history-menu-item";
+      pin.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5"></path><path d="M8 3h8l-1 7 4 4v2H5v-2l4-4-1-7Z"></path></svg><span>${session.pinnedAt ? "取消置顶" : "置顶"}</span>`;
+      pin.addEventListener("click", () => togglePinSession(session.id));
+
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "history-menu-item danger";
+      del.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path></svg><span>删除</span>';
+      del.addEventListener("click", () => deleteSession(session.id));
+
+      menu.append(rename, pin, del);
+      return menu;
+    }
+
     function filteredSessions() {
-      if (!state.historyQuery) return state.sessions;
-      return state.sessions.filter((session) => {
+      const sessions = state.sessions.slice().sort(compareSessions);
+      if (!state.historyQuery) return sessions;
+      return sessions.filter((session) => {
         const lastUser = [...session.messages].reverse().find((msg) => msg.role === "user");
         const haystack = `${session.title || ""} ${lastUser ? lastUser.content : ""}`.toLowerCase();
         return haystack.includes(state.historyQuery);
@@ -2367,6 +2575,11 @@
     function groupSessions(sessions) {
       const today = startOfDay(Date.now());
       return sessions.reduce((groups, session) => {
+        if (session.pinnedAt) {
+          groups["置顶"] = groups["置顶"] || [];
+          groups["置顶"].push(session);
+          return groups;
+        }
         const day = startOfDay(session.updatedAt);
         const diff = Math.round((today - day) / 86400000);
         const label = diff <= 0 ? "今天" : diff === 1 ? "昨天" : diff <= 30 ? "30 天内" : formatMonth(session.updatedAt);
@@ -2374,6 +2587,11 @@
         groups[label].push(session);
         return groups;
       }, {});
+    }
+
+    function compareSessions(a, b) {
+      if ((a.pinnedAt || 0) !== (b.pinnedAt || 0)) return (b.pinnedAt || 0) - (a.pinnedAt || 0);
+      return (b.updatedAt || 0) - (a.updatedAt || 0);
     }
 
     function updateChatTitle() {
