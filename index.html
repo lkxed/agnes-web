@@ -2110,7 +2110,7 @@
       els.modalPrevButton.addEventListener("click", () => showImagePreviewAt(state.previewIndex - 1));
       els.modalNextButton.addEventListener("click", () => showImagePreviewAt(state.previewIndex + 1));
       els.modalOpenButton.addEventListener("click", () => openInNewTab(els.imagePreviewModal.dataset.url || ""));
-      els.modalDownloadButton.addEventListener("click", () => downloadImage(els.imagePreviewModal.dataset.url || "", els.imagePreviewModal.dataset.name || "agnes-image"));
+      els.modalDownloadButton.addEventListener("click", () => downloadMedia(els.imagePreviewModal.dataset.url || "", els.imagePreviewModal.dataset.name || "agnes-image"));
       els.modalSaveAsButton.addEventListener("click", () => saveImageAs(els.imagePreviewModal.dataset.url || "", els.imagePreviewModal.dataset.name || "agnes-image"));
       els.imagePreviewModal.addEventListener("click", (event) => {
         if (event.target === els.imagePreviewModal) closeImagePreview();
@@ -2507,7 +2507,11 @@
         button.className = "suggestion-chip";
         button.dataset.mode = mode;
         button.dataset.prompt = suggestion.prompt;
-        button.innerHTML = `<strong>${escapeHtml(suggestion.title)}</strong><span>${escapeHtml(suggestion.desc)}</span>`;
+        const title = document.createElement("strong");
+        title.textContent = suggestion.title;
+        const desc = document.createElement("span");
+        desc.textContent = suggestion.desc;
+        button.append(title, desc);
         els.welcomeSuggestions.appendChild(button);
       });
     }
@@ -2562,7 +2566,17 @@
             const button = document.createElement("button");
             button.type = "button";
             button.className = "history-item";
-            button.innerHTML = `${session.pinnedAt ? '<span class="history-pin" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"></path><path d="M8 3h8l-1 7 4 4v2H5v-2l4-4-1-7Z"></path></svg></span>' : ""}<span class="history-title">${escapeHtml(session.title || "新的对话")}</span>`;
+            if (session.pinnedAt) {
+              const pin = document.createElement("span");
+              pin.className = "history-pin";
+              pin.setAttribute("aria-hidden", "true");
+              pin.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"></path><path d="M8 3h8l-1 7 4 4v2H5v-2l4-4-1-7Z"></path></svg>';
+              button.appendChild(pin);
+            }
+            const title = document.createElement("span");
+            title.className = "history-title";
+            title.textContent = session.title || "新的对话";
+            button.appendChild(title);
             button.addEventListener("click", () => activateSession(session.id));
             row.appendChild(button);
           }
@@ -3456,19 +3470,19 @@
         actions.appendChild(renderMessageAction("编辑", "edit", () => startEditMessage(message.id)));
       }
       if (message.result && message.result.url) {
-        actions.appendChild(renderResultAction("新标签页打开", () => openInNewTab(message.result.url)));
+        actions.appendChild(createTextButton("新标签页打开", () => openInNewTab(message.result.url)));
         if (message.result.kind === "video") {
-          actions.appendChild(renderResultAction("下载", () => downloadImage(message.result.url, message.result.downloadName || "agnes-result")));
+          actions.appendChild(createTextButton("下载", () => downloadMedia(message.result.url, message.result.downloadName || "agnes-result")));
         }
       }
       footer.append(info, actions);
       return footer;
     }
 
-    function renderResultAction(label, handler) {
+    function createTextButton(label, handler, className = "debug-button") {
       const button = document.createElement("button");
       button.type = "button";
-      button.className = "debug-button";
+      button.className = className;
       button.textContent = label;
       button.addEventListener("click", handler);
       return button;
@@ -3661,11 +3675,7 @@
       pre.textContent = stringify(raw);
       const actions = document.createElement("div");
       actions.className = "message-actions";
-      const button = document.createElement("button");
-      button.className = "debug-button";
-      button.type = "button";
-      button.textContent = "复制调试详情";
-      button.addEventListener("click", async () => {
+      const button = createTextButton("复制调试详情", async () => {
         await copyText(stringify(raw));
         toast("调试详情已复制");
       });
@@ -3722,12 +3732,9 @@
     }
 
     function openImagePreview(items, index = 0) {
-      const normalized = Array.isArray(items)
-        ? items.filter((item) => item && item.url)
-        : [{ url: items, name: typeof index === "string" ? index : "图片预览" }].filter((item) => item.url);
-      if (!normalized.length) return;
-      state.previewItems = normalized;
-      showImagePreviewAt(typeof index === "number" ? index : 0);
+      state.previewItems = items.filter((item) => item && item.url);
+      if (!state.previewItems.length) return;
+      showImagePreviewAt(index);
       els.imagePreviewModal.hidden = false;
     }
 
@@ -3772,19 +3779,19 @@
       window.open(url, "_blank", "noopener,noreferrer");
     }
 
-    async function downloadImage(url, filename) {
+    async function downloadMedia(url, filename) {
       if (!url) return;
       try {
-        const blob = await imageUrlToBlob(url);
+        const blob = await urlToBlob(url);
         const objectUrl = URL.createObjectURL(blob);
-        triggerDownload(objectUrl, safeDownloadName(filename, blob.type));
+        triggerDownload(objectUrl, safeFileName(filename, blob.type));
         setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
       } catch (error) {
         if (url.startsWith("data:")) {
-          triggerDownload(url, safeDownloadName(filename, ""));
+          triggerDownload(url, safeFileName(filename, ""));
           return;
         }
-        toast("浏览器无法直接下载这个远程图片，请尝试新标签页打开后保存。");
+        toast("浏览器无法直接下载这个远程文件，请尝试新标签页打开后保存。");
       }
     }
 
@@ -3795,9 +3802,9 @@
         return;
       }
       try {
-        const blob = await imageUrlToBlob(url);
+        const blob = await urlToBlob(url);
         const handle = await window.showSaveFilePicker({
-          suggestedName: safeDownloadName(filename, blob.type),
+          suggestedName: safeFileName(filename, blob.type),
           types: [
             {
               description: "图片文件",
@@ -3820,7 +3827,7 @@
       }
     }
 
-    async function imageUrlToBlob(url) {
+    async function urlToBlob(url) {
       const response = await fetch(url);
       if (!response.ok) throw new Error("HTTP " + response.status);
       return response.blob();
@@ -3836,14 +3843,14 @@
       document.body.removeChild(link);
     }
 
-    function safeDownloadName(name, mimeType) {
+    function safeFileName(name, mimeType) {
       const fallbackExt = mimeType && mimeType.includes("jpeg") ? ".jpg" : mimeType && mimeType.includes("webp") ? ".webp" : ".png";
       const clean = String(name || "agnes-image").replace(/[\\/:*?"<>|]+/g, "-").trim() || "agnes-image";
       return /\.[a-z0-9]{2,5}$/i.test(clean) ? clean : clean + fallbackExt;
     }
 
     function safeUploadName(name, mimeType) {
-      return safeDownloadName(name || "agnes-reference", mimeType);
+      return safeFileName(name || "agnes-reference", mimeType);
     }
 
     function numberOrDefault(value, fallback) {
@@ -3950,10 +3957,6 @@
     function formatMonth(time) {
       const date = new Date(time);
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-    }
-
-    function escapeHtml(value) {
-      return String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char]));
     }
 
     function scrollToBottom() {
