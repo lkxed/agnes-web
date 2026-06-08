@@ -1524,6 +1524,7 @@
         <div class="message-actions">
           <button class="debug-button" id="modalOpenButton" type="button">新标签页打开</button>
           <button class="debug-button" id="modalDownloadButton" type="button">下载</button>
+          <button class="debug-button" id="modalSaveAsButton" type="button">另存为</button>
           <button class="debug-button" id="modalCloseButton" type="button">关闭</button>
         </div>
       </div>
@@ -1713,6 +1714,7 @@
       imagePreviewImg: document.getElementById("imagePreviewImg"),
       modalOpenButton: document.getElementById("modalOpenButton"),
       modalDownloadButton: document.getElementById("modalDownloadButton"),
+      modalSaveAsButton: document.getElementById("modalSaveAsButton"),
       modalCloseButton: document.getElementById("modalCloseButton")
     };
 
@@ -1793,6 +1795,7 @@
       els.modalCloseButton.addEventListener("click", closeImagePreview);
       els.modalOpenButton.addEventListener("click", () => openInNewTab(els.imagePreviewModal.dataset.url || ""));
       els.modalDownloadButton.addEventListener("click", () => downloadImage(els.imagePreviewModal.dataset.url || "", els.imagePreviewModal.dataset.name || "agnes-image"));
+      els.modalSaveAsButton.addEventListener("click", () => saveImageAs(els.imagePreviewModal.dataset.url || "", els.imagePreviewModal.dataset.name || "agnes-image"));
       els.imagePreviewModal.addEventListener("click", (event) => {
         if (event.target === els.imagePreviewModal) closeImagePreview();
       });
@@ -2937,6 +2940,14 @@
       download.textContent = "下载";
       download.addEventListener("click", () => downloadImage(result.url, result.downloadName || "agnes-result"));
       actions.append(open, download);
+      if (result.kind === "image") {
+        const saveAs = document.createElement("button");
+        saveAs.className = "debug-button";
+        saveAs.type = "button";
+        saveAs.textContent = "另存为";
+        saveAs.addEventListener("click", () => saveImageAs(result.url, result.downloadName || "agnes-result"));
+        actions.appendChild(saveAs);
+      }
       wrap.appendChild(actions);
       return wrap;
     }
@@ -3036,9 +3047,7 @@
     async function downloadImage(url, filename) {
       if (!url) return;
       try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("HTTP " + response.status);
-        const blob = await response.blob();
+        const blob = await imageUrlToBlob(url);
         const objectUrl = URL.createObjectURL(blob);
         triggerDownload(objectUrl, safeDownloadName(filename, blob.type));
         setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
@@ -3049,6 +3058,44 @@
         }
         toast("浏览器无法直接下载这个远程图片，请尝试新标签页打开后保存。");
       }
+    }
+
+    async function saveImageAs(url, filename) {
+      if (!url) return;
+      if (!window.showSaveFilePicker) {
+        toast("当前浏览器不支持另存为对话框，请使用下载或右键另存为。");
+        return;
+      }
+      try {
+        const blob = await imageUrlToBlob(url);
+        const handle = await window.showSaveFilePicker({
+          suggestedName: safeDownloadName(filename, blob.type),
+          types: [
+            {
+              description: "图片文件",
+              accept: {
+                "image/png": [".png"],
+                "image/jpeg": [".jpg", ".jpeg"],
+                "image/webp": [".webp"],
+                "image/gif": [".gif"]
+              }
+            }
+          ]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        toast("图片已保存");
+      } catch (error) {
+        if (error && error.name === "AbortError") return;
+        toast("无法打开另存为对话框。远程图片可能限制了浏览器读取，请尝试新标签页打开后保存。");
+      }
+    }
+
+    async function imageUrlToBlob(url) {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      return response.blob();
     }
 
     function triggerDownload(url, filename) {
