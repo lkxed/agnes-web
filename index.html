@@ -1016,6 +1016,12 @@
       min-width: 0;
     }
 
+    .image-modal-title-wrap {
+      display: grid;
+      gap: 3px;
+      min-width: 0;
+    }
+
     .image-modal-title {
       min-width: 0;
       overflow: hidden;
@@ -1023,6 +1029,17 @@
       font-weight: 900;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+
+    .image-modal-counter {
+      color: var(--subtle);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .debug-button:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
     }
 
     .image-modal-stage {
@@ -1520,8 +1537,13 @@
   <div class="image-modal" id="imagePreviewModal" role="dialog" aria-modal="true" aria-labelledby="imagePreviewTitle" hidden>
     <div class="image-modal-card">
       <div class="image-modal-head">
-        <div class="image-modal-title" id="imagePreviewTitle">图片预览</div>
+        <div class="image-modal-title-wrap">
+          <div class="image-modal-title" id="imagePreviewTitle">图片预览</div>
+          <div class="image-modal-counter" id="imagePreviewCounter" hidden></div>
+        </div>
         <div class="message-actions">
+          <button class="debug-button" id="modalPrevButton" type="button" hidden>上一张</button>
+          <button class="debug-button" id="modalNextButton" type="button" hidden>下一张</button>
           <button class="debug-button" id="modalOpenButton" type="button">新标签页打开</button>
           <button class="debug-button" id="modalDownloadButton" type="button">下载</button>
           <button class="debug-button" id="modalSaveAsButton" type="button">另存为</button>
@@ -1655,7 +1677,9 @@
       historyQuery: "",
       attachments: emptyAttachments(),
       advancedMode: false,
-      showDebug: false
+      showDebug: false,
+      previewItems: [],
+      previewIndex: 0
     };
 
     const els = {
@@ -1711,7 +1735,10 @@
       videoNegative: document.getElementById("videoNegative"),
       imagePreviewModal: document.getElementById("imagePreviewModal"),
       imagePreviewTitle: document.getElementById("imagePreviewTitle"),
+      imagePreviewCounter: document.getElementById("imagePreviewCounter"),
       imagePreviewImg: document.getElementById("imagePreviewImg"),
+      modalPrevButton: document.getElementById("modalPrevButton"),
+      modalNextButton: document.getElementById("modalNextButton"),
       modalOpenButton: document.getElementById("modalOpenButton"),
       modalDownloadButton: document.getElementById("modalDownloadButton"),
       modalSaveAsButton: document.getElementById("modalSaveAsButton"),
@@ -1793,6 +1820,8 @@
       els.imageFileInput.addEventListener("change", handleImageFileSelection);
       els.clearAttachmentsButton.addEventListener("click", () => clearModeAttachments(state.mode));
       els.modalCloseButton.addEventListener("click", closeImagePreview);
+      els.modalPrevButton.addEventListener("click", () => showImagePreviewAt(state.previewIndex - 1));
+      els.modalNextButton.addEventListener("click", () => showImagePreviewAt(state.previewIndex + 1));
       els.modalOpenButton.addEventListener("click", () => openInNewTab(els.imagePreviewModal.dataset.url || ""));
       els.modalDownloadButton.addEventListener("click", () => downloadImage(els.imagePreviewModal.dataset.url || "", els.imagePreviewModal.dataset.name || "agnes-image"));
       els.modalSaveAsButton.addEventListener("click", () => saveImageAs(els.imagePreviewModal.dataset.url || "", els.imagePreviewModal.dataset.name || "agnes-image"));
@@ -1800,7 +1829,10 @@
         if (event.target === els.imagePreviewModal) closeImagePreview();
       });
       document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && !els.imagePreviewModal.hidden) closeImagePreview();
+        if (els.imagePreviewModal.hidden) return;
+        if (event.key === "Escape") closeImagePreview();
+        if (event.key === "ArrowLeft") showImagePreviewAt(state.previewIndex - 1);
+        if (event.key === "ArrowRight") showImagePreviewAt(state.previewIndex + 1);
       });
 
       els.videoDuration.addEventListener("change", () => {
@@ -2852,14 +2884,19 @@
     function renderMessageAttachments(attachments) {
       const wrap = document.createElement("div");
       wrap.className = "message-attachments";
+      const previewItems = attachments
+        .filter((item) => item.previewUrl)
+        .map((item) => ({ url: item.previewUrl, name: item.name || "参考图" }));
+      let previewIndex = 0;
       attachments.forEach((item) => {
         const hasPreview = Boolean(item.previewUrl);
+        const currentPreviewIndex = hasPreview ? previewIndex++ : -1;
         const row = document.createElement(hasPreview ? "button" : "div");
         row.className = "message-attachment";
         if (hasPreview) {
           row.type = "button";
           row.title = "预览 " + (item.name || "参考图");
-          row.addEventListener("click", () => openImagePreview(item.previewUrl, item.name || "参考图"));
+          row.addEventListener("click", () => openImagePreview(previewItems, currentPreviewIndex));
         }
         let preview;
         if (hasPreview) {
@@ -2934,19 +2971,14 @@
       open.type = "button";
       open.textContent = result.kind === "image" ? "新标签页打开" : "打开";
       open.addEventListener("click", () => openInNewTab(result.url));
-      const download = document.createElement("button");
-      download.className = "debug-button";
-      download.type = "button";
-      download.textContent = "下载";
-      download.addEventListener("click", () => downloadImage(result.url, result.downloadName || "agnes-result"));
-      actions.append(open, download);
-      if (result.kind === "image") {
-        const saveAs = document.createElement("button");
-        saveAs.className = "debug-button";
-        saveAs.type = "button";
-        saveAs.textContent = "另存为";
-        saveAs.addEventListener("click", () => saveImageAs(result.url, result.downloadName || "agnes-result"));
-        actions.appendChild(saveAs);
+      actions.appendChild(open);
+      if (result.kind === "video") {
+        const download = document.createElement("button");
+        download.className = "debug-button";
+        download.type = "button";
+        download.textContent = "下载";
+        download.addEventListener("click", () => downloadImage(result.url, result.downloadName || "agnes-result"));
+        actions.appendChild(download);
       }
       wrap.appendChild(actions);
       return wrap;
@@ -3022,14 +3054,35 @@
       }
     }
 
-    function openImagePreview(url, name) {
-      if (!url) return;
-      els.imagePreviewModal.dataset.url = url;
-      els.imagePreviewModal.dataset.name = name || "agnes-image";
-      els.imagePreviewTitle.textContent = name || "图片预览";
-      els.imagePreviewImg.src = url;
-      els.imagePreviewImg.alt = name || "图片预览";
+    function openImagePreview(items, index = 0) {
+      const normalized = Array.isArray(items)
+        ? items.filter((item) => item && item.url)
+        : [{ url: items, name: typeof index === "string" ? index : "图片预览" }].filter((item) => item.url);
+      if (!normalized.length) return;
+      state.previewItems = normalized;
+      showImagePreviewAt(typeof index === "number" ? index : 0);
       els.imagePreviewModal.hidden = false;
+    }
+
+    function showImagePreviewAt(index) {
+      if (!state.previewItems.length) return;
+      const nextIndex = Math.min(Math.max(index, 0), state.previewItems.length - 1);
+      const item = state.previewItems[nextIndex];
+      state.previewIndex = nextIndex;
+      els.imagePreviewModal.dataset.url = item.url;
+      els.imagePreviewModal.dataset.name = item.name || "agnes-image";
+      els.imagePreviewTitle.textContent = item.name || "图片预览";
+      els.imagePreviewImg.src = item.url;
+      els.imagePreviewImg.alt = item.name || "图片预览";
+      const canSwitch = state.previewItems.length > 1;
+      els.imagePreviewCounter.hidden = !canSwitch;
+      els.modalPrevButton.hidden = !canSwitch;
+      els.modalNextButton.hidden = !canSwitch;
+      if (canSwitch) {
+        els.imagePreviewCounter.textContent = String(nextIndex + 1) + " / " + String(state.previewItems.length);
+        els.modalPrevButton.disabled = nextIndex === 0;
+        els.modalNextButton.disabled = nextIndex === state.previewItems.length - 1;
+      }
     }
 
     function closeImagePreview() {
@@ -3037,6 +3090,14 @@
       els.imagePreviewImg.removeAttribute("src");
       delete els.imagePreviewModal.dataset.url;
       delete els.imagePreviewModal.dataset.name;
+      els.imagePreviewCounter.hidden = true;
+      els.imagePreviewCounter.textContent = "";
+      els.modalPrevButton.hidden = true;
+      els.modalNextButton.hidden = true;
+      els.modalPrevButton.disabled = false;
+      els.modalNextButton.disabled = false;
+      state.previewItems = [];
+      state.previewIndex = 0;
     }
 
     function openInNewTab(url) {
