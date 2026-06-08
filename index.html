@@ -1503,6 +1503,10 @@
         width: 48px;
       }
 
+      .quick-text-options:not([hidden]) {
+        grid-column: 1 / -1;
+      }
+
       .simple-settings,
       .advanced-fields {
         grid-template-columns: 1fr;
@@ -3348,13 +3352,18 @@
       }
       if (existing) {
         const copy = existing.querySelector(".thinking-copy");
-        if (copy) copy.textContent = thinking;
+        if (copy) {
+          copy.textContent = thinking;
+          scrollThinkingToLatest(copy);
+        }
         return;
       }
       const body = node.querySelector(".message-body");
       const bubble = node.querySelector(".bubble");
       if (!body || !bubble) return;
-      bubble.insertBefore(renderThinking(thinking), body);
+      const thinkingBlock = renderThinking(thinking);
+      bubble.insertBefore(thinkingBlock, body);
+      scrollThinkingToLatest(thinkingBlock.querySelector(".thinking-copy"));
     }
 
     function renderThinking(thinking) {
@@ -3378,8 +3387,17 @@
         const expanded = button.getAttribute("aria-expanded") === "true";
         button.setAttribute("aria-expanded", String(!expanded));
         stateLabel.textContent = expanded ? "展开" : "收起";
+        scrollThinkingToLatest(copy);
       });
+      scrollThinkingToLatest(copy);
       return button;
+    }
+
+    function scrollThinkingToLatest(copy) {
+      if (!copy) return;
+      requestAnimationFrame(() => {
+        copy.scrollTop = copy.scrollHeight;
+      });
     }
 
     function renderMessageAttachments(attachments) {
