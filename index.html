@@ -3431,6 +3431,7 @@
       }
       const time = document.createElement("span");
       time.textContent = formatMessageTime(message.createdAt);
+      time.title = formatExactTime(message.createdAt);
       info.appendChild(time);
       const usage = formatUsage(message.usage);
       if (usage) {
@@ -3891,7 +3892,27 @@
     function formatMessageTime(value) {
       const time = new Date(value).getTime();
       if (!Number.isFinite(time)) return "";
-      return new Date(time).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+      const diff = Math.max(0, Date.now() - time);
+      const minute = 60 * 1000;
+      const hour = 60 * minute;
+      const day = 24 * hour;
+      if (diff < minute) return "刚刚";
+      if (diff < hour) return Math.floor(diff / minute) + "分钟前";
+      if (diff < day) return Math.floor(diff / hour) + "小时前";
+      if (diff < 30 * day) return Math.floor(diff / day) + "天前";
+      return formatMonth(time);
+    }
+
+    function formatExactTime(value) {
+      const time = new Date(value).getTime();
+      if (!Number.isFinite(time)) return "";
+      return new Date(time).toLocaleString([], {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "numeric",
+        minute: "2-digit"
+      });
     }
 
     function formatUsage(usage) {
