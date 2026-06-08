@@ -2291,7 +2291,7 @@
 
     function updateKeyVisibilityIcon() {
       const isVisible = els.apiKeyInput.type === "text";
-      els.toggleKeyButton.innerHTML = isVisible ? ICONS.eyeOff : ICONS.eye;
+      els.toggleKeyButton.innerHTML = isVisible ? ICONS.eye : ICONS.eyeOff;
       els.toggleKeyButton.title = isVisible ? "隐藏 API Key" : "显示 API Key";
       els.toggleKeyButton.setAttribute("aria-label", els.toggleKeyButton.title);
     }
