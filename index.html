@@ -665,10 +665,18 @@
       padding-top: 2px;
     }
 
-    .message.user .bubble {
+    .message-content {
+      display: grid;
+      min-width: 0;
+    }
+
+    .message.user .message-content {
       grid-column: 1;
       justify-self: end;
       max-width: min(720px, 100%);
+    }
+
+    .message.user .bubble {
       padding: 12px 14px;
       border-radius: 16px;
       background: color-mix(in srgb, var(--brand), var(--panel) 82%);
@@ -715,7 +723,7 @@
       gap: 10px;
       align-items: center;
       justify-content: flex-end;
-      margin-top: 7px;
+      margin-top: 5px;
       color: var(--subtle);
       font-size: 12px;
     }
@@ -1509,7 +1517,7 @@
         display: none;
       }
 
-      .message.user .bubble {
+      .message.user .message-content {
         grid-column: auto;
       }
 
@@ -3389,6 +3397,8 @@
       const avatar = document.createElement("div");
       avatar.className = "avatar";
       avatar.textContent = message.role === "user" ? "你" : "A";
+      const content = document.createElement("div");
+      content.className = "message-content";
       const bubble = document.createElement("div");
       bubble.className = "bubble";
       const body = document.createElement("div");
@@ -3400,8 +3410,8 @@
       if (message.task) bubble.appendChild(renderTask(message.task));
       if (message.result) bubble.appendChild(renderResult(message.result));
       if (state.advancedMode && state.showDebug && message.raw) bubble.appendChild(renderRaw(message.raw, message.id));
-      bubble.appendChild(renderMessageFooter(message));
-      article.append(avatar, bubble);
+      content.append(bubble, renderMessageFooter(message));
+      article.append(avatar, content);
       return article;
     }
 
