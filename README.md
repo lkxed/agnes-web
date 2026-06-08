@@ -1,12 +1,13 @@
-# Agnes AI Console
+# Agnes AI 创作助手
 
-一个零构建、纯 HTML 的 Agnes AI 对话式 Web App。它可以直接部署到 GitHub Pages，通过浏览器调用 Agnes AI 的文本、图像和视频 API。
+一个零构建、纯 HTML 的 Agnes AI 创作 Web App。它面向普通用户，提供写作与问答、图片创作、视频创作三种入口，可以直接部署到 GitHub Pages，通过浏览器调用 Agnes AI API。
 
 ## 功能
 
-- 文本：调用 `agnes-2.0-flash`，支持普通聊天、流式输出、Thinking 开关和图片 URL 输入。
-- 图像：调用 `agnes-image-2.1-flash`，支持文生图、图生图、URL 输出和 Base64 输出。
-- 视频：调用 `agnes-video-v2.0`，支持文本生成视频、图片生成视频、多图/关键帧输入，并自动轮询任务结果。
+- 写作与问答：适合文案、总结、脚本、灵感整理和图片理解。
+- 图片创作：用自然语言生成图片，也可以提供参考图进行风格转换或编辑。
+- 视频创作：提交视频创作任务后自动等待结果，完成后在页面中播放。
+- 高级设置默认折叠，普通用户只需要填写创作需求；需要调参时仍可展开。
 - API Key 仅保存在 `sessionStorage`。关闭浏览器标签页后会清空，不会写入仓库。
 
 ## 本地使用
@@ -41,6 +42,12 @@ git push -u origin main
 - 不要把真实 API Key 写进 `index.html`、README 或任何提交。
 - 这个 App 是纯前端应用，用户填写的 API Key 会从浏览器直接发送到 `https://apihub.agnes-ai.com`。
 - 如果你把页面公开发布，访问者需要使用自己的 Agnes AI API Key。
+
+## 高级说明
+
+- 文本使用 `agnes-2.0-flash`，高级设置里保留创意程度、回答长度、流式输出、Thinking 和图片 URL 输入。
+- 图片使用 `agnes-image-2.1-flash`，普通设置提供画面比例和参考图，高级设置保留结果格式。
+- 视频使用 `agnes-video-v2.0`，普通设置提供画面比例、视频长度和参考图；高级设置保留帧数、FPS、检查次数和负面提示词。
 
 ## API 文档
 

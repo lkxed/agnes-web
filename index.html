@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
-  <title>Agnes AI Console</title>
+  <title>Agnes AI 创作助手</title>
   <style>
     :root {
       --bg: #f6f7f9;
@@ -214,7 +214,7 @@
     }
 
     .textarea {
-      min-height: 92px;
+      min-height: 112px;
       padding: 12px 13px;
       resize: vertical;
       line-height: 1.5;
@@ -565,18 +565,84 @@
       background: rgba(251, 252, 253, 0.96);
     }
 
+    .prompt-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .prompt-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 7px 10px;
+      border: 1px solid #cfe4e1;
+      border-radius: var(--radius);
+      background: #f3fbfa;
+      color: #235552;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .simple-settings {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      align-items: end;
+    }
+
     .params {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 10px;
     }
 
+    .simple-settings .wide,
     .params .wide {
       grid-column: span 2;
     }
 
+    .simple-settings .full,
     .params .full {
       grid-column: 1 / -1;
+    }
+
+    .advanced-settings {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.76);
+    }
+
+    .advanced-settings summary {
+      display: flex;
+      align-items: center;
+      min-height: 40px;
+      padding: 9px 12px;
+      color: #344054;
+      font-size: 13px;
+      font-weight: 800;
+      list-style: none;
+      cursor: pointer;
+    }
+
+    .advanced-settings summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .advanced-settings summary::after {
+      content: "+";
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .advanced-settings[open] summary::after {
+      content: "-";
+    }
+
+    .advanced-settings .params {
+      padding: 0 12px 12px;
     }
 
     .option-row {
@@ -659,6 +725,7 @@
     }
 
     @media (max-width: 1120px) {
+      .simple-settings,
       .params {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
@@ -737,10 +804,12 @@
         grid-template-columns: 1fr;
       }
 
+      .simple-settings,
       .params {
         grid-template-columns: 1fr;
       }
 
+      .simple-settings .wide,
       .params .wide {
         grid-column: auto;
       }
@@ -780,17 +849,17 @@
       <div class="brand">
         <div class="brand-mark" aria-hidden="true">A</div>
         <div>
-          <h1>Agnes AI Console</h1>
-          <p>GitHub Pages ready</p>
+          <h1>Agnes 创作助手</h1>
+          <p>写作、图片和视频创作</p>
         </div>
       </div>
 
-      <section class="panel" aria-label="API Key">
-        <div class="panel-title">API Key</div>
+      <section class="panel" aria-label="连接 Agnes">
+        <div class="panel-title">连接 Agnes</div>
         <div class="field">
-          <label for="apiKeyInput">Bearer Token</label>
+          <label for="apiKeyInput">你的 Agnes API Key</label>
           <div class="input-row">
-            <input class="input" id="apiKeyInput" autocomplete="off" spellcheck="false" type="password" placeholder="YOUR_API_KEY">
+            <input class="input" id="apiKeyInput" autocomplete="off" spellcheck="false" type="password" placeholder="粘贴 API Key 后即可开始创作">
             <button class="icon-button" id="toggleKeyButton" type="button" title="显示或隐藏 API Key" aria-label="显示或隐藏 API Key">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
             </button>
@@ -798,55 +867,55 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
             </button>
           </div>
-          <span class="hint">仅保存在当前浏览器会话，关闭标签页后清空。</span>
+          <span class="hint">只保存在当前标签页会话中，关闭页面后会自动清空。</span>
         </div>
         <span class="status-pill" id="keyStatus"><span class="status-dot"></span><span>未设置</span></span>
       </section>
 
       <section class="panel" aria-label="模式">
-        <div class="panel-title">Mode</div>
+        <div class="panel-title">创作类型</div>
         <div class="mode-list">
           <button class="mode-button" type="button" data-mode="text" aria-pressed="true">
             <span class="mode-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"></path><path d="M8 9h8"></path><path d="M8 13h5"></path></svg>
             </span>
-            <span><span class="mode-name">文本</span><span class="mode-desc">聊天、流式、图像理解</span></span>
+            <span><span class="mode-name">写作与问答</span><span class="mode-desc">文案、总结、灵感整理</span></span>
           </button>
           <button class="mode-button" type="button" data-mode="image" aria-pressed="false">
             <span class="mode-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="M21 15l-5-5L5 21"></path></svg>
             </span>
-            <span><span class="mode-name">图像</span><span class="mode-desc">文生图、图生图</span></span>
+            <span><span class="mode-name">图片创作</span><span class="mode-desc">海报、封面、视觉素材</span></span>
           </button>
           <button class="mode-button" type="button" data-mode="video" aria-pressed="false">
             <span class="mode-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 8l6-3v14l-6-3Z"></path><rect x="3" y="6" width="11" height="12" rx="2"></rect></svg>
             </span>
-            <span><span class="mode-name">视频</span><span class="mode-desc">异步生成与轮询</span></span>
+            <span><span class="mode-name">视频创作</span><span class="mode-desc">短片、动效、产品展示</span></span>
           </button>
         </div>
       </section>
 
       <div class="sidebar-footer">
-        <span>Base API: https://apihub.agnes-ai.com</span>
-        <span>不会把 API Key 写入仓库或长期存储。发布到 GitHub Pages 前请确认没有在代码中硬编码密钥。</span>
+        <span>普通模式下只需要描述你想创作的内容。</span>
+        <span>高级设置仍然保留给需要精细控制的用户。</span>
       </div>
     </aside>
 
     <main class="main">
       <header class="topbar">
         <div>
-          <h2 id="modeTitle">文本对话</h2>
-          <p id="modeSubtitle">使用 agnes-2.0-flash 调用 OpenAI-compatible Chat Completions。</p>
+          <h2 id="modeTitle">写作与问答</h2>
+          <p id="modeSubtitle">把想法、资料或问题交给 Agnes，整理成清晰内容。</p>
         </div>
         <div class="top-actions">
           <button class="secondary-button" id="copyThreadButton" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-            复制记录
+            复制作品记录
           </button>
           <button class="secondary-button" id="clearThreadButton" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path></svg>
-            清空
+            清空画布
           </button>
         </div>
       </header>
@@ -854,21 +923,21 @@
       <section class="messages" id="messages" aria-live="polite">
         <div class="empty-state" id="emptyState">
           <div class="intro">
-            <h3>一个对话窗口，调用 Agnes 文本、图像和视频 API。</h3>
-            <p>填入 API Key，选择模式，然后直接输入你的需求。所有请求都从浏览器发往 Agnes API，适合发布到 GitHub Pages。</p>
+            <h3>你想创作什么？</h3>
+            <p>选择一种创作类型，用自然语言描述需求。Agnes 会帮你写内容、生成图片，或者制作可播放的视频。</p>
           </div>
           <div class="quick-grid">
-            <button class="quick-card" type="button" data-mode="text" data-prompt="用中文解释 Agnes AI 可以怎样帮助独立开发者快速构建 AI 应用。">
-              <strong>文本聊天</strong>
-              <span>普通聊天、流式输出、工具调用结构兼容 OpenAI Chat Completions。</span>
+            <button class="quick-card" type="button" data-mode="text" data-prompt="帮我写一段小红书风格的新品发布文案，主题是一个能写作、作图、生成视频的 AI 创作助手。语气自然、有吸引力。">
+              <strong>写一段发布文案</strong>
+              <span>适合社媒、产品介绍、邮件、脚本和灵感整理。</span>
             </button>
-            <button class="quick-card" type="button" data-mode="image" data-prompt="A polished app icon for Agnes AI Console, clean geometric shape, teal and blue palette, high detail, white background">
-              <strong>生成图像</strong>
-              <span>输入 prompt，选择尺寸和 URL/Base64 输出，直接预览生成结果。</span>
+            <button class="quick-card" type="button" data-mode="image" data-prompt="一张温和专业的 AI 创作助手宣传海报，干净的桌面、柔和自然光、屏幕上有写作和图片创作界面，现代感，高级但不夸张">
+              <strong>生成一张海报</strong>
+              <span>描述画面、风格和用途，就能生成视觉素材。</span>
             </button>
-            <button class="quick-card" type="button" data-mode="video" data-prompt="A cinematic product demo shot of a futuristic AI console interface glowing on a desk, smooth camera push-in, realistic lighting">
-              <strong>生成视频</strong>
-              <span>提交异步任务，自动轮询状态，完成后在对话里播放视频。</span>
+            <button class="quick-card" type="button" data-mode="video" data-prompt="一个 5 秒左右的产品展示短片：镜头缓慢推进到一块简洁的 AI 创作界面，文字、图片、视频三个能力依次亮起，光线柔和，现代专业">
+              <strong>制作一个短视频</strong>
+              <span>适合产品展示、动态封面、短视频素材和概念演示。</span>
             </button>
           </div>
         </div>
@@ -876,94 +945,111 @@
       </section>
 
       <form class="composer" id="composer">
-        <div class="params" id="params">
-          <div class="field" data-param="text">
-            <label for="textTemperature">Temperature</label>
-            <input class="input" id="textTemperature" type="number" min="0" max="2" step="0.1" value="0.7">
-          </div>
-          <div class="field" data-param="text">
-            <label for="textMaxTokens">Max tokens</label>
-            <input class="input" id="textMaxTokens" type="number" min="1" step="1" value="1024">
-          </div>
-          <div class="field wide" data-param="text">
-            <label for="textImageUrl">图片 URL（可选）</label>
-            <input class="input" id="textImageUrl" type="url" placeholder="https://example.com/image.jpg">
-          </div>
-          <div class="field full" data-param="text">
-            <div class="option-row">
-              <label class="check" for="textStream"><input id="textStream" type="checkbox">流式输出</label>
-              <label class="check" for="textThinking"><input id="textThinking" type="checkbox">启用 Thinking</label>
-            </div>
-          </div>
-
-          <div class="field" data-param="image" hidden>
-            <label for="imageSize">尺寸</label>
-            <select class="select" id="imageSize">
-              <option value="1024x768">1024x768</option>
-              <option value="768x1024">768x1024</option>
-              <option value="1024x1024">1024x1024</option>
-              <option value="1280x720">1280x720</option>
-              <option value="720x1280">720x1280</option>
-            </select>
-          </div>
-          <div class="field" data-param="image" hidden>
-            <label for="imageOutput">输出格式</label>
-            <select class="select" id="imageOutput">
-              <option value="url">URL</option>
-              <option value="base64">Base64</option>
-            </select>
-          </div>
-          <div class="field wide" data-param="image" hidden>
-            <label for="imageInputs">输入图片（可选，逗号或换行分隔）</label>
-            <input class="input" id="imageInputs" spellcheck="false" placeholder="https://example.com/input.png">
-          </div>
-
-          <div class="field" data-param="video" hidden>
-            <label for="videoSize">尺寸</label>
-            <select class="select" id="videoSize">
-              <option value="1152x768">1152x768</option>
-              <option value="1280x768">1280x768</option>
-              <option value="1024x576">1024x576</option>
-              <option value="768x1152">768x1152</option>
-            </select>
-          </div>
-          <div class="field" data-param="video" hidden>
-            <label for="videoFrames">帧数</label>
-            <input class="input" id="videoFrames" type="number" min="9" max="441" step="8" value="121">
-          </div>
-          <div class="field" data-param="video" hidden>
-            <label for="videoFrameRate">FPS</label>
-            <input class="input" id="videoFrameRate" type="number" min="1" max="60" step="1" value="24">
-          </div>
-          <div class="field" data-param="video" hidden>
-            <label for="videoPollLimit">轮询次数</label>
-            <input class="input" id="videoPollLimit" type="number" min="1" max="120" step="1" value="60">
-          </div>
-          <div class="field wide" data-param="video" hidden>
-            <label for="videoImage">单张输入图（可选）</label>
-            <input class="input" id="videoImage" type="url" placeholder="https://example.com/image.png">
-          </div>
-          <div class="field wide" data-param="video" hidden>
-            <label for="videoExtraImages">多图/关键帧（可选，逗号或换行分隔）</label>
-            <input class="input" id="videoExtraImages" spellcheck="false" placeholder="https://example.com/keyframe1.png, https://example.com/keyframe2.png">
-          </div>
-          <div class="field full" data-param="video" hidden>
-            <label for="videoNegative">负面提示词（可选）</label>
-            <input class="input" id="videoNegative" spellcheck="false" placeholder="low quality, distorted motion">
-          </div>
-        </div>
-
         <div class="submit-row">
           <div class="field">
-            <label for="promptInput" id="promptLabel">输入消息</label>
-            <textarea class="textarea" id="promptInput" required placeholder="输入你想让 Agnes 完成的任务..."></textarea>
-            <span class="hint" id="modeHint">文本模式会保留本页内的上下文；图片 URL 必须可以公开访问。</span>
+            <label for="promptInput" id="promptLabel">告诉 Agnes 你想创作什么</label>
+            <textarea class="textarea" id="promptInput" required placeholder="例如：帮我写一段新品发布文案，语气自然、有吸引力..."></textarea>
+            <span class="hint" id="modeHint">描述目标、受众和风格，Agnes 会尽量把结果整理得可直接使用。</span>
           </div>
           <button class="primary-button" id="sendButton" type="submit">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13"></path><path d="M22 2l-7 20-4-9-9-4 20-7Z"></path></svg>
             发送
           </button>
         </div>
+
+        <div class="prompt-chips" id="promptChips" aria-label="提示词示例"></div>
+
+        <div class="simple-settings" id="simpleSettings">
+          <div class="field" data-simple-param="image" hidden>
+            <label for="imageSize">画面比例</label>
+            <select class="select" id="imageSize">
+              <option value="1024x768">横版海报</option>
+              <option value="768x1024">竖版封面</option>
+              <option value="1024x1024">方形头像</option>
+              <option value="1280x720">宽屏封面</option>
+              <option value="720x1280">手机竖屏</option>
+            </select>
+          </div>
+          <div class="field wide" data-simple-param="image" hidden>
+            <label for="imageInputs">参考图片（可选）</label>
+            <input class="input" id="imageInputs" spellcheck="false" placeholder="粘贴公开图片 URL，多个可用换行分隔">
+          </div>
+          <div class="field" data-simple-param="video" hidden>
+            <label for="videoSize">画面比例</label>
+            <select class="select" id="videoSize">
+              <option value="1152x768">横版短片</option>
+              <option value="1280x768">宽屏展示</option>
+              <option value="1024x576">轻量横版</option>
+              <option value="768x1152">手机竖屏</option>
+            </select>
+          </div>
+          <div class="field" data-simple-param="video" hidden>
+            <label for="videoDuration">视频长度</label>
+            <select class="select" id="videoDuration">
+              <option value="121:24">标准短片</option>
+              <option value="81:24">更短更快</option>
+              <option value="201:24">更长展示</option>
+              <option value="custom">使用高级设置</option>
+            </select>
+          </div>
+          <div class="field wide" data-simple-param="video" hidden>
+            <label for="videoImage">参考图（可选）</label>
+            <input class="input" id="videoImage" type="url" placeholder="粘贴一张公开图片 URL，让 Agnes 根据它生成动态画面">
+          </div>
+          <div class="field wide" data-simple-param="video" hidden>
+            <label for="videoExtraImages">关键帧（可选）</label>
+            <input class="input" id="videoExtraImages" spellcheck="false" placeholder="多张公开图片 URL，可用换行分隔">
+          </div>
+        </div>
+
+        <details class="advanced-settings" id="advancedSettings">
+          <summary>高级设置</summary>
+          <div class="params" id="params">
+            <div class="field" data-param="text">
+              <label for="textTemperature">创意程度</label>
+              <input class="input" id="textTemperature" type="number" min="0" max="2" step="0.1" value="0.7">
+            </div>
+            <div class="field" data-param="text">
+              <label for="textMaxTokens">回答长度上限</label>
+              <input class="input" id="textMaxTokens" type="number" min="1" step="1" value="1024">
+            </div>
+            <div class="field wide" data-param="text">
+              <label for="textImageUrl">附加图片 URL（可选）</label>
+              <input class="input" id="textImageUrl" type="url" placeholder="https://example.com/image.jpg">
+            </div>
+            <div class="field full" data-param="text">
+              <div class="option-row">
+                <label class="check" for="textStream"><input id="textStream" type="checkbox">边写边显示</label>
+                <label class="check" for="textThinking"><input id="textThinking" type="checkbox">加强推理</label>
+              </div>
+            </div>
+
+            <div class="field" data-param="image" hidden>
+              <label for="imageOutput">结果格式</label>
+              <select class="select" id="imageOutput">
+                <option value="url">直接预览</option>
+                <option value="base64">Base64</option>
+              </select>
+            </div>
+
+            <div class="field" data-param="video" hidden>
+              <label for="videoFrames">帧数</label>
+              <input class="input" id="videoFrames" type="number" min="9" max="441" step="8" value="121">
+            </div>
+            <div class="field" data-param="video" hidden>
+              <label for="videoFrameRate">FPS</label>
+              <input class="input" id="videoFrameRate" type="number" min="1" max="60" step="1" value="24">
+            </div>
+            <div class="field" data-param="video" hidden>
+              <label for="videoPollLimit">检查次数</label>
+              <input class="input" id="videoPollLimit" type="number" min="1" max="120" step="1" value="60">
+            </div>
+            <div class="field full" data-param="video" hidden>
+              <label for="videoNegative">不想出现的内容（可选）</label>
+              <input class="input" id="videoNegative" spellcheck="false" placeholder="例如：低清晰度、变形、杂乱背景">
+            </div>
+          </div>
+        </details>
       </form>
     </main>
   </div>
@@ -974,28 +1060,46 @@
     const API_BASE = "https://apihub.agnes-ai.com";
     const MODE_CONFIG = {
       text: {
-        title: "文本对话",
-        subtitle: "使用 agnes-2.0-flash 调用 OpenAI-compatible Chat Completions。",
-        hint: "文本模式会保留本页内的上下文；图片 URL 必须可以公开访问。",
-        label: "输入消息",
-        button: "发送",
-        tag: "Text"
+        title: "写作与问答",
+        subtitle: "把想法、资料或问题交给 Agnes，整理成清晰内容。",
+        hint: "可以写目标、受众、语气和长度；需要分析图片时，可在高级设置里附加图片 URL。",
+        label: "告诉 Agnes 你想写什么",
+        button: "开始创作",
+        tag: "写作",
+        placeholder: "例如：帮我写一段新品发布文案，语气自然、有吸引力...",
+        examples: [
+          "帮我把这段想法整理成一封专业但亲切的邮件",
+          "生成 5 个适合小红书的标题，主题是 AI 创作助手",
+          "把下面内容总结成三条重点和一个行动建议"
+        ]
       },
       image: {
-        title: "图像生成",
-        subtitle: "使用 agnes-image-2.1-flash 生成图片或编辑公开图片。",
-        hint: "图生图请填写公开 URL 或 Data URI Base64；URL 输出更适合浏览器预览。",
-        label: "图像提示词",
-        button: "生成",
-        tag: "Image"
+        title: "图片创作",
+        subtitle: "描述画面、风格和用途，Agnes 会生成可预览的图片。",
+        hint: "说清主体、场景、风格、光线和用途；有参考图时粘贴公开图片 URL。",
+        label: "描述你想要的画面",
+        button: "生成图片",
+        tag: "图片",
+        placeholder: "例如：一张温和专业的 AI 创作助手宣传海报，现代感，柔和自然光...",
+        examples: [
+          "生成一张产品发布海报，清爽科技感，留出标题位置",
+          "把参考图改成雨夜霓虹风格，但保留原构图",
+          "设计一个简洁高级的应用图标，蓝绿色，白底"
+        ]
       },
       video: {
-        title: "视频生成",
-        subtitle: "使用 agnes-video-v2.0 创建异步任务并自动轮询结果。",
-        hint: "视频生成可能需要较长时间；完成后会显示可播放的视频 URL。",
-        label: "视频提示词",
-        button: "创建任务",
-        tag: "Video"
+        title: "视频创作",
+        subtitle: "描述镜头、动作和氛围，Agnes 会创建视频并自动等待结果。",
+        hint: "视频需要一点时间生成。建议写清主体动作、镜头运动、光线和画面风格。",
+        label: "描述你想制作的视频",
+        button: "生成视频",
+        tag: "视频",
+        placeholder: "例如：一个 5 秒产品展示短片，镜头缓慢推进，界面光效依次亮起...",
+        examples: [
+          "产品展示短片，镜头缓慢推进，柔和光线，现代专业",
+          "让参考图中的人物轻轻转头看向镜头，自然表情",
+          "两张关键帧之间做平滑转场，保持角色一致"
+        ]
       }
     };
 
@@ -1015,6 +1119,9 @@
       modeTitle: document.getElementById("modeTitle"),
       modeSubtitle: document.getElementById("modeSubtitle"),
       params: document.getElementById("params"),
+      simpleSettings: document.getElementById("simpleSettings"),
+      advancedSettings: document.getElementById("advancedSettings"),
+      promptChips: document.getElementById("promptChips"),
       promptInput: document.getElementById("promptInput"),
       promptLabel: document.getElementById("promptLabel"),
       modeHint: document.getElementById("modeHint"),
@@ -1035,6 +1142,7 @@
       imageOutput: document.getElementById("imageOutput"),
       imageInputs: document.getElementById("imageInputs"),
       videoSize: document.getElementById("videoSize"),
+      videoDuration: document.getElementById("videoDuration"),
       videoFrames: document.getElementById("videoFrames"),
       videoFrameRate: document.getElementById("videoFrameRate"),
       videoPollLimit: document.getElementById("videoPollLimit"),
@@ -1046,6 +1154,7 @@
     els.apiKeyInput.value = state.apiKey;
     updateKeyStatus();
     renderMode();
+    applyVideoDurationPreset();
 
     els.apiKeyInput.addEventListener("input", () => {
       state.apiKey = els.apiKeyInput.value.trim();
@@ -1082,6 +1191,15 @@
       });
     });
 
+    els.promptChips.addEventListener("click", (event) => {
+      const chip = event.target.closest(".prompt-chip");
+      if (!chip) return;
+      els.promptInput.value = chip.dataset.prompt;
+      els.promptInput.focus();
+    });
+
+    els.videoDuration.addEventListener("change", applyVideoDurationPreset);
+
     els.clearThreadButton.addEventListener("click", () => {
       state.messages = [];
       renderThread();
@@ -1106,7 +1224,7 @@
         return;
       }
       if (!state.apiKey) {
-        toast("请先填写 Agnes AI API Key");
+        toast("请先连接 Agnes：粘贴你的 API Key 后再开始创作");
         els.apiKeyInput.focus();
         return;
       }
@@ -1139,16 +1257,34 @@
       els.modeSubtitle.textContent = config.subtitle;
       els.promptLabel.textContent = config.label;
       els.modeHint.textContent = config.hint;
+      els.promptInput.placeholder = config.placeholder;
       els.sendButton.lastChild.nodeValue = " " + config.button;
+      els.advancedSettings.open = false;
+      renderPromptChips(config.examples);
+      Array.from(els.simpleSettings.querySelectorAll("[data-simple-param]")).forEach((el) => {
+        el.hidden = el.dataset.simpleParam !== state.mode;
+      });
       Array.from(els.params.querySelectorAll("[data-param]")).forEach((el) => {
         el.hidden = el.dataset.param !== state.mode;
+      });
+    }
+
+    function renderPromptChips(examples) {
+      els.promptChips.innerHTML = "";
+      examples.forEach((example) => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "prompt-chip";
+        chip.dataset.prompt = example;
+        chip.textContent = example;
+        els.promptChips.appendChild(chip);
       });
     }
 
     function updateKeyStatus() {
       const isReady = Boolean(state.apiKey);
       els.keyStatus.classList.toggle("ready", isReady);
-      els.keyStatus.querySelector("span:last-child").textContent = isReady ? "已会话保存" : "未设置";
+      els.keyStatus.querySelector("span:last-child").textContent = isReady ? "已连接" : "未连接";
     }
 
     function setBusy(next) {
@@ -1254,7 +1390,7 @@
 
     async function handleImage(prompt) {
       appendMessage({ mode: "image", role: "user", status: "done", content: prompt });
-      const assistant = appendMessage({ mode: "image", role: "assistant", status: "loading", content: "正在生成图像..." });
+      const assistant = appendMessage({ mode: "image", role: "assistant", status: "loading", content: "正在创作图片，请稍等..." });
       const inputImages = splitList(els.imageInputs.value);
       const output = els.imageOutput.value;
       const payload = {
@@ -1274,12 +1410,12 @@
       const url = first.url || "";
       const b64 = first.b64_json || "";
       if (!url && !b64) {
-        updateMessage(assistant.id, { status: "done", content: "图像请求完成，但未找到 data[0].url 或 data[0].b64_json。", raw: data });
+        updateMessage(assistant.id, { status: "done", content: "图片已经处理完成，但这次没有拿到可预览的结果。可以展开原始 JSON 查看详情。", raw: data });
         return;
       }
       updateMessage(assistant.id, {
         status: "done",
-        content: url ? "图像生成完成。" : "图像生成完成，已返回 Base64。",
+        content: url ? "图片创作完成。" : "图片创作完成，已返回可下载图片数据。",
         raw: data,
         result: {
           kind: "image",
@@ -1291,7 +1427,7 @@
 
     async function handleVideo(prompt) {
       appendMessage({ mode: "video", role: "user", status: "done", content: prompt });
-      const assistant = appendMessage({ mode: "video", role: "assistant", status: "loading", content: "正在创建视频任务..." });
+      const assistant = appendMessage({ mode: "video", role: "assistant", status: "loading", content: "正在开始制作视频..." });
       const [width, height] = els.videoSize.value.split("x").map((value) => parseInt(value, 10));
       const extraImages = splitList(els.videoExtraImages.value);
       const payload = {
@@ -1299,8 +1435,7 @@
         prompt,
         width,
         height,
-        num_frames: Math.min(441, Math.max(9, parseInt(els.videoFrames.value, 10) || 121)),
-        frame_rate: Math.min(60, Math.max(1, parseFloat(els.videoFrameRate.value) || 24))
+        ...getVideoTiming()
       };
       const singleImage = els.videoImage.value.trim();
       if (singleImage) payload.image = singleImage;
@@ -1313,7 +1448,7 @@
       const taskId = task.task_id || task.id;
       updateMessage(assistant.id, {
         status: "loading",
-        content: "视频任务已创建，正在等待结果...",
+        content: "视频已经开始制作，我会自动等待结果...",
         raw: task,
         task: {
           videoId,
@@ -1323,7 +1458,7 @@
         }
       });
       if (!videoId && !taskId) {
-        updateMessage(assistant.id, { status: "done", content: "任务已创建，但响应中没有 video_id 或 task_id。请复制原始 JSON 手动查询。", raw: task });
+        updateMessage(assistant.id, { status: "done", content: "视频任务已创建，但没有拿到可自动查询的编号。可以展开原始 JSON 查看详情。", raw: task });
         return;
       }
       await pollVideoResult(assistant.id, videoId, taskId);
@@ -1343,7 +1478,7 @@
         const progress = typeof data.progress === "number" ? data.progress : Math.min(99, Math.round((attempt / limit) * 100));
         updateMessage(messageId, {
           status: "loading",
-          content: "视频任务状态：" + status + "（" + progress + "%）",
+          content: "视频还在生成中：" + statusLabel(status) + "（" + progress + "%）",
           raw: data,
           task: {
             videoId: data.video_id || videoId,
@@ -1356,7 +1491,7 @@
           const videoUrl = data.remixed_from_video_id || data.video_url || data.url || "";
           updateMessage(messageId, {
             status: "done",
-            content: videoUrl ? "视频生成完成。" : "视频生成完成，但响应里没有可播放 URL。",
+            content: videoUrl ? "视频创作完成。" : "视频创作完成，但这次没有拿到可播放地址。",
             raw: data,
             task: {
               videoId: data.video_id || videoId,
@@ -1371,7 +1506,7 @@
         if (status === "failed") {
           updateMessage(messageId, {
             status: "error",
-            content: "视频生成失败：" + JSON.stringify(data.error || data, null, 2),
+            content: "视频创作失败了。可以展开原始 JSON 查看 Agnes 返回的详细原因。",
             raw: data
           });
           return;
@@ -1379,7 +1514,7 @@
       }
       updateMessage(messageId, {
         status: "done",
-        content: "已达到轮询次数上限，任务可能仍在进行。可以复制原始 JSON，用 video_id 稍后查询。",
+        content: "等待时间到了，视频可能还在制作中。可以稍后用原始 JSON 里的 video_id 再查询。",
         raw: last
       });
     }
@@ -1431,6 +1566,7 @@
       }
       const err = new Error("Agnes API 返回 " + response.status + "：" + detail);
       err.raw = text;
+      err.status = response.status;
       return err;
     }
 
@@ -1523,7 +1659,7 @@
       const time = document.createElement("span");
       time.textContent = new Date(message.createdAt).toLocaleString();
       const status = document.createElement("span");
-      status.textContent = message.status;
+      status.textContent = statusLabel(message.status);
       status.className = message.status === "error" ? "error-text" : "";
       meta.append(tag, time, status);
 
@@ -1624,6 +1760,34 @@
         .filter(Boolean);
     }
 
+    function statusLabel(status) {
+      return {
+        done: "完成",
+        loading: "创作中",
+        error: "需要处理",
+        queued: "排队中",
+        in_progress: "生成中",
+        completed: "完成",
+        failed: "失败",
+        unknown: "处理中"
+      }[status] || status;
+    }
+
+    function applyVideoDurationPreset() {
+      if (els.videoDuration.value === "custom") return;
+      const [frames, fps] = els.videoDuration.value.split(":");
+      els.videoFrames.value = frames;
+      els.videoFrameRate.value = fps;
+    }
+
+    function getVideoTiming() {
+      if (els.videoDuration.value !== "custom") applyVideoDurationPreset();
+      return {
+        num_frames: Math.min(441, Math.max(9, parseInt(els.videoFrames.value, 10) || 121)),
+        frame_rate: Math.min(60, Math.max(1, parseFloat(els.videoFrameRate.value) || 24))
+      };
+    }
+
     function numberOrDefault(value, fallback) {
       const num = Number(value);
       return Number.isFinite(num) ? num : fallback;
@@ -1639,7 +1803,17 @@
     }
 
     function formatError(error) {
-      return error && error.message ? error.message : String(error);
+      const message = error && error.message ? error.message : String(error);
+      if ((error && error.status === 401) || message.includes("无效的令牌")) {
+        return "连接 Agnes 失败：这个 API Key 看起来无效或已过期，请重新粘贴后再试。";
+      }
+      if (message.includes("网络请求失败") || message.includes("跨域")) {
+        return "这次没有连上 Agnes。请检查网络连接，稍后再试。";
+      }
+      if (error && error.status) {
+        return "这次创作没有成功。可以展开原始 JSON 查看 Agnes 返回的详细信息。";
+      }
+      return message;
     }
 
     function scrollToBottom() {
