@@ -1944,10 +1944,10 @@
       els.advancedSettings.hidden = !state.advancedMode;
       els.advancedSettings.open = state.advancedMode;
       Array.from(els.simpleSettings.querySelectorAll("[data-simple-param]")).forEach((el) => {
-        el.hidden = !state.advancedMode && el.dataset.simpleParam !== state.mode;
+        el.hidden = el.dataset.simpleParam !== state.mode;
       });
       Array.from(els.advancedFields.querySelectorAll("[data-param]")).forEach((el) => {
-        el.hidden = !state.advancedMode && el.dataset.param !== state.mode;
+        el.hidden = el.dataset.param !== state.mode;
       });
       renderFieldLabels();
       renderOptionText();
