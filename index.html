@@ -1695,7 +1695,7 @@
                   </div>
                 </div>
               <button class="advanced-mode-button" id="advancedModeButton" type="button" aria-pressed="false">高级选项</button>
-              <span class="attachment-hint" id="attachmentHint"></span>
+              <span class="attachment-hint" id="attachmentHint" hidden></span>
             </div>
             <div class="composer-right-tools">
               <div class="attachment-actions">
@@ -2786,7 +2786,8 @@
       const items = state.attachments[state.mode] || [];
       els.clearAttachmentsButton.hidden = !items.length;
       els.uploadImagesLabel.textContent = items.length ? "添加图片 (" + items.length + "/" + MAX_ATTACHMENTS + ")" : "添加图片";
-      els.attachmentHint.textContent = attachmentHint();
+      els.attachmentHint.textContent = "";
+      els.attachmentHint.hidden = true;
       els.attachmentList.hidden = !items.length;
       els.attachmentList.innerHTML = "";
       items.forEach((item) => {
@@ -2813,13 +2814,6 @@
         chip.append(img, info, remove);
         els.attachmentList.appendChild(chip);
       });
-    }
-
-    function attachmentHint() {
-      const count = (state.attachments[state.mode] || []).length;
-      if (state.mode === "text") return count ? "图片理解模式" : "可添加图片一起提问";
-      if (state.mode === "image") return count ? "已作为参考图" : "可添加多张参考图";
-      return count ? "生成视频前会先上传到图床" : "可添加本地参考图，或填写公开图片 URL";
     }
 
     function removeAttachment(mode, id) {
