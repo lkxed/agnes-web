@@ -932,7 +932,10 @@
     }
 
     .composer-left-tools {
+      display: grid;
+      grid-template-columns: auto auto minmax(0, 1fr);
       grid-column: 1;
+      align-items: center;
       max-width: 100%;
     }
 
@@ -942,15 +945,15 @@
       margin-left: auto;
     }
 
-    .composer-toolbar:has(.composer-options[open]) .composer-left-tools {
-      align-items: flex-start;
-    }
-
     .quick-text-options {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
       align-items: center;
+    }
+
+    .quick-text-options:not([hidden]) {
+      grid-column: 1 / -1;
     }
 
     .send-button {
@@ -989,6 +992,11 @@
       font-size: 13px;
       font-weight: 900;
       white-space: nowrap;
+    }
+
+    .composer-left-tools:has(.composer-options:not([hidden])) > .advanced-mode-button {
+      grid-column: 2;
+      grid-row: 1;
     }
 
     .advanced-mode-button[aria-pressed="true"],
@@ -1036,6 +1044,13 @@
       color: var(--text);
       background: var(--panel-3);
       transform: translateY(-1px);
+    }
+
+    .composer-left-tools:has(.composer-options:not([hidden])) > .attachment-hint {
+      grid-column: 3;
+      grid-row: 1;
+      align-self: center;
+      min-width: 0;
     }
 
     .attachment-hint {
@@ -1244,36 +1259,23 @@
     }
 
     .composer-toolbar .composer-options {
-      flex: 0 1 auto;
-      min-width: 0;
-      max-width: 100%;
-      border-top: 0;
-      padding-top: 0;
-    }
-
-    .composer-toolbar .composer-options[open] {
-      width: 100%;
-      flex-basis: 100%;
-      order: 10;
-    }
-
-    .composer-options summary {
+      grid-column: 1;
+      grid-row: 1;
       display: inline-flex;
       align-items: center;
       gap: 7px;
       min-height: 32px;
+      padding: 0;
+      border: 0;
       color: var(--muted);
+      background: transparent;
       font-size: 13px;
       font-weight: 800;
       list-style: none;
       cursor: pointer;
     }
 
-    .composer-options summary::-webkit-details-marker {
-      display: none;
-    }
-
-    .composer-options summary::after {
+    .composer-options::after {
       content: "";
       width: 8px;
       height: 8px;
@@ -1283,17 +1285,16 @@
       transition: transform 150ms ease;
     }
 
-    .composer-options[open] summary::after {
+    .composer-options[aria-expanded="true"]::after {
       transform: rotate(225deg) translate(-1px, -1px);
     }
 
-    .composer-options .simple-settings {
-      margin-top: 8px;
-    }
-
-    .composer-toolbar .composer-options .simple-settings {
+    .composer-toolbar .simple-settings {
+      grid-column: 1 / -1;
+      grid-row: 2;
       width: 100%;
-      padding-top: 8px;
+      margin-top: 2px;
+      padding-top: 0;
       grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
     }
 
@@ -1652,9 +1653,8 @@
                   <span data-basic-label="流式输出" data-advanced-label="stream">流式输出</span>
                 </label>
               </div>
-              <details class="composer-options" id="optionsSettings">
-                <summary>创作选项</summary>
-                <div class="simple-settings" id="simpleSettings">
+              <button class="composer-options" id="optionsSettings" type="button" aria-expanded="false">创作选项</button>
+                <div class="simple-settings" id="simpleSettings" hidden>
                   <div class="field" data-simple-param="image" hidden>
                     <label for="imageSize" data-basic-label="画面比例" data-advanced-label="size">画面比例</label>
                     <select class="select" id="imageSize">
@@ -1698,7 +1698,6 @@
                     <input class="input" id="videoExtraImages" spellcheck="false" placeholder="多张公开图片 URL，可用换行分隔">
                   </div>
                 </div>
-              </details>
               <button class="advanced-mode-button" id="advancedModeButton" type="button" aria-pressed="false">高级选项</button>
               <span class="attachment-hint" id="attachmentHint"></span>
             </div>
@@ -1922,7 +1921,8 @@
       previewItems: [],
       previewIndex: 0,
       openHistoryMenuId: null,
-      renamingSessionId: null
+      renamingSessionId: null,
+      optionsOpen: false
     };
 
     const els = {
@@ -2047,6 +2047,11 @@
         state.openHistoryMenuId = null;
         state.renamingSessionId = null;
         renderHistory();
+      });
+
+      els.optionsSettings.addEventListener("click", () => {
+        state.optionsOpen = !state.optionsOpen;
+        renderMode();
       });
 
       document.addEventListener("click", (event) => {
@@ -2412,7 +2417,10 @@
       els.advancedSettings.open = state.advancedMode;
       const hasSimpleOptions = Array.from(els.simpleSettings.querySelectorAll("[data-simple-param]")).some((el) => el.dataset.simpleParam === state.mode);
       els.quickTextOptions.hidden = state.mode !== "text";
+      if (!hasSimpleOptions) state.optionsOpen = false;
       els.optionsSettings.hidden = !hasSimpleOptions;
+      els.optionsSettings.setAttribute("aria-expanded", String(state.optionsOpen));
+      els.simpleSettings.hidden = !hasSimpleOptions || !state.optionsOpen;
       Array.from(els.simpleSettings.querySelectorAll("[data-simple-param]")).forEach((el) => {
         el.hidden = el.dataset.simpleParam !== state.mode;
       });
