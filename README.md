@@ -8,7 +8,7 @@
 - 三种创作模式：聊天、图片、视频，通过输入框上方的模式胶囊切换。
 - 统一图片附件：聊天和图片模式可以直接上传多张本地图片；视频模式会先把本地参考图上传到 img.scdn.io 图床，再把公开 URL 交给 Agnes 生成视频。
 - 用户发送的参考图会在消息中显示为缩略图，点击缩略图会在页面内模态窗口中预览；同一条消息内有多张图时可前后切换，模态窗口内可选择新标签页打开、下载或另存为。
-- 本地会话历史：自动保存标题、消息和非敏感设置，支持搜索、恢复和删除单个会话。
+- 本地会话历史：自动保存标题、消息和非敏感设置，支持搜索、恢复、重命名、置顶和删除单个会话。
 - 图片和视频的常用选项靠近输入框，画面比例默认“保持原比例”，也可以选择具体尺寸；视频长度会同时显示用户友好名称与具体参数。
 - 高级模式：发送按钮下方可切换，开启后显示当前创作模式支持的全部 API 选项、专业字段名，并可显示或隐藏每条消息的调试详情。
 - 思考模式：文本流式输出开启 Thinking 时，思考内容会显示在可展开/收起的引用块中，默认只露出 3 行。
@@ -27,10 +27,25 @@ python3 -m http.server 8080
 
 然后访问 `http://localhost:8080`。
 
+## 发布前检查
+
+本项目没有构建步骤。提交前可以运行：
+
+```bash
+node -e "const fs=require('fs'); const html=fs.readFileSync('index.html','utf8'); const js=html.match(/<script>([\s\S]*)<\/script>/)[1]; new Function(js); console.log('script ok')"
+git diff --check
+```
+
+确认仓库里没有真实 API Key：
+
+```bash
+git grep -n -E "sk-[A-Za-z0-9_-]{20,}|Bearer [A-Za-z0-9._-]{20,}|AIza[0-9A-Za-z_-]{20,}" -- index.html
+```
+
 ## GitHub Pages 发布
 
 1. 在 GitHub 创建一个新仓库，例如 `agnes-web`。
-2. 推送本仓库代码：
+2. 如果还没有配置远程仓库，执行：
 
 ```bash
 git remote add origin https://github.com/<user>/agnes-web.git
@@ -38,9 +53,28 @@ git branch -M main
 git push -u origin main
 ```
 
-3. 在 GitHub 仓库设置里打开 `Settings -> Pages`。
-4. Source 选择 `Deploy from a branch`，Branch 选择 `main` 和 `/root`。
-5. 发布后访问 `https://<user>.github.io/agnes-web/`。
+如果已经配置过 `origin`，只需要：
+
+```bash
+git push
+```
+
+3. 在 GitHub 仓库页面进入 `Settings -> Pages`。
+4. `Build and deployment` 里，Source 选择 `Deploy from a branch`。
+5. Branch 选择 `main`，目录选择 `/ (root)`，然后保存。
+6. 等待 Pages 部署完成后访问：
+
+```text
+https://<user>.github.io/agnes-web/
+```
+
+如果仓库名是 `<user>.github.io`，访问地址则是：
+
+```text
+https://<user>.github.io/
+```
+
+仓库根目录里的 `.nojekyll` 会让 GitHub Pages 按静态文件原样发布。
 
 ## API Key 安全
 

@@ -1042,19 +1042,6 @@
       transform: translateY(-1px);
     }
 
-    .composer-left-tools:has(.composer-options:not([hidden])) > .attachment-hint {
-      grid-column: 3;
-      grid-row: 1;
-      align-self: center;
-      min-width: 0;
-    }
-
-    .attachment-hint {
-      color: var(--subtle);
-      font-size: 12px;
-      font-weight: 700;
-    }
-
     .composer-right-tools .tool-button {
       position: relative;
       width: 42px;
@@ -1695,7 +1682,6 @@
                   </div>
                 </div>
               <button class="advanced-mode-button" id="advancedModeButton" type="button" aria-pressed="false">高级选项</button>
-              <span class="attachment-hint" id="attachmentHint" hidden></span>
             </div>
             <div class="composer-right-tools">
               <div class="attachment-actions">
@@ -1961,7 +1947,6 @@
       uploadImagesLabel: document.getElementById("uploadImagesLabel"),
       clearAttachmentsButton: document.getElementById("clearAttachmentsButton"),
       imageFileInput: document.getElementById("imageFileInput"),
-      attachmentHint: document.getElementById("attachmentHint"),
       attachmentList: document.getElementById("attachmentList"),
       imageSize: document.getElementById("imageSize"),
       imageOutput: document.getElementById("imageOutput"),
@@ -2786,8 +2771,6 @@
       const items = state.attachments[state.mode] || [];
       els.clearAttachmentsButton.hidden = !items.length;
       els.uploadImagesLabel.textContent = items.length ? "添加图片 (" + items.length + "/" + MAX_ATTACHMENTS + ")" : "添加图片";
-      els.attachmentHint.textContent = "";
-      els.attachmentHint.hidden = true;
       els.attachmentList.hidden = !items.length;
       els.attachmentList.innerHTML = "";
       items.forEach((item) => {
