@@ -1,0 +1,1680 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Agnes AI Console</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --surface: #ffffff;
+      --surface-2: #f0f4f7;
+      --text: #17202a;
+      --muted: #69747f;
+      --line: #dce3ea;
+      --brand: #0d7a78;
+      --brand-2: #1d5fd0;
+      --accent: #e8663f;
+      --danger: #b42318;
+      --success: #067647;
+      --shadow: 0 18px 42px rgba(16, 24, 40, 0.10);
+      --radius: 8px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    body {
+      overflow: hidden;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 296px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 20px;
+      padding: 22px;
+      border-right: 1px solid var(--line);
+      background: #fbfcfd;
+      overflow: auto;
+    }
+
+    .brand {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      color: #fff;
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .brand p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .panel {
+      display: grid;
+      gap: 12px;
+    }
+
+    .panel-title {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .mode-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .mode-button {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+      width: 100%;
+      min-height: 56px;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      text-align: left;
+      transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    .mode-button[aria-pressed="true"] {
+      border-color: rgba(13, 122, 120, 0.6);
+      background: #eef8f7;
+      box-shadow: 0 0 0 3px rgba(13, 122, 120, 0.10);
+    }
+
+    .mode-button svg,
+    .icon-button svg,
+    .primary-button svg,
+    .secondary-button svg {
+      width: 18px;
+      height: 18px;
+      flex: none;
+    }
+
+    .mode-icon {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      color: var(--brand);
+      background: #e7f5f3;
+    }
+
+    .mode-name {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .mode-desc {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.3;
+    }
+
+    .field {
+      display: grid;
+      gap: 7px;
+    }
+
+    .field label {
+      color: #344054;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .input-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 6px;
+    }
+
+    .input,
+    .select,
+    .textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      transition: border-color 160ms ease, box-shadow 160ms ease;
+    }
+
+    .input,
+    .select {
+      min-height: 38px;
+      padding: 8px 10px;
+    }
+
+    .textarea {
+      min-height: 92px;
+      padding: 12px 13px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .input:focus,
+    .select:focus,
+    .textarea:focus {
+      border-color: rgba(29, 95, 208, 0.7);
+      box-shadow: 0 0 0 3px rgba(29, 95, 208, 0.12);
+    }
+
+    .icon-button,
+    .secondary-button,
+    .primary-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 38px;
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      font-weight: 700;
+      transition: transform 120ms ease, box-shadow 160ms ease, border-color 160ms ease, background 160ms ease;
+    }
+
+    .icon-button {
+      width: 38px;
+      color: var(--muted);
+      border-color: var(--line);
+      background: var(--surface);
+    }
+
+    .secondary-button {
+      padding: 8px 12px;
+      color: #344054;
+      border-color: var(--line);
+      background: var(--surface);
+    }
+
+    .primary-button {
+      padding: 9px 15px;
+      color: #fff;
+      background: var(--brand);
+      box-shadow: 0 10px 20px rgba(13, 122, 120, 0.20);
+    }
+
+    .primary-button:disabled,
+    .secondary-button:disabled,
+    .icon-button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      box-shadow: none;
+    }
+
+    .icon-button:not(:disabled):hover,
+    .secondary-button:not(:disabled):hover,
+    .primary-button:not(:disabled):hover {
+      transform: translateY(-1px);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 28px;
+      padding: 5px 9px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--muted);
+      background: var(--surface);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--muted);
+    }
+
+    .status-pill.ready .status-dot {
+      background: var(--success);
+    }
+
+    .sidebar-footer {
+      display: grid;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .main {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      min-width: 0;
+      height: 100vh;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      min-height: 76px;
+      padding: 16px 22px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.86);
+      backdrop-filter: blur(12px);
+    }
+
+    .topbar h2 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: 0;
+    }
+
+    .topbar p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .top-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .messages {
+      overflow: auto;
+      padding: 24px;
+      scroll-behavior: smooth;
+    }
+
+    .empty-state {
+      display: grid;
+      gap: 18px;
+      align-content: center;
+      min-height: 100%;
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 24px 0;
+    }
+
+    .intro {
+      display: grid;
+      gap: 12px;
+    }
+
+    .intro h3 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    .intro p {
+      max-width: 680px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .quick-card {
+      min-height: 132px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      text-align: left;
+      box-shadow: 0 8px 24px rgba(16, 24, 40, 0.04);
+    }
+
+    .quick-card strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .quick-card span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .thread {
+      display: grid;
+      gap: 16px;
+      max-width: 980px;
+      margin: 0 auto;
+    }
+
+    .message {
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+    }
+
+    .message.user {
+      grid-template-columns: minmax(0, 1fr) 42px;
+    }
+
+    .avatar {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      color: #fff;
+      background: #344054;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .message.user .avatar {
+      grid-column: 2;
+      background: var(--brand-2);
+    }
+
+    .bubble {
+      min-width: 0;
+      padding: 15px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: 0 10px 24px rgba(16, 24, 40, 0.05);
+    }
+
+    .message.user .bubble {
+      grid-column: 1;
+      background: #eef5ff;
+      border-color: #cadcf8;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .mode-tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      padding: 3px 7px;
+      border-radius: 6px;
+      color: #fff;
+      background: var(--brand);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .message-body {
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.65;
+      overflow-wrap: anywhere;
+      white-space: pre-wrap;
+    }
+
+    .message-body:empty::after {
+      content: "Waiting for response...";
+      color: var(--muted);
+    }
+
+    .message-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .raw-block,
+    .json-preview {
+      max-height: 260px;
+      margin: 12px 0 0;
+      padding: 12px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #111827;
+      color: #e5e7eb;
+      font-size: 12px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+
+    .result-media {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .result-media img,
+    .result-media video {
+      display: block;
+      width: min(100%, 720px);
+      max-height: 520px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-2);
+      object-fit: contain;
+    }
+
+    .task-progress {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 10px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: var(--surface-2);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--brand), var(--brand-2));
+      transition: width 240ms ease;
+    }
+
+    .composer {
+      display: grid;
+      gap: 12px;
+      padding: 16px 22px 18px;
+      border-top: 1px solid var(--line);
+      background: rgba(251, 252, 253, 0.96);
+    }
+
+    .params {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .params .wide {
+      grid-column: span 2;
+    }
+
+    .params .full {
+      grid-column: 1 / -1;
+    }
+
+    .option-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .check {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      min-height: 38px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: #344054;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .check input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--brand);
+    }
+
+    .submit-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 10;
+      max-width: min(420px, calc(100vw - 36px));
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: var(--shadow);
+      transform: translateY(18px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 160ms ease, transform 160ms ease;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .error-text {
+      color: var(--danger);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 1120px) {
+      .params {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .quick-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 820px) {
+      body {
+        overflow: auto;
+      }
+
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+        grid-template-rows: auto auto auto;
+        gap: 14px;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .mode-list {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .mode-button {
+        grid-template-columns: 1fr;
+        align-content: start;
+      }
+
+      .mode-icon {
+        width: 30px;
+        height: 30px;
+      }
+
+      .sidebar-footer {
+        display: none;
+      }
+
+      .main {
+        height: auto;
+        min-height: 100vh;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .messages {
+        min-height: 48vh;
+        padding: 18px;
+      }
+
+      .composer {
+        position: static;
+        padding: 14px;
+      }
+
+      .submit-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .sidebar {
+        padding: 16px;
+      }
+
+      .mode-list {
+        grid-template-columns: 1fr;
+      }
+
+      .params {
+        grid-template-columns: 1fr;
+      }
+
+      .params .wide {
+        grid-column: auto;
+      }
+
+      .message,
+      .message.user {
+        grid-template-columns: 1fr;
+      }
+
+      .avatar,
+      .message.user .avatar {
+        display: none;
+      }
+
+      .message.user .bubble {
+        grid-column: auto;
+      }
+
+      .intro h3 {
+        font-size: 23px;
+      }
+
+      .input-row {
+        grid-template-columns: minmax(0, 1fr) auto;
+      }
+
+      .input-row .icon-button:last-child {
+        grid-column: 1 / -1;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="应用设置">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">A</div>
+        <div>
+          <h1>Agnes AI Console</h1>
+          <p>GitHub Pages ready</p>
+        </div>
+      </div>
+
+      <section class="panel" aria-label="API Key">
+        <div class="panel-title">API Key</div>
+        <div class="field">
+          <label for="apiKeyInput">Bearer Token</label>
+          <div class="input-row">
+            <input class="input" id="apiKeyInput" autocomplete="off" spellcheck="false" type="password" placeholder="YOUR_API_KEY">
+            <button class="icon-button" id="toggleKeyButton" type="button" title="显示或隐藏 API Key" aria-label="显示或隐藏 API Key">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+            <button class="icon-button" id="clearKeyButton" type="button" title="清除 API Key" aria-label="清除 API Key">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+            </button>
+          </div>
+          <span class="hint">仅保存在当前浏览器会话，关闭标签页后清空。</span>
+        </div>
+        <span class="status-pill" id="keyStatus"><span class="status-dot"></span><span>未设置</span></span>
+      </section>
+
+      <section class="panel" aria-label="模式">
+        <div class="panel-title">Mode</div>
+        <div class="mode-list">
+          <button class="mode-button" type="button" data-mode="text" aria-pressed="true">
+            <span class="mode-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"></path><path d="M8 9h8"></path><path d="M8 13h5"></path></svg>
+            </span>
+            <span><span class="mode-name">文本</span><span class="mode-desc">聊天、流式、图像理解</span></span>
+          </button>
+          <button class="mode-button" type="button" data-mode="image" aria-pressed="false">
+            <span class="mode-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="M21 15l-5-5L5 21"></path></svg>
+            </span>
+            <span><span class="mode-name">图像</span><span class="mode-desc">文生图、图生图</span></span>
+          </button>
+          <button class="mode-button" type="button" data-mode="video" aria-pressed="false">
+            <span class="mode-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 8l6-3v14l-6-3Z"></path><rect x="3" y="6" width="11" height="12" rx="2"></rect></svg>
+            </span>
+            <span><span class="mode-name">视频</span><span class="mode-desc">异步生成与轮询</span></span>
+          </button>
+        </div>
+      </section>
+
+      <div class="sidebar-footer">
+        <span>Base API: https://apihub.agnes-ai.com</span>
+        <span>不会把 API Key 写入仓库或长期存储。发布到 GitHub Pages 前请确认没有在代码中硬编码密钥。</span>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h2 id="modeTitle">文本对话</h2>
+          <p id="modeSubtitle">使用 agnes-2.0-flash 调用 OpenAI-compatible Chat Completions。</p>
+        </div>
+        <div class="top-actions">
+          <button class="secondary-button" id="copyThreadButton" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            复制记录
+          </button>
+          <button class="secondary-button" id="clearThreadButton" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path></svg>
+            清空
+          </button>
+        </div>
+      </header>
+
+      <section class="messages" id="messages" aria-live="polite">
+        <div class="empty-state" id="emptyState">
+          <div class="intro">
+            <h3>一个对话窗口，调用 Agnes 文本、图像和视频 API。</h3>
+            <p>填入 API Key，选择模式，然后直接输入你的需求。所有请求都从浏览器发往 Agnes API，适合发布到 GitHub Pages。</p>
+          </div>
+          <div class="quick-grid">
+            <button class="quick-card" type="button" data-mode="text" data-prompt="用中文解释 Agnes AI 可以怎样帮助独立开发者快速构建 AI 应用。">
+              <strong>文本聊天</strong>
+              <span>普通聊天、流式输出、工具调用结构兼容 OpenAI Chat Completions。</span>
+            </button>
+            <button class="quick-card" type="button" data-mode="image" data-prompt="A polished app icon for Agnes AI Console, clean geometric shape, teal and blue palette, high detail, white background">
+              <strong>生成图像</strong>
+              <span>输入 prompt，选择尺寸和 URL/Base64 输出，直接预览生成结果。</span>
+            </button>
+            <button class="quick-card" type="button" data-mode="video" data-prompt="A cinematic product demo shot of a futuristic AI console interface glowing on a desk, smooth camera push-in, realistic lighting">
+              <strong>生成视频</strong>
+              <span>提交异步任务，自动轮询状态，完成后在对话里播放视频。</span>
+            </button>
+          </div>
+        </div>
+        <div class="thread" id="thread" hidden></div>
+      </section>
+
+      <form class="composer" id="composer">
+        <div class="params" id="params">
+          <div class="field" data-param="text">
+            <label for="textTemperature">Temperature</label>
+            <input class="input" id="textTemperature" type="number" min="0" max="2" step="0.1" value="0.7">
+          </div>
+          <div class="field" data-param="text">
+            <label for="textMaxTokens">Max tokens</label>
+            <input class="input" id="textMaxTokens" type="number" min="1" step="1" value="1024">
+          </div>
+          <div class="field wide" data-param="text">
+            <label for="textImageUrl">图片 URL（可选）</label>
+            <input class="input" id="textImageUrl" type="url" placeholder="https://example.com/image.jpg">
+          </div>
+          <div class="field full" data-param="text">
+            <div class="option-row">
+              <label class="check" for="textStream"><input id="textStream" type="checkbox">流式输出</label>
+              <label class="check" for="textThinking"><input id="textThinking" type="checkbox">启用 Thinking</label>
+            </div>
+          </div>
+
+          <div class="field" data-param="image" hidden>
+            <label for="imageSize">尺寸</label>
+            <select class="select" id="imageSize">
+              <option value="1024x768">1024x768</option>
+              <option value="768x1024">768x1024</option>
+              <option value="1024x1024">1024x1024</option>
+              <option value="1280x720">1280x720</option>
+              <option value="720x1280">720x1280</option>
+            </select>
+          </div>
+          <div class="field" data-param="image" hidden>
+            <label for="imageOutput">输出格式</label>
+            <select class="select" id="imageOutput">
+              <option value="url">URL</option>
+              <option value="base64">Base64</option>
+            </select>
+          </div>
+          <div class="field wide" data-param="image" hidden>
+            <label for="imageInputs">输入图片（可选，逗号或换行分隔）</label>
+            <input class="input" id="imageInputs" spellcheck="false" placeholder="https://example.com/input.png">
+          </div>
+
+          <div class="field" data-param="video" hidden>
+            <label for="videoSize">尺寸</label>
+            <select class="select" id="videoSize">
+              <option value="1152x768">1152x768</option>
+              <option value="1280x768">1280x768</option>
+              <option value="1024x576">1024x576</option>
+              <option value="768x1152">768x1152</option>
+            </select>
+          </div>
+          <div class="field" data-param="video" hidden>
+            <label for="videoFrames">帧数</label>
+            <input class="input" id="videoFrames" type="number" min="9" max="441" step="8" value="121">
+          </div>
+          <div class="field" data-param="video" hidden>
+            <label for="videoFrameRate">FPS</label>
+            <input class="input" id="videoFrameRate" type="number" min="1" max="60" step="1" value="24">
+          </div>
+          <div class="field" data-param="video" hidden>
+            <label for="videoPollLimit">轮询次数</label>
+            <input class="input" id="videoPollLimit" type="number" min="1" max="120" step="1" value="60">
+          </div>
+          <div class="field wide" data-param="video" hidden>
+            <label for="videoImage">单张输入图（可选）</label>
+            <input class="input" id="videoImage" type="url" placeholder="https://example.com/image.png">
+          </div>
+          <div class="field wide" data-param="video" hidden>
+            <label for="videoExtraImages">多图/关键帧（可选，逗号或换行分隔）</label>
+            <input class="input" id="videoExtraImages" spellcheck="false" placeholder="https://example.com/keyframe1.png, https://example.com/keyframe2.png">
+          </div>
+          <div class="field full" data-param="video" hidden>
+            <label for="videoNegative">负面提示词（可选）</label>
+            <input class="input" id="videoNegative" spellcheck="false" placeholder="low quality, distorted motion">
+          </div>
+        </div>
+
+        <div class="submit-row">
+          <div class="field">
+            <label for="promptInput" id="promptLabel">输入消息</label>
+            <textarea class="textarea" id="promptInput" required placeholder="输入你想让 Agnes 完成的任务..."></textarea>
+            <span class="hint" id="modeHint">文本模式会保留本页内的上下文；图片 URL 必须可以公开访问。</span>
+          </div>
+          <button class="primary-button" id="sendButton" type="submit">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13"></path><path d="M22 2l-7 20-4-9-9-4 20-7Z"></path></svg>
+            发送
+          </button>
+        </div>
+      </form>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const API_BASE = "https://apihub.agnes-ai.com";
+    const MODE_CONFIG = {
+      text: {
+        title: "文本对话",
+        subtitle: "使用 agnes-2.0-flash 调用 OpenAI-compatible Chat Completions。",
+        hint: "文本模式会保留本页内的上下文；图片 URL 必须可以公开访问。",
+        label: "输入消息",
+        button: "发送",
+        tag: "Text"
+      },
+      image: {
+        title: "图像生成",
+        subtitle: "使用 agnes-image-2.1-flash 生成图片或编辑公开图片。",
+        hint: "图生图请填写公开 URL 或 Data URI Base64；URL 输出更适合浏览器预览。",
+        label: "图像提示词",
+        button: "生成",
+        tag: "Image"
+      },
+      video: {
+        title: "视频生成",
+        subtitle: "使用 agnes-video-v2.0 创建异步任务并自动轮询结果。",
+        hint: "视频生成可能需要较长时间；完成后会显示可播放的视频 URL。",
+        label: "视频提示词",
+        button: "创建任务",
+        tag: "Video"
+      }
+    };
+
+    const state = {
+      mode: "text",
+      messages: [],
+      apiKey: sessionStorage.getItem("agnes_api_key") || "",
+      busy: false
+    };
+
+    const els = {
+      apiKeyInput: document.getElementById("apiKeyInput"),
+      toggleKeyButton: document.getElementById("toggleKeyButton"),
+      clearKeyButton: document.getElementById("clearKeyButton"),
+      keyStatus: document.getElementById("keyStatus"),
+      modeButtons: Array.from(document.querySelectorAll(".mode-button")),
+      modeTitle: document.getElementById("modeTitle"),
+      modeSubtitle: document.getElementById("modeSubtitle"),
+      params: document.getElementById("params"),
+      promptInput: document.getElementById("promptInput"),
+      promptLabel: document.getElementById("promptLabel"),
+      modeHint: document.getElementById("modeHint"),
+      sendButton: document.getElementById("sendButton"),
+      composer: document.getElementById("composer"),
+      emptyState: document.getElementById("emptyState"),
+      thread: document.getElementById("thread"),
+      messages: document.getElementById("messages"),
+      clearThreadButton: document.getElementById("clearThreadButton"),
+      copyThreadButton: document.getElementById("copyThreadButton"),
+      toast: document.getElementById("toast"),
+      textTemperature: document.getElementById("textTemperature"),
+      textMaxTokens: document.getElementById("textMaxTokens"),
+      textImageUrl: document.getElementById("textImageUrl"),
+      textStream: document.getElementById("textStream"),
+      textThinking: document.getElementById("textThinking"),
+      imageSize: document.getElementById("imageSize"),
+      imageOutput: document.getElementById("imageOutput"),
+      imageInputs: document.getElementById("imageInputs"),
+      videoSize: document.getElementById("videoSize"),
+      videoFrames: document.getElementById("videoFrames"),
+      videoFrameRate: document.getElementById("videoFrameRate"),
+      videoPollLimit: document.getElementById("videoPollLimit"),
+      videoImage: document.getElementById("videoImage"),
+      videoExtraImages: document.getElementById("videoExtraImages"),
+      videoNegative: document.getElementById("videoNegative")
+    };
+
+    els.apiKeyInput.value = state.apiKey;
+    updateKeyStatus();
+    renderMode();
+
+    els.apiKeyInput.addEventListener("input", () => {
+      state.apiKey = els.apiKeyInput.value.trim();
+      if (state.apiKey) {
+        sessionStorage.setItem("agnes_api_key", state.apiKey);
+      } else {
+        sessionStorage.removeItem("agnes_api_key");
+      }
+      updateKeyStatus();
+    });
+
+    els.toggleKeyButton.addEventListener("click", () => {
+      const showing = els.apiKeyInput.type === "text";
+      els.apiKeyInput.type = showing ? "password" : "text";
+    });
+
+    els.clearKeyButton.addEventListener("click", () => {
+      state.apiKey = "";
+      els.apiKeyInput.value = "";
+      sessionStorage.removeItem("agnes_api_key");
+      updateKeyStatus();
+      toast("API Key 已清除");
+    });
+
+    els.modeButtons.forEach((button) => {
+      button.addEventListener("click", () => setMode(button.dataset.mode));
+    });
+
+    document.querySelectorAll(".quick-card").forEach((button) => {
+      button.addEventListener("click", () => {
+        setMode(button.dataset.mode);
+        els.promptInput.value = button.dataset.prompt;
+        els.promptInput.focus();
+      });
+    });
+
+    els.clearThreadButton.addEventListener("click", () => {
+      state.messages = [];
+      renderThread();
+      toast("对话已清空");
+    });
+
+    els.copyThreadButton.addEventListener("click", async () => {
+      if (!state.messages.length) {
+        toast("当前没有可复制的对话记录");
+        return;
+      }
+      await copyText(JSON.stringify(state.messages, null, 2));
+      toast("对话 JSON 已复制");
+    });
+
+    els.composer.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (state.busy) return;
+      const prompt = els.promptInput.value.trim();
+      if (!prompt) {
+        toast("请输入内容");
+        return;
+      }
+      if (!state.apiKey) {
+        toast("请先填写 Agnes AI API Key");
+        els.apiKeyInput.focus();
+        return;
+      }
+
+      try {
+        setBusy(true);
+        if (state.mode === "text") await handleText(prompt);
+        if (state.mode === "image") await handleImage(prompt);
+        if (state.mode === "video") await handleVideo(prompt);
+        els.promptInput.value = "";
+      } catch (error) {
+        showRequestError(error);
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    function setMode(mode) {
+      if (!MODE_CONFIG[mode]) return;
+      state.mode = mode;
+      renderMode();
+    }
+
+    function renderMode() {
+      const config = MODE_CONFIG[state.mode];
+      els.modeButtons.forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.mode === state.mode));
+      });
+      els.modeTitle.textContent = config.title;
+      els.modeSubtitle.textContent = config.subtitle;
+      els.promptLabel.textContent = config.label;
+      els.modeHint.textContent = config.hint;
+      els.sendButton.lastChild.nodeValue = " " + config.button;
+      Array.from(els.params.querySelectorAll("[data-param]")).forEach((el) => {
+        el.hidden = el.dataset.param !== state.mode;
+      });
+    }
+
+    function updateKeyStatus() {
+      const isReady = Boolean(state.apiKey);
+      els.keyStatus.classList.toggle("ready", isReady);
+      els.keyStatus.querySelector("span:last-child").textContent = isReady ? "已会话保存" : "未设置";
+    }
+
+    function setBusy(next) {
+      state.busy = next;
+      els.sendButton.disabled = next;
+      els.sendButton.textContent = next ? "处理中..." : MODE_CONFIG[state.mode].button;
+      if (!next) {
+        els.sendButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13"></path><path d="M22 2l-7 20-4-9-9-4 20-7Z"></path></svg> ' + MODE_CONFIG[state.mode].button;
+      }
+    }
+
+    async function handleText(prompt) {
+      const userMessage = appendMessage({ mode: "text", role: "user", status: "done", content: prompt });
+      const assistant = appendMessage({ mode: "text", role: "assistant", status: "loading", content: "" });
+      const content = buildTextContent(prompt);
+      const payload = {
+        model: "agnes-2.0-flash",
+        messages: buildChatMessages(content, userMessage.id),
+        temperature: numberOrDefault(els.textTemperature.value, 0.7),
+        max_tokens: Math.max(1, parseInt(els.textMaxTokens.value, 10) || 1024)
+      };
+      if (els.textStream.checked) payload.stream = true;
+      if (els.textThinking.checked) payload.chat_template_kwargs = { enable_thinking: true };
+
+      userMessage.raw = payload;
+      renderThread();
+
+      if (payload.stream) {
+        await streamTextCompletion(payload, assistant.id);
+      } else {
+        const data = await fetchAgnes("/v1/chat/completions", { method: "POST", body: payload });
+        const answer = data && data.choices && data.choices[0] && data.choices[0].message
+          ? data.choices[0].message.content || ""
+          : "";
+        updateMessage(assistant.id, { status: "done", content: answer || "没有返回文本内容。", raw: data });
+      }
+    }
+
+    function buildTextContent(prompt) {
+      const imageUrl = els.textImageUrl.value.trim();
+      if (!imageUrl) return prompt;
+      return [
+        { type: "text", text: prompt },
+        { type: "image_url", image_url: { url: imageUrl } }
+      ];
+    }
+
+    function buildChatMessages(content, excludeId) {
+      const prior = state.messages
+        .filter((msg) => msg.id !== excludeId && msg.mode === "text" && msg.status === "done" && (msg.role === "user" || msg.role === "assistant"))
+        .slice(-10)
+        .map((msg) => ({ role: msg.role, content: msg.content }));
+      prior.push({ role: "user", content });
+      return prior;
+    }
+
+    async function streamTextCompletion(payload, messageId) {
+      const response = await fetch(API_BASE + "/v1/chat/completions", {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) {
+        throw await responseError(response);
+      }
+      if (!response.body) {
+        throw new Error("浏览器不支持流式响应读取。");
+      }
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let fullText = "";
+      let done = false;
+      while (!done) {
+        const chunk = await reader.read();
+        done = chunk.done;
+        buffer += decoder.decode(chunk.value || new Uint8Array(), { stream: !done });
+        const parts = buffer.split("\n");
+        buffer = parts.pop() || "";
+        for (const line of parts) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith("data:")) continue;
+          const data = trimmed.slice(5).trim();
+          if (data === "[DONE]") {
+            done = true;
+            break;
+          }
+          try {
+            const json = JSON.parse(data);
+            const delta = json.choices && json.choices[0] && json.choices[0].delta;
+            const text = delta && (delta.content || delta.reasoning_content || "");
+            if (text) {
+              fullText += text;
+              updateMessage(messageId, { content: fullText, status: "loading", raw: json }, true);
+            }
+          } catch (error) {
+            console.warn("Skipping stream chunk", error);
+          }
+        }
+      }
+      updateMessage(messageId, { content: fullText || "流式响应结束，但没有返回文本内容。", status: "done" });
+    }
+
+    async function handleImage(prompt) {
+      appendMessage({ mode: "image", role: "user", status: "done", content: prompt });
+      const assistant = appendMessage({ mode: "image", role: "assistant", status: "loading", content: "正在生成图像..." });
+      const inputImages = splitList(els.imageInputs.value);
+      const output = els.imageOutput.value;
+      const payload = {
+        model: "agnes-image-2.1-flash",
+        prompt,
+        size: els.imageSize.value
+      };
+      if (inputImages.length) {
+        payload.extra_body = { image: inputImages, response_format: output === "base64" ? "b64_json" : "url" };
+      } else if (output === "base64") {
+        payload.return_base64 = true;
+      } else {
+        payload.extra_body = { response_format: "url" };
+      }
+      const data = await fetchAgnes("/v1/images/generations", { method: "POST", body: payload });
+      const first = data && data.data && data.data[0] ? data.data[0] : {};
+      const url = first.url || "";
+      const b64 = first.b64_json || "";
+      if (!url && !b64) {
+        updateMessage(assistant.id, { status: "done", content: "图像请求完成，但未找到 data[0].url 或 data[0].b64_json。", raw: data });
+        return;
+      }
+      updateMessage(assistant.id, {
+        status: "done",
+        content: url ? "图像生成完成。" : "图像生成完成，已返回 Base64。",
+        raw: data,
+        result: {
+          kind: "image",
+          url: url || "data:image/png;base64," + b64,
+          downloadName: "agnes-image.png"
+        }
+      });
+    }
+
+    async function handleVideo(prompt) {
+      appendMessage({ mode: "video", role: "user", status: "done", content: prompt });
+      const assistant = appendMessage({ mode: "video", role: "assistant", status: "loading", content: "正在创建视频任务..." });
+      const [width, height] = els.videoSize.value.split("x").map((value) => parseInt(value, 10));
+      const extraImages = splitList(els.videoExtraImages.value);
+      const payload = {
+        model: "agnes-video-v2.0",
+        prompt,
+        width,
+        height,
+        num_frames: Math.min(441, Math.max(9, parseInt(els.videoFrames.value, 10) || 121)),
+        frame_rate: Math.min(60, Math.max(1, parseFloat(els.videoFrameRate.value) || 24))
+      };
+      const singleImage = els.videoImage.value.trim();
+      if (singleImage) payload.image = singleImage;
+      if (extraImages.length) payload.extra_body = { image: extraImages };
+      const negative = els.videoNegative.value.trim();
+      if (negative) payload.negative_prompt = negative;
+
+      const task = await fetchAgnes("/v1/videos", { method: "POST", body: payload });
+      const videoId = task.video_id;
+      const taskId = task.task_id || task.id;
+      updateMessage(assistant.id, {
+        status: "loading",
+        content: "视频任务已创建，正在等待结果...",
+        raw: task,
+        task: {
+          videoId,
+          taskId,
+          status: task.status || "queued",
+          progress: task.progress || 0
+        }
+      });
+      if (!videoId && !taskId) {
+        updateMessage(assistant.id, { status: "done", content: "任务已创建，但响应中没有 video_id 或 task_id。请复制原始 JSON 手动查询。", raw: task });
+        return;
+      }
+      await pollVideoResult(assistant.id, videoId, taskId);
+    }
+
+    async function pollVideoResult(messageId, videoId, taskId) {
+      const limit = Math.min(120, Math.max(1, parseInt(els.videoPollLimit.value, 10) || 60));
+      let last = null;
+      for (let attempt = 1; attempt <= limit; attempt += 1) {
+        await wait(attempt === 1 ? 1500 : 5000);
+        const path = videoId
+          ? "/agnesapi?video_id=" + encodeURIComponent(videoId) + "&model_name=agnes-video-v2.0"
+          : "/v1/videos/" + encodeURIComponent(taskId);
+        const data = await fetchAgnes(path, { method: "GET" });
+        last = data;
+        const status = data.status || "unknown";
+        const progress = typeof data.progress === "number" ? data.progress : Math.min(99, Math.round((attempt / limit) * 100));
+        updateMessage(messageId, {
+          status: "loading",
+          content: "视频任务状态：" + status + "（" + progress + "%）",
+          raw: data,
+          task: {
+            videoId: data.video_id || videoId,
+            taskId: data.task_id || data.id || taskId,
+            status,
+            progress
+          }
+        }, true);
+        if (status === "completed") {
+          const videoUrl = data.remixed_from_video_id || data.video_url || data.url || "";
+          updateMessage(messageId, {
+            status: "done",
+            content: videoUrl ? "视频生成完成。" : "视频生成完成，但响应里没有可播放 URL。",
+            raw: data,
+            task: {
+              videoId: data.video_id || videoId,
+              taskId: data.task_id || data.id || taskId,
+              status,
+              progress: 100
+            },
+            result: videoUrl ? { kind: "video", url: videoUrl, downloadName: "agnes-video.mp4" } : null
+          });
+          return;
+        }
+        if (status === "failed") {
+          updateMessage(messageId, {
+            status: "error",
+            content: "视频生成失败：" + JSON.stringify(data.error || data, null, 2),
+            raw: data
+          });
+          return;
+        }
+      }
+      updateMessage(messageId, {
+        status: "done",
+        content: "已达到轮询次数上限，任务可能仍在进行。可以复制原始 JSON，用 video_id 稍后查询。",
+        raw: last
+      });
+    }
+
+    async function fetchAgnes(path, options) {
+      const method = options.method || "GET";
+      const init = {
+        method,
+        headers: authHeaders()
+      };
+      if (options.body !== undefined) {
+        init.body = typeof options.body === "string" ? options.body : JSON.stringify(options.body);
+      }
+      let response;
+      try {
+        response = await fetch(API_BASE + path, init);
+      } catch (error) {
+        throw new Error("网络请求失败。请检查网络、API 地址，或浏览器是否阻止跨域请求。详情：" + error.message);
+      }
+      if (!response.ok) {
+        throw await responseError(response);
+      }
+      const text = await response.text();
+      if (!text) return {};
+      try {
+        return JSON.parse(text);
+      } catch (error) {
+        const err = new Error("响应不是有效 JSON。");
+        err.raw = text;
+        throw err;
+      }
+    }
+
+    function authHeaders() {
+      return {
+        "Authorization": "Bearer " + state.apiKey,
+        "Content-Type": "application/json"
+      };
+    }
+
+    async function responseError(response) {
+      const text = await response.text();
+      let detail = text;
+      try {
+        const json = JSON.parse(text);
+        detail = json.error && json.error.message ? json.error.message : JSON.stringify(json, null, 2);
+      } catch (error) {
+        detail = text || response.statusText;
+      }
+      const err = new Error("Agnes API 返回 " + response.status + "：" + detail);
+      err.raw = text;
+      return err;
+    }
+
+    function appendMessage(partial) {
+      const message = {
+        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+        mode: partial.mode || state.mode,
+        role: partial.role,
+        content: partial.content || "",
+        status: partial.status || "done",
+        createdAt: new Date().toISOString(),
+        raw: partial.raw || null,
+        result: partial.result || null,
+        task: partial.task || null
+      };
+      state.messages.push(message);
+      renderThread();
+      return message;
+    }
+
+    function updateMessage(id, patch, shallow) {
+      const message = state.messages.find((item) => item.id === id);
+      if (!message) return;
+      Object.assign(message, patch);
+      if (!shallow || !updateLiveMessage(message)) renderThread();
+      scrollToBottom();
+    }
+
+    function showRequestError(error) {
+      const loading = [...state.messages].reverse().find((message) => message.role === "assistant" && message.status === "loading");
+      const patch = {
+        status: "error",
+        content: formatError(error),
+        raw: error && error.raw ? error.raw : null
+      };
+      if (loading) {
+        updateMessage(loading.id, patch);
+      } else {
+        appendMessage({
+          mode: state.mode,
+          role: "assistant",
+          ...patch
+        });
+      }
+    }
+
+    function updateLiveMessage(message) {
+      const node = document.querySelector('[data-message-id="' + message.id + '"]');
+      if (!node) return false;
+      const body = node.querySelector(".message-body");
+      if (body) body.textContent = message.content || "";
+      const raw = node.querySelector(".raw-block");
+      if (raw && message.raw) raw.textContent = stringify(message.raw);
+      const task = node.querySelector(".task-progress");
+      if (task && message.task) {
+        const status = task.querySelector("[data-task-status]");
+        const progress = task.querySelector("[data-task-progress]");
+        const fill = task.querySelector(".progress-fill");
+        if (status) status.textContent = message.task.status || "unknown";
+        if (progress) progress.textContent = String(message.task.progress || 0) + "%";
+        if (fill) fill.style.width = String(Math.min(100, Math.max(0, message.task.progress || 0))) + "%";
+      }
+      return true;
+    }
+
+    function renderThread() {
+      const hasMessages = state.messages.length > 0;
+      els.emptyState.hidden = hasMessages;
+      els.thread.hidden = !hasMessages;
+      els.thread.innerHTML = "";
+      state.messages.forEach((message) => els.thread.appendChild(renderMessage(message)));
+      scrollToBottom();
+    }
+
+    function renderMessage(message) {
+      const article = document.createElement("article");
+      article.className = "message " + message.role;
+      article.dataset.messageId = message.id;
+      const avatar = document.createElement("div");
+      avatar.className = "avatar";
+      avatar.textContent = message.role === "user" ? "You" : "AI";
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      const tag = document.createElement("span");
+      tag.className = "mode-tag";
+      tag.textContent = MODE_CONFIG[message.mode].tag;
+      const time = document.createElement("span");
+      time.textContent = new Date(message.createdAt).toLocaleString();
+      const status = document.createElement("span");
+      status.textContent = message.status;
+      status.className = message.status === "error" ? "error-text" : "";
+      meta.append(tag, time, status);
+
+      const body = document.createElement("div");
+      body.className = "message-body";
+      body.textContent = message.content || "";
+      bubble.append(meta, body);
+
+      if (message.task) bubble.appendChild(renderTask(message.task));
+      if (message.result) bubble.appendChild(renderResult(message.result));
+      if (message.raw) bubble.appendChild(renderRaw(message.raw, message.id));
+
+      article.append(avatar, bubble);
+      return article;
+    }
+
+    function renderTask(task) {
+      const wrap = document.createElement("div");
+      wrap.className = "task-progress";
+      const line = document.createElement("div");
+      line.className = "hint";
+      line.innerHTML = '状态：<strong data-task-status></strong> · 进度：<strong data-task-progress></strong>';
+      const bar = document.createElement("div");
+      bar.className = "progress-bar";
+      const fill = document.createElement("div");
+      fill.className = "progress-fill";
+      bar.appendChild(fill);
+      const ids = document.createElement("div");
+      ids.className = "hint";
+      ids.textContent = [task.videoId ? "video_id: " + task.videoId : "", task.taskId ? "task_id: " + task.taskId : ""].filter(Boolean).join(" · ");
+      wrap.append(line, bar, ids);
+      setTimeout(() => {
+        const status = wrap.querySelector("[data-task-status]");
+        const progress = wrap.querySelector("[data-task-progress]");
+        if (status) status.textContent = task.status || "unknown";
+        if (progress) progress.textContent = String(task.progress || 0) + "%";
+        fill.style.width = String(Math.min(100, Math.max(0, task.progress || 0))) + "%";
+      });
+      return wrap;
+    }
+
+    function renderResult(result) {
+      const wrap = document.createElement("div");
+      wrap.className = "result-media";
+      let media;
+      if (result.kind === "video") {
+        media = document.createElement("video");
+        media.controls = true;
+        media.playsInline = true;
+      } else {
+        media = document.createElement("img");
+        media.alt = "Agnes generated image";
+      }
+      media.src = result.url;
+      wrap.appendChild(media);
+      const actions = document.createElement("div");
+      actions.className = "message-actions";
+      const open = document.createElement("a");
+      open.className = "secondary-button";
+      open.href = result.url;
+      open.target = "_blank";
+      open.rel = "noopener noreferrer";
+      open.textContent = "打开";
+      const download = document.createElement("a");
+      download.className = "secondary-button";
+      download.href = result.url;
+      download.download = result.downloadName || "agnes-result";
+      download.textContent = "下载";
+      actions.append(open, download);
+      wrap.appendChild(actions);
+      return wrap;
+    }
+
+    function renderRaw(raw, id) {
+      const wrap = document.createElement("details");
+      wrap.className = "json-preview";
+      const summary = document.createElement("summary");
+      summary.textContent = "原始 JSON";
+      const pre = document.createElement("pre");
+      pre.className = "raw-block";
+      pre.textContent = stringify(raw);
+      const button = document.createElement("button");
+      button.className = "secondary-button";
+      button.type = "button";
+      button.textContent = "复制原始 JSON";
+      button.addEventListener("click", async () => {
+        await copyText(stringify(raw));
+        toast("消息 " + id.slice(0, 8) + " 的 JSON 已复制");
+      });
+      wrap.append(summary, pre, button);
+      return wrap;
+    }
+
+    function splitList(value) {
+      return value
+        .split(/[\n,]+/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+
+    function numberOrDefault(value, fallback) {
+      const num = Number(value);
+      return Number.isFinite(num) ? num : fallback;
+    }
+
+    function stringify(value) {
+      if (typeof value === "string") return value;
+      try {
+        return JSON.stringify(value, null, 2);
+      } catch (error) {
+        return String(value);
+      }
+    }
+
+    function formatError(error) {
+      return error && error.message ? error.message : String(error);
+    }
+
+    function scrollToBottom() {
+      requestAnimationFrame(() => {
+        els.messages.scrollTop = els.messages.scrollHeight;
+      });
+    }
+
+    function wait(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    async function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+
+    let toastTimer = null;
+    function toast(message) {
+      els.toast.textContent = message;
+      els.toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => els.toast.classList.remove("show"), 2600);
+    }
+  </script>
+</body>
+</html>
