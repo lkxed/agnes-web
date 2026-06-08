@@ -1435,7 +1435,7 @@
             <div class="welcome-logo" aria-hidden="true">A</div>
             <div>
               <h1>使用 Agnes 开始创作</h1>
-              <p>像聊天一样描述需求。可以写作、生成图片、制作视频，也可以在一个对话里持续修改方向。</p>
+              <p>像聊天一样描述需求。可以聊天、生成图片、制作视频，也可以在一个对话里持续修改方向。</p>
             </div>
             <div class="suggestions" id="welcomeSuggestions"></div>
           </div>
@@ -1448,7 +1448,7 @@
           <div class="mode-pills" aria-label="创作模式">
             <button class="mode-pill" type="button" data-mode="text" aria-pressed="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"></path></svg>
-              写作
+              聊天
             </button>
             <button class="mode-pill" type="button" data-mode="image" aria-pressed="false">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M21 15l-5-5L5 21"></path></svg>
@@ -1693,12 +1693,12 @@
 
     const MODE_CONFIG = {
       text: {
-        title: "写作",
+        title: "聊天",
         placeholder: "给 Agnes 发送消息",
         buttonLabel: "开始创作",
-        tag: "写作",
+        tag: "聊天",
         suggestions: [
-          { title: "写一段发布文案", desc: "小红书风格，语气自然、有吸引力。", prompt: "帮我写一段小红书风格的新品发布文案，主题是一个能写作、作图、生成视频的 AI 创作助手。语气自然、有吸引力。" },
+          { title: "写一段发布文案", desc: "小红书风格，语气自然、有吸引力。", prompt: "帮我写一段小红书风格的新品发布文案，主题是一个能聊天、作图、生成视频的 AI 创作助手。语气自然、有吸引力。" },
           { title: "整理成行动建议", desc: "把零散想法变成清晰计划。", prompt: "把下面内容总结成三条重点和一个行动建议：" },
           { title: "改写得更专业", desc: "适合邮件、介绍和说明文。", prompt: "帮我把下面这段话改写得更专业但仍然亲切：" }
         ]
@@ -1709,7 +1709,7 @@
         buttonLabel: "生成图片",
         tag: "图片",
         suggestions: [
-          { title: "生成一张海报", desc: "干净、现代、适合产品发布。", prompt: "一张温和专业的 AI 创作助手宣传海报，干净的桌面、柔和自然光、屏幕上有写作和图片创作界面，现代感，高级但不夸张" },
+          { title: "生成一张海报", desc: "干净、现代、适合产品发布。", prompt: "一张温和专业的 AI 创作助手宣传海报，干净的桌面、柔和自然光、屏幕上有聊天和图片创作界面，现代感，高级但不夸张" },
           { title: "设计应用图标", desc: "简洁高级，蓝绿配色。", prompt: "设计一个简洁高级的应用图标，蓝绿色，白底，几何形状，适合 AI 创作助手" },
           { title: "改造参考图", desc: "保留构图，改变风格。", prompt: "把参考图改成雨夜霓虹风格，但保留原构图和主体位置" }
         ]
