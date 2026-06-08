@@ -3,24 +3,49 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light">
-  <title>Agnes AI 创作助手</title>
+  <meta name="color-scheme" content="dark light">
+  <title>Agnes AI Chat</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%235D8CFF'/%3E%3Cpath d='M18 39c9-19 26-19 28-18-2 13-10 22-25 26 4-5 9-8 17-12-8 1-15 5-20 4Z' fill='white'/%3E%3Ccircle cx='42' cy='23' r='3' fill='%2332C7B5'/%3E%3C/svg%3E">
   <style>
     :root {
-      --bg: #f6f7f9;
-      --surface: #ffffff;
-      --surface-2: #f0f4f7;
-      --text: #17202a;
-      --muted: #69747f;
-      --line: #dce3ea;
-      --brand: #0d7a78;
-      --brand-2: #1d5fd0;
-      --accent: #e8663f;
-      --danger: #b42318;
-      --success: #067647;
-      --shadow: 0 18px 42px rgba(16, 24, 40, 0.10);
-      --radius: 8px;
+      color-scheme: dark;
+      --bg: #111214;
+      --sidebar: #17181b;
+      --panel: #202125;
+      --panel-2: #2b2c31;
+      --panel-3: #34363c;
+      --text: #f1f3f5;
+      --muted: #9da3ae;
+      --subtle: #727986;
+      --line: #2c2e34;
+      --brand: #5d8cff;
+      --brand-2: #32c7b5;
+      --danger: #ff7b72;
+      --success: #59d596;
+      --shadow: 0 20px 60px rgba(0, 0, 0, 0.34);
+      --radius: 12px;
+      --sidebar-w: 292px;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        color-scheme: light;
+        --bg: #f6f8fb;
+        --sidebar: #ffffff;
+        --panel: #ffffff;
+        --panel-2: #f0f4f8;
+        --panel-3: #e5ebf2;
+        --text: #18212f;
+        --muted: #667085;
+        --subtle: #8a94a3;
+        --line: #d9e1ea;
+        --brand: #2865d9;
+        --brand-2: #0d9488;
+        --danger: #b42318;
+        --success: #067647;
+        --shadow: 0 18px 42px rgba(16, 24, 40, 0.12);
+      }
     }
 
     * {
@@ -33,6 +58,8 @@
 
     html,
     body {
+      width: 100%;
+      height: 100%;
       min-height: 100%;
       margin: 0;
       background: var(--bg);
@@ -60,139 +87,152 @@
 
     .app {
       display: grid;
-      grid-template-columns: 296px minmax(0, 1fr);
+      grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+      height: 100vh;
       min-height: 100vh;
+      background: var(--bg);
     }
 
     .sidebar {
       display: grid;
-      grid-template-rows: auto auto 1fr auto;
-      gap: 20px;
-      padding: 22px;
+      grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+      gap: 16px;
+      min-height: 100vh;
+      padding: 18px 14px;
       border-right: 1px solid var(--line);
-      background: #fbfcfd;
-      overflow: auto;
+      background: var(--sidebar);
+      overflow: hidden;
+    }
+
+    @supports (height: 100dvh) {
+      .app,
+      .main {
+        height: 100dvh;
+        min-height: 100dvh;
+      }
+
+      .sidebar {
+        min-height: 100dvh;
+      }
+    }
+
+    .brand-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 42px;
+      padding: 0 4px;
     }
 
     .brand {
       display: flex;
-      gap: 12px;
       align-items: center;
+      gap: 10px;
+      min-width: 0;
     }
 
     .brand-mark {
       display: grid;
       place-items: center;
-      width: 42px;
-      height: 42px;
-      border-radius: 8px;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
       color: #fff;
       background: linear-gradient(135deg, var(--brand), var(--brand-2));
-      font-weight: 800;
+      font-weight: 900;
       letter-spacing: 0;
     }
 
-    .brand h1 {
-      margin: 0;
+    .brand-name {
+      display: grid;
+      min-width: 0;
+    }
+
+    .brand-name strong {
+      overflow: hidden;
       font-size: 18px;
       line-height: 1.1;
-      letter-spacing: 0;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
-    .brand p {
-      margin: 4px 0 0;
+    .brand-name span {
+      margin-top: 3px;
       color: var(--muted);
       font-size: 12px;
     }
 
-    .panel {
-      display: grid;
-      gap: 12px;
-    }
-
-    .panel-title {
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .mode-list {
-      display: grid;
-      gap: 8px;
-    }
-
-    .mode-button {
-      display: grid;
-      grid-template-columns: 34px minmax(0, 1fr);
-      gap: 10px;
-      align-items: center;
-      width: 100%;
-      min-height: 56px;
-      padding: 9px 10px;
-      border: 1px solid var(--line);
+    .icon-button,
+    .new-chat-button,
+    .ghost-button,
+    .send-button,
+    .mode-pill,
+    .suggestion-chip,
+    .history-item,
+    .debug-button {
+      border: 0;
       border-radius: var(--radius);
-      background: var(--surface);
+    }
+
+    .icon-button {
+      display: inline-grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      color: var(--muted);
+      background: transparent;
+      transition: background 150ms ease, color 150ms ease;
+    }
+
+    .icon-button:hover {
       color: var(--text);
-      text-align: left;
-      transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+      background: var(--panel-2);
     }
 
-    .mode-button[aria-pressed="true"] {
-      border-color: rgba(13, 122, 120, 0.6);
-      background: #eef8f7;
-      box-shadow: 0 0 0 3px rgba(13, 122, 120, 0.10);
-    }
-
-    .mode-button svg,
     .icon-button svg,
-    .primary-button svg,
-    .secondary-button svg {
+    .new-chat-button svg,
+    .ghost-button svg,
+    .send-button svg,
+    .mode-pill svg,
+    .debug-button svg {
       width: 18px;
       height: 18px;
       flex: none;
     }
 
-    .mode-icon {
-      display: grid;
-      place-items: center;
-      width: 34px;
-      height: 34px;
-      border-radius: 8px;
-      color: var(--brand);
-      background: #e7f5f3;
+    .new-chat-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      min-height: 48px;
+      width: 100%;
+      color: var(--text);
+      background: var(--panel-3);
+      font-size: 15px;
+      font-weight: 800;
+      transition: background 150ms ease, transform 120ms ease;
     }
 
-    .mode-name {
-      display: block;
-      font-size: 14px;
-      font-weight: 700;
+    .new-chat-button:hover {
+      transform: translateY(-1px);
+      background: color-mix(in srgb, var(--panel-3), var(--brand) 18%);
     }
 
-    .mode-desc {
-      display: block;
-      margin-top: 2px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.3;
+    .search-box {
+      position: relative;
     }
 
-    .field {
-      display: grid;
-      gap: 7px;
-    }
-
-    .field label {
-      color: #344054;
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .input-row {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto auto;
-      gap: 6px;
+    .search-box svg {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      width: 16px;
+      height: 16px;
+      color: var(--subtle);
+      transform: translateY(-50%);
+      pointer-events: none;
     }
 
     .input,
@@ -201,10 +241,10 @@
       width: 100%;
       border: 1px solid var(--line);
       border-radius: var(--radius);
-      background: var(--surface);
+      background: var(--panel);
       color: var(--text);
       outline: none;
-      transition: border-color 160ms ease, box-shadow 160ms ease;
+      transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
     }
 
     .input,
@@ -213,199 +253,274 @@
       padding: 8px 10px;
     }
 
+    .search-input {
+      padding-left: 36px;
+      background: color-mix(in srgb, var(--panel), var(--bg) 16%);
+    }
+
     .textarea {
-      min-height: 112px;
-      padding: 12px 13px;
-      resize: vertical;
-      line-height: 1.5;
+      min-height: 104px;
+      max-height: 240px;
+      padding: 16px;
+      border: 0;
+      background: transparent;
+      resize: none;
+      line-height: 1.55;
     }
 
     .input:focus,
     .select:focus,
     .textarea:focus {
-      border-color: rgba(29, 95, 208, 0.7);
-      box-shadow: 0 0 0 3px rgba(29, 95, 208, 0.12);
+      border-color: color-mix(in srgb, var(--brand), white 8%);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand), transparent 78%);
     }
 
-    .icon-button,
-    .secondary-button,
-    .primary-button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      min-height: 38px;
-      border: 1px solid transparent;
-      border-radius: var(--radius);
-      font-weight: 700;
-      transition: transform 120ms ease, box-shadow 160ms ease, border-color 160ms ease, background 160ms ease;
-    }
-
-    .icon-button {
-      width: 38px;
-      color: var(--muted);
-      border-color: var(--line);
-      background: var(--surface);
-    }
-
-    .secondary-button {
-      padding: 8px 12px;
-      color: #344054;
-      border-color: var(--line);
-      background: var(--surface);
-    }
-
-    .primary-button {
-      padding: 9px 15px;
-      color: #fff;
-      background: var(--brand);
-      box-shadow: 0 10px 20px rgba(13, 122, 120, 0.20);
-    }
-
-    .primary-button:disabled,
-    .secondary-button:disabled,
-    .icon-button:disabled {
-      cursor: not-allowed;
-      opacity: 0.55;
+    .textarea:focus {
       box-shadow: none;
     }
 
-    .icon-button:not(:disabled):hover,
-    .secondary-button:not(:disabled):hover,
-    .primary-button:not(:disabled):hover {
-      transform: translateY(-1px);
+    .history-list {
+      min-height: 0;
+      overflow: auto;
+      padding-right: 3px;
+    }
+
+    .history-group {
+      display: grid;
+      gap: 4px;
+      margin-bottom: 18px;
+    }
+
+    .history-heading {
+      padding: 8px 10px 4px;
+      color: var(--subtle);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .history-row {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 30px;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .history-item {
+      min-width: 0;
+      min-height: 38px;
+      padding: 9px 10px;
+      color: color-mix(in srgb, var(--text), var(--muted) 8%);
+      background: transparent;
+      text-align: left;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      transition: background 150ms ease, color 150ms ease;
+    }
+
+    .history-item:hover,
+    .history-row.active .history-item {
+      color: var(--text);
+      background: var(--panel-2);
+    }
+
+    .history-delete {
+      opacity: 0;
+      width: 30px;
+      height: 30px;
+    }
+
+    .history-row:hover .history-delete,
+    .history-row.active .history-delete {
+      opacity: 1;
+    }
+
+    .sidebar-footer {
+      display: grid;
+      gap: 10px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+    }
+
+    .connection-card {
+      display: grid;
+      gap: 9px;
+      padding: 11px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: color-mix(in srgb, var(--panel), var(--bg) 10%);
+    }
+
+    .connection-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .connection-title {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
     }
 
     .status-pill {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      min-height: 28px;
-      padding: 5px 9px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
+      min-height: 24px;
+      padding: 4px 8px;
+      border-radius: 999px;
       color: var(--muted);
-      background: var(--surface);
+      background: var(--panel-2);
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 800;
     }
 
     .status-dot {
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
       border-radius: 999px;
-      background: var(--muted);
+      background: var(--subtle);
     }
 
     .status-pill.ready .status-dot {
       background: var(--success);
     }
 
-    .sidebar-footer {
+    .api-key-row {
       display: grid;
-      gap: 10px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.45;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 6px;
     }
 
     .main {
       display: grid;
       grid-template-rows: auto minmax(0, 1fr) auto;
-      min-width: 0;
       height: 100vh;
+      min-width: 0;
+      background:
+        radial-gradient(circle at 80% 10%, color-mix(in srgb, var(--brand), transparent 86%), transparent 38%),
+        var(--bg);
     }
 
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
+    .mobile-topbar {
+      display: none;
       align-items: center;
-      min-height: 76px;
-      padding: 16px 22px;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 58px;
+      padding: 10px 14px;
       border-bottom: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.86);
-      backdrop-filter: blur(12px);
+      background: color-mix(in srgb, var(--bg), var(--panel) 45%);
     }
 
-    .topbar h2 {
-      margin: 0;
-      font-size: 20px;
-      letter-spacing: 0;
-    }
-
-    .topbar p {
-      margin: 4px 0 0;
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .top-actions {
+    .chat-header {
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: flex-end;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 58px;
+      padding: 10px 22px;
+      color: var(--muted);
+    }
+
+    .chat-title {
+      min-width: 0;
+      overflow: hidden;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 800;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .chat-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
     }
 
     .messages {
+      min-height: 0;
       overflow: auto;
-      padding: 24px;
-      scroll-behavior: smooth;
+      padding: 20px 24px 24px;
     }
 
-    .empty-state {
+    .welcome {
       display: grid;
-      gap: 18px;
-      align-content: center;
+      place-items: center;
       min-height: 100%;
-      max-width: 780px;
-      margin: 0 auto;
       padding: 24px 0;
     }
 
-    .intro {
+    .welcome-inner {
       display: grid;
-      gap: 12px;
+      gap: 22px;
+      width: min(860px, 100%);
+      justify-items: center;
+      text-align: center;
     }
 
-    .intro h3 {
+    .welcome-logo {
+      display: inline-grid;
+      place-items: center;
+      width: 46px;
+      height: 46px;
+      border-radius: 15px;
+      color: #fff;
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      box-shadow: 0 16px 34px color-mix(in srgb, var(--brand), transparent 72%);
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    .welcome h1 {
       margin: 0;
-      font-size: 28px;
-      line-height: 1.15;
+      font-size: 30px;
+      line-height: 1.18;
       letter-spacing: 0;
     }
 
-    .intro p {
-      max-width: 680px;
+    .welcome p {
+      max-width: 620px;
       margin: 0;
       color: var(--muted);
       font-size: 15px;
-      line-height: 1.6;
+      line-height: 1.65;
     }
 
-    .quick-grid {
+    .suggestions {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 10px;
+      width: 100%;
     }
 
-    .quick-card {
-      min-height: 132px;
+    .suggestion-chip {
+      display: grid;
+      gap: 8px;
+      min-height: 116px;
       padding: 14px;
       border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: var(--surface);
+      background: color-mix(in srgb, var(--panel), var(--bg) 8%);
+      color: var(--text);
       text-align: left;
-      box-shadow: 0 8px 24px rgba(16, 24, 40, 0.04);
+      transition: border-color 150ms ease, transform 120ms ease, background 150ms ease;
     }
 
-    .quick-card strong {
-      display: block;
-      margin-bottom: 8px;
+    .suggestion-chip:hover {
+      transform: translateY(-1px);
+      border-color: color-mix(in srgb, var(--brand), var(--line) 50%);
+      background: color-mix(in srgb, var(--panel), var(--brand) 8%);
+    }
+
+    .suggestion-chip strong {
       font-size: 14px;
     }
 
-    .quick-card span {
+    .suggestion-chip span {
       color: var(--muted);
       font-size: 13px;
       line-height: 1.45;
@@ -413,52 +528,52 @@
 
     .thread {
       display: grid;
-      gap: 16px;
-      max-width: 980px;
+      gap: 22px;
+      width: min(900px, 100%);
       margin: 0 auto;
     }
 
     .message {
       display: grid;
-      grid-template-columns: 42px minmax(0, 1fr);
+      grid-template-columns: 38px minmax(0, 1fr);
       gap: 12px;
       align-items: start;
     }
 
     .message.user {
-      grid-template-columns: minmax(0, 1fr) 42px;
+      grid-template-columns: minmax(0, 1fr) 38px;
     }
 
     .avatar {
       display: grid;
       place-items: center;
-      width: 42px;
-      height: 42px;
-      border-radius: 8px;
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
       color: #fff;
-      background: #344054;
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
       font-size: 13px;
-      font-weight: 800;
+      font-weight: 900;
     }
 
     .message.user .avatar {
       grid-column: 2;
-      background: var(--brand-2);
+      background: var(--panel-3);
+      color: var(--text);
     }
 
     .bubble {
       min-width: 0;
-      padding: 15px;
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: var(--surface);
-      box-shadow: 0 10px 24px rgba(16, 24, 40, 0.05);
+      padding-top: 2px;
     }
 
     .message.user .bubble {
       grid-column: 1;
-      background: #eef5ff;
-      border-color: #cadcf8;
+      justify-self: end;
+      max-width: min(720px, 100%);
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: color-mix(in srgb, var(--brand), var(--panel) 82%);
     }
 
     .meta {
@@ -466,8 +581,8 @@
       flex-wrap: wrap;
       gap: 8px;
       align-items: center;
-      margin-bottom: 10px;
-      color: var(--muted);
+      margin-bottom: 8px;
+      color: var(--subtle);
       font-size: 12px;
     }
 
@@ -476,24 +591,23 @@
       align-items: center;
       min-height: 22px;
       padding: 3px 7px;
-      border-radius: 6px;
-      color: #fff;
-      background: var(--brand);
+      border-radius: 999px;
+      color: color-mix(in srgb, var(--brand), white 20%);
+      background: color-mix(in srgb, var(--brand), transparent 84%);
       font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0;
+      font-weight: 900;
     }
 
     .message-body {
       color: var(--text);
-      font-size: 14px;
-      line-height: 1.65;
+      font-size: 15px;
+      line-height: 1.72;
       overflow-wrap: anywhere;
       white-space: pre-wrap;
     }
 
     .message-body:empty::after {
-      content: "Waiting for response...";
+      content: "正在思考...";
       color: var(--muted);
     }
 
@@ -504,19 +618,58 @@
       margin-top: 12px;
     }
 
-    .raw-block,
-    .json-preview {
-      max-height: 260px;
-      margin: 12px 0 0;
-      padding: 12px;
-      overflow: auto;
+    .debug-details {
+      margin-top: 12px;
       border: 1px solid var(--line);
       border-radius: var(--radius);
-      background: #111827;
-      color: #e5e7eb;
+      background: color-mix(in srgb, var(--panel), var(--bg) 10%);
+    }
+
+    .debug-details summary {
+      min-height: 38px;
+      padding: 9px 12px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      list-style: none;
+    }
+
+    .debug-details summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .raw-block {
+      max-height: 260px;
+      margin: 0;
+      padding: 12px;
+      overflow: auto;
+      border-top: 1px solid var(--line);
+      color: color-mix(in srgb, var(--text), var(--muted) 18%);
       font-size: 12px;
       line-height: 1.55;
       white-space: pre-wrap;
+    }
+
+    .debug-button,
+    .ghost-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 34px;
+      padding: 7px 10px;
+      color: var(--muted);
+      background: var(--panel-2);
+      font-size: 13px;
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    .debug-button:hover,
+    .ghost-button:hover {
+      color: var(--text);
+      background: var(--panel-3);
     }
 
     .result-media {
@@ -532,7 +685,7 @@
       max-height: 520px;
       border: 1px solid var(--line);
       border-radius: var(--radius);
-      background: var(--surface-2);
+      background: var(--panel);
       object-fit: contain;
     }
 
@@ -544,81 +697,157 @@
 
     .progress-bar {
       width: 100%;
-      height: 10px;
+      height: 9px;
       overflow: hidden;
       border-radius: 999px;
-      background: var(--surface-2);
+      background: var(--panel-2);
     }
 
     .progress-fill {
       height: 100%;
       width: 0%;
       background: linear-gradient(90deg, var(--brand), var(--brand-2));
-      transition: width 240ms ease;
+      transition: width 220ms ease;
+    }
+
+    .composer-wrap {
+      padding: 0 24px 22px;
     }
 
     .composer {
       display: grid;
-      gap: 12px;
-      padding: 16px 22px 18px;
-      border-top: 1px solid var(--line);
-      background: rgba(251, 252, 253, 0.96);
+      gap: 10px;
+      width: min(900px, 100%);
+      margin: 0 auto;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: color-mix(in srgb, var(--panel), var(--bg) 6%);
+      box-shadow: var(--shadow);
     }
 
-    .prompt-chips {
+    .mode-pills {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
+      align-items: center;
     }
 
-    .prompt-chip {
+    .mode-pill {
       display: inline-flex;
       align-items: center;
+      gap: 7px;
       min-height: 34px;
-      padding: 7px 10px;
-      border: 1px solid #cfe4e1;
-      border-radius: var(--radius);
-      background: #f3fbfa;
-      color: #235552;
-      font-size: 13px;
-      font-weight: 700;
+      padding: 7px 12px;
+      color: var(--muted);
+      background: transparent;
+      font-size: 14px;
+      font-weight: 800;
+      transition: background 150ms ease, color 150ms ease, box-shadow 150ms ease;
     }
 
-    .simple-settings {
+    .mode-pill[aria-pressed="true"] {
+      color: color-mix(in srgb, var(--brand), white 18%);
+      background: color-mix(in srgb, var(--brand), transparent 86%);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand), transparent 38%);
+    }
+
+    .composer-input-row {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: minmax(0, 1fr) auto;
       gap: 10px;
       align-items: end;
     }
 
-    .params {
+    .send-button {
+      display: inline-grid;
+      place-items: center;
+      width: 46px;
+      height: 46px;
+      color: #fff;
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      transition: transform 120ms ease, opacity 150ms ease;
+    }
+
+    .send-button:not(:disabled):hover {
+      transform: translateY(-1px);
+    }
+
+    .send-button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .composer-tools {
+      display: grid;
+      gap: 10px;
+    }
+
+    .simple-settings,
+    .advanced-fields {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 10px;
     }
 
     .simple-settings .wide,
-    .params .wide {
+    .advanced-fields .wide {
       grid-column: span 2;
     }
 
     .simple-settings .full,
-    .params .full {
+    .advanced-fields .full {
       grid-column: 1 / -1;
     }
 
-    .advanced-settings {
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .option-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .check {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      min-height: 36px;
+      padding: 8px 10px;
       border: 1px solid var(--line);
       border-radius: var(--radius);
-      background: rgba(255, 255, 255, 0.76);
+      color: var(--muted);
+      background: var(--panel);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .check input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--brand);
+    }
+
+    .advanced-settings {
+      border-top: 1px solid var(--line);
+      padding-top: 8px;
     }
 
     .advanced-settings summary {
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      min-height: 40px;
-      padding: 9px 12px;
-      color: #344054;
+      min-height: 32px;
+      color: var(--muted);
       font-size: 13px;
       font-weight: 800;
       list-style: none;
@@ -629,72 +858,20 @@
       display: none;
     }
 
-    .advanced-settings summary::after {
-      content: "+";
-      margin-left: auto;
-      color: var(--muted);
-      font-size: 18px;
-      line-height: 1;
-    }
-
-    .advanced-settings[open] summary::after {
-      content: "-";
-    }
-
-    .advanced-settings .params {
-      padding: 0 12px 12px;
-    }
-
-    .option-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .check {
-      display: inline-flex;
-      gap: 8px;
-      align-items: center;
-      min-height: 38px;
-      padding: 8px 10px;
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: var(--surface);
-      color: #344054;
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .check input {
-      width: 16px;
-      height: 16px;
-      accent-color: var(--brand);
-    }
-
-    .submit-row {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 10px;
-      align-items: end;
-    }
-
-    .hint {
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.45;
+    .advanced-fields {
+      margin-top: 8px;
     }
 
     .toast {
       position: fixed;
       right: 18px;
       bottom: 18px;
-      z-index: 10;
+      z-index: 20;
       max-width: min(420px, calc(100vw - 36px));
       padding: 12px 14px;
       border: 1px solid var(--line);
       border-radius: var(--radius);
-      background: var(--surface);
+      background: var(--panel);
       color: var(--text);
       box-shadow: var(--shadow);
       transform: translateY(18px);
@@ -708,36 +885,28 @@
       opacity: 1;
     }
 
+    .sidebar-backdrop {
+      display: none;
+    }
+
     .error-text {
       color: var(--danger);
     }
 
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-    }
-
-    @media (max-width: 1120px) {
-      .simple-settings,
-      .params {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+    @media (max-width: 1040px) {
+      .suggestions {
+        grid-template-columns: 1fr;
       }
 
-      .quick-grid {
-        grid-template-columns: 1fr;
+      .simple-settings,
+      .advanced-fields {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
 
     @media (max-width: 820px) {
       body {
-        overflow: auto;
+        overflow: hidden;
       }
 
       .app {
@@ -745,75 +914,70 @@
       }
 
       .sidebar {
-        position: static;
-        grid-template-rows: auto auto auto;
-        gap: 14px;
-        border-right: 0;
-        border-bottom: 1px solid var(--line);
+        position: fixed;
+        inset: 0 auto 0 0;
+        z-index: 30;
+        width: min(86vw, var(--sidebar-w));
+        transform: translateX(-105%);
+        transition: transform 180ms ease;
       }
 
-      .mode-list {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+      body.sidebar-open .sidebar {
+        transform: translateX(0);
       }
 
-      .mode-button {
-        grid-template-columns: 1fr;
-        align-content: start;
+      .sidebar-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 25;
+        display: block;
+        background: rgba(0, 0, 0, 0.42);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 180ms ease;
       }
 
-      .mode-icon {
-        width: 30px;
-        height: 30px;
-      }
-
-      .sidebar-footer {
-        display: none;
+      body.sidebar-open .sidebar-backdrop {
+        opacity: 1;
+        pointer-events: auto;
       }
 
       .main {
-        height: auto;
-        min-height: 100vh;
+        height: 100vh;
+        min-height: 0;
       }
 
-      .topbar {
-        align-items: flex-start;
-        flex-direction: column;
+      .mobile-topbar {
+        display: flex;
+      }
+
+      .chat-header {
+        display: none;
       }
 
       .messages {
-        min-height: 48vh;
-        padding: 18px;
+        min-height: 0;
+        padding: 18px 14px 24px;
       }
 
-      .composer {
-        position: static;
-        padding: 14px;
+      .composer-wrap {
+        max-height: calc(100vh - 76px);
+        overflow: auto;
+        padding: 0 12px 14px;
       }
 
-      .submit-row {
-        grid-template-columns: 1fr;
+      @supports (height: 100dvh) {
+        .main {
+          height: 100dvh;
+        }
+
+        .composer-wrap {
+          max-height: calc(100dvh - 76px);
+        }
       }
     }
 
     @media (max-width: 560px) {
-      .sidebar {
-        padding: 16px;
-      }
-
-      .mode-list {
-        grid-template-columns: 1fr;
-      }
-
-      .simple-settings,
-      .params {
-        grid-template-columns: 1fr;
-      }
-
-      .simple-settings .wide,
-      .params .wide {
-        grid-column: auto;
-      }
-
       .message,
       .message.user {
         grid-template-columns: 1fr;
@@ -828,286 +992,286 @@
         grid-column: auto;
       }
 
-      .intro h3 {
-        font-size: 23px;
+      .composer {
+        border-radius: 18px;
       }
 
-      .input-row {
-        grid-template-columns: minmax(0, 1fr) auto;
+      .composer-input-row {
+        grid-template-columns: 1fr;
       }
 
-      .input-row .icon-button:last-child {
-        grid-column: 1 / -1;
+      .send-button {
         width: 100%;
+      }
+
+      .simple-settings,
+      .advanced-fields {
+        grid-template-columns: 1fr;
+      }
+
+      .simple-settings .wide,
+      .advanced-fields .wide {
+        grid-column: auto;
+      }
+
+      .welcome h1 {
+        font-size: 24px;
       }
     }
   </style>
 </head>
 <body>
   <div class="app">
-    <aside class="sidebar" aria-label="应用设置">
-      <div class="brand">
-        <div class="brand-mark" aria-hidden="true">A</div>
-        <div>
-          <h1>Agnes 创作助手</h1>
-          <p>写作、图片和视频创作</p>
+    <aside class="sidebar" aria-label="会话历史">
+      <div class="brand-row">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">A</div>
+          <div class="brand-name">
+            <strong>Agnes AI</strong>
+            <span>创作聊天助手</span>
+          </div>
         </div>
+        <button class="icon-button mobile-close" id="closeSidebarButton" type="button" aria-label="关闭侧栏">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+        </button>
       </div>
 
-      <section class="panel" aria-label="连接 Agnes">
-        <div class="panel-title">连接 Agnes</div>
-        <div class="field">
-          <label for="apiKeyInput">你的 Agnes API Key</label>
-          <div class="input-row">
-            <input class="input" id="apiKeyInput" autocomplete="off" spellcheck="false" type="password" placeholder="粘贴 API Key 后即可开始创作">
+      <button class="new-chat-button" id="newChatButton" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+        开启新对话
+      </button>
+
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <input class="input search-input" id="historySearchInput" type="search" placeholder="搜索历史对话">
+      </div>
+
+      <div class="history-list" id="historyList" aria-label="历史对话"></div>
+
+      <div class="sidebar-footer">
+        <div class="connection-card">
+          <div class="connection-head">
+            <span class="connection-title">连接 Agnes</span>
+            <span class="status-pill" id="keyStatus"><span class="status-dot"></span><span>未连接</span></span>
+          </div>
+          <div class="api-key-row">
+            <input class="input" id="apiKeyInput" autocomplete="off" spellcheck="false" type="password" placeholder="粘贴 API Key">
             <button class="icon-button" id="toggleKeyButton" type="button" title="显示或隐藏 API Key" aria-label="显示或隐藏 API Key">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
             </button>
             <button class="icon-button" id="clearKeyButton" type="button" title="清除 API Key" aria-label="清除 API Key">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path></svg>
             </button>
           </div>
-          <span class="hint">只保存在当前标签页会话中，关闭页面后会自动清空。</span>
         </div>
-        <span class="status-pill" id="keyStatus"><span class="status-dot"></span><span>未设置</span></span>
-      </section>
-
-      <section class="panel" aria-label="模式">
-        <div class="panel-title">创作类型</div>
-        <div class="mode-list">
-          <button class="mode-button" type="button" data-mode="text" aria-pressed="true">
-            <span class="mode-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"></path><path d="M8 9h8"></path><path d="M8 13h5"></path></svg>
-            </span>
-            <span><span class="mode-name">写作与问答</span><span class="mode-desc">文案、总结、灵感整理</span></span>
-          </button>
-          <button class="mode-button" type="button" data-mode="image" aria-pressed="false">
-            <span class="mode-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="M21 15l-5-5L5 21"></path></svg>
-            </span>
-            <span><span class="mode-name">图片创作</span><span class="mode-desc">海报、封面、视觉素材</span></span>
-          </button>
-          <button class="mode-button" type="button" data-mode="video" aria-pressed="false">
-            <span class="mode-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 8l6-3v14l-6-3Z"></path><rect x="3" y="6" width="11" height="12" rx="2"></rect></svg>
-            </span>
-            <span><span class="mode-name">视频创作</span><span class="mode-desc">短片、动效、产品展示</span></span>
-          </button>
-        </div>
-      </section>
-
-      <div class="sidebar-footer">
-        <span>普通模式下只需要描述你想创作的内容。</span>
-        <span>高级设置仍然保留给需要精细控制的用户。</span>
       </div>
     </aside>
 
     <main class="main">
-      <header class="topbar">
-        <div>
-          <h2 id="modeTitle">写作与问答</h2>
-          <p id="modeSubtitle">把想法、资料或问题交给 Agnes，整理成清晰内容。</p>
-        </div>
-        <div class="top-actions">
-          <button class="secondary-button" id="copyThreadButton" type="button">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-            复制作品记录
-          </button>
-          <button class="secondary-button" id="clearThreadButton" type="button">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path></svg>
-            清空画布
-          </button>
+      <header class="mobile-topbar">
+        <button class="icon-button" id="openSidebarButton" type="button" aria-label="打开侧栏">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16"></path><path d="M4 12h16"></path><path d="M4 18h16"></path></svg>
+        </button>
+        <strong>Agnes AI</strong>
+        <button class="icon-button" id="mobileNewChatButton" type="button" aria-label="开启新对话">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+        </button>
+      </header>
+
+      <header class="chat-header">
+        <div class="chat-title" id="chatTitle">新的 Agnes 对话</div>
+        <div class="chat-actions">
+          <button class="ghost-button" id="copyThreadButton" type="button">复制记录</button>
+          <button class="ghost-button" id="clearThreadButton" type="button">清空当前对话</button>
         </div>
       </header>
 
       <section class="messages" id="messages" aria-live="polite">
-        <div class="empty-state" id="emptyState">
-          <div class="intro">
-            <h3>你想创作什么？</h3>
-            <p>选择一种创作类型，用自然语言描述需求。Agnes 会帮你写内容、生成图片，或者制作可播放的视频。</p>
-          </div>
-          <div class="quick-grid">
-            <button class="quick-card" type="button" data-mode="text" data-prompt="帮我写一段小红书风格的新品发布文案，主题是一个能写作、作图、生成视频的 AI 创作助手。语气自然、有吸引力。">
-              <strong>写一段发布文案</strong>
-              <span>适合社媒、产品介绍、邮件、脚本和灵感整理。</span>
-            </button>
-            <button class="quick-card" type="button" data-mode="image" data-prompt="一张温和专业的 AI 创作助手宣传海报，干净的桌面、柔和自然光、屏幕上有写作和图片创作界面，现代感，高级但不夸张">
-              <strong>生成一张海报</strong>
-              <span>描述画面、风格和用途，就能生成视觉素材。</span>
-            </button>
-            <button class="quick-card" type="button" data-mode="video" data-prompt="一个 5 秒左右的产品展示短片：镜头缓慢推进到一块简洁的 AI 创作界面，文字、图片、视频三个能力依次亮起，光线柔和，现代专业">
-              <strong>制作一个短视频</strong>
-              <span>适合产品展示、动态封面、短视频素材和概念演示。</span>
-            </button>
+        <div class="welcome" id="emptyState">
+          <div class="welcome-inner">
+            <div class="welcome-logo" aria-hidden="true">A</div>
+            <div>
+              <h1>使用 Agnes 开始创作</h1>
+              <p>像聊天一样描述需求。可以写作、生成图片、制作视频，也可以在一个对话里持续修改方向。</p>
+            </div>
+            <div class="suggestions" id="welcomeSuggestions"></div>
           </div>
         </div>
         <div class="thread" id="thread" hidden></div>
       </section>
 
-      <form class="composer" id="composer">
-        <div class="submit-row">
-          <div class="field">
-            <label for="promptInput" id="promptLabel">告诉 Agnes 你想创作什么</label>
-            <textarea class="textarea" id="promptInput" required placeholder="例如：帮我写一段新品发布文案，语气自然、有吸引力..."></textarea>
-            <span class="hint" id="modeHint">描述目标、受众和风格，Agnes 会尽量把结果整理得可直接使用。</span>
+      <div class="composer-wrap">
+        <form class="composer" id="composer">
+          <div class="mode-pills" aria-label="创作模式">
+            <button class="mode-pill" type="button" data-mode="text" aria-pressed="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"></path></svg>
+              写作
+            </button>
+            <button class="mode-pill" type="button" data-mode="image" aria-pressed="false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M21 15l-5-5L5 21"></path></svg>
+              图片
+            </button>
+            <button class="mode-pill" type="button" data-mode="video" aria-pressed="false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 8l6-3v14l-6-3Z"></path><rect x="3" y="6" width="11" height="12" rx="2"></rect></svg>
+              视频
+            </button>
           </div>
-          <button class="primary-button" id="sendButton" type="submit">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13"></path><path d="M22 2l-7 20-4-9-9-4 20-7Z"></path></svg>
-            发送
-          </button>
-        </div>
 
-        <div class="prompt-chips" id="promptChips" aria-label="提示词示例"></div>
+          <div class="composer-input-row">
+            <textarea class="textarea" id="promptInput" required placeholder="给 Agnes 发送消息"></textarea>
+            <button class="send-button" id="sendButton" type="submit" aria-label="发送">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"></path><path d="m5 12 7-7 7 7"></path></svg>
+            </button>
+          </div>
 
-        <div class="simple-settings" id="simpleSettings">
-          <div class="field" data-simple-param="image" hidden>
-            <label for="imageSize">画面比例</label>
-            <select class="select" id="imageSize">
-              <option value="1024x768">横版海报</option>
-              <option value="768x1024">竖版封面</option>
-              <option value="1024x1024">方形头像</option>
-              <option value="1280x720">宽屏封面</option>
-              <option value="720x1280">手机竖屏</option>
-            </select>
-          </div>
-          <div class="field wide" data-simple-param="image" hidden>
-            <label for="imageInputs">参考图片（可选）</label>
-            <input class="input" id="imageInputs" spellcheck="false" placeholder="粘贴公开图片 URL，多个可用换行分隔">
-          </div>
-          <div class="field" data-simple-param="video" hidden>
-            <label for="videoSize">画面比例</label>
-            <select class="select" id="videoSize">
-              <option value="1152x768">横版短片</option>
-              <option value="1280x768">宽屏展示</option>
-              <option value="1024x576">轻量横版</option>
-              <option value="768x1152">手机竖屏</option>
-            </select>
-          </div>
-          <div class="field" data-simple-param="video" hidden>
-            <label for="videoDuration">视频长度</label>
-            <select class="select" id="videoDuration">
-              <option value="121:24">标准短片</option>
-              <option value="81:24">更短更快</option>
-              <option value="201:24">更长展示</option>
-              <option value="custom">使用高级设置</option>
-            </select>
-          </div>
-          <div class="field wide" data-simple-param="video" hidden>
-            <label for="videoImage">参考图（可选）</label>
-            <input class="input" id="videoImage" type="url" placeholder="粘贴一张公开图片 URL，让 Agnes 根据它生成动态画面">
-          </div>
-          <div class="field wide" data-simple-param="video" hidden>
-            <label for="videoExtraImages">关键帧（可选）</label>
-            <input class="input" id="videoExtraImages" spellcheck="false" placeholder="多张公开图片 URL，可用换行分隔">
-          </div>
-        </div>
-
-        <details class="advanced-settings" id="advancedSettings">
-          <summary>高级设置</summary>
-          <div class="params" id="params">
-            <div class="field" data-param="text">
-              <label for="textTemperature">创意程度</label>
-              <input class="input" id="textTemperature" type="number" min="0" max="2" step="0.1" value="0.7">
-            </div>
-            <div class="field" data-param="text">
-              <label for="textMaxTokens">回答长度上限</label>
-              <input class="input" id="textMaxTokens" type="number" min="1" step="1" value="1024">
-            </div>
-            <div class="field wide" data-param="text">
-              <label for="textImageUrl">附加图片 URL（可选）</label>
-              <input class="input" id="textImageUrl" type="url" placeholder="https://example.com/image.jpg">
-            </div>
-            <div class="field full" data-param="text">
-              <div class="option-row">
-                <label class="check" for="textStream"><input id="textStream" type="checkbox">边写边显示</label>
-                <label class="check" for="textThinking"><input id="textThinking" type="checkbox">加强推理</label>
+          <div class="composer-tools">
+            <div class="simple-settings" id="simpleSettings">
+              <div class="field" data-simple-param="image" hidden>
+                <label for="imageSize">画面比例</label>
+                <select class="select" id="imageSize">
+                  <option value="1024x768">横版海报</option>
+                  <option value="768x1024">竖版封面</option>
+                  <option value="1024x1024">方形头像</option>
+                  <option value="1280x720">宽屏封面</option>
+                  <option value="720x1280">手机竖屏</option>
+                </select>
+              </div>
+              <div class="field wide" data-simple-param="image" hidden>
+                <label for="imageInputs">参考图片</label>
+                <input class="input" id="imageInputs" spellcheck="false" placeholder="公开图片 URL，多个可用换行分隔">
+              </div>
+              <div class="field" data-simple-param="video" hidden>
+                <label for="videoSize">画面比例</label>
+                <select class="select" id="videoSize">
+                  <option value="1152x768">横版短片</option>
+                  <option value="1280x768">宽屏展示</option>
+                  <option value="1024x576">轻量横版</option>
+                  <option value="768x1152">手机竖屏</option>
+                </select>
+              </div>
+              <div class="field" data-simple-param="video" hidden>
+                <label for="videoDuration">视频长度</label>
+                <select class="select" id="videoDuration">
+                  <option value="121:24">标准短片</option>
+                  <option value="81:24">更短更快</option>
+                  <option value="201:24">更长展示</option>
+                  <option value="custom">使用高级设置</option>
+                </select>
+              </div>
+              <div class="field wide" data-simple-param="video" hidden>
+                <label for="videoImage">参考图</label>
+                <input class="input" id="videoImage" type="url" placeholder="公开图片 URL">
+              </div>
+              <div class="field wide" data-simple-param="video" hidden>
+                <label for="videoExtraImages">关键帧</label>
+                <input class="input" id="videoExtraImages" spellcheck="false" placeholder="多张公开图片 URL，可用换行分隔">
               </div>
             </div>
 
-            <div class="field" data-param="image" hidden>
-              <label for="imageOutput">结果格式</label>
-              <select class="select" id="imageOutput">
-                <option value="url">直接预览</option>
-                <option value="base64">Base64</option>
-              </select>
-            </div>
+            <details class="advanced-settings" id="advancedSettings">
+              <summary>高级设置</summary>
+              <div class="advanced-fields" id="advancedFields">
+                <div class="field" data-param="text">
+                  <label for="textTemperature">创意程度</label>
+                  <input class="input" id="textTemperature" type="number" min="0" max="2" step="0.1" value="0.7">
+                </div>
+                <div class="field" data-param="text">
+                  <label for="textMaxTokens">回答长度</label>
+                  <input class="input" id="textMaxTokens" type="number" min="1" step="1" value="1024">
+                </div>
+                <div class="field wide" data-param="text">
+                  <label for="textImageUrl">附加图片 URL</label>
+                  <input class="input" id="textImageUrl" type="url" placeholder="https://example.com/image.jpg">
+                </div>
+                <div class="field full" data-param="text">
+                  <div class="option-row">
+                    <label class="check" for="textStream"><input id="textStream" type="checkbox">边写边显示</label>
+                    <label class="check" for="textThinking"><input id="textThinking" type="checkbox">加强推理</label>
+                  </div>
+                </div>
 
-            <div class="field" data-param="video" hidden>
-              <label for="videoFrames">帧数</label>
-              <input class="input" id="videoFrames" type="number" min="9" max="441" step="8" value="121">
-            </div>
-            <div class="field" data-param="video" hidden>
-              <label for="videoFrameRate">FPS</label>
-              <input class="input" id="videoFrameRate" type="number" min="1" max="60" step="1" value="24">
-            </div>
-            <div class="field" data-param="video" hidden>
-              <label for="videoPollLimit">检查次数</label>
-              <input class="input" id="videoPollLimit" type="number" min="1" max="120" step="1" value="60">
-            </div>
-            <div class="field full" data-param="video" hidden>
-              <label for="videoNegative">不想出现的内容（可选）</label>
-              <input class="input" id="videoNegative" spellcheck="false" placeholder="例如：低清晰度、变形、杂乱背景">
-            </div>
+                <div class="field" data-param="image" hidden>
+                  <label for="imageOutput">结果格式</label>
+                  <select class="select" id="imageOutput">
+                    <option value="url">直接预览</option>
+                    <option value="base64">Base64</option>
+                  </select>
+                </div>
+
+                <div class="field" data-param="video" hidden>
+                  <label for="videoFrames">帧数</label>
+                  <input class="input" id="videoFrames" type="number" min="9" max="441" step="8" value="121">
+                </div>
+                <div class="field" data-param="video" hidden>
+                  <label for="videoFrameRate">FPS</label>
+                  <input class="input" id="videoFrameRate" type="number" min="1" max="60" step="1" value="24">
+                </div>
+                <div class="field" data-param="video" hidden>
+                  <label for="videoPollLimit">检查次数</label>
+                  <input class="input" id="videoPollLimit" type="number" min="1" max="120" step="1" value="60">
+                </div>
+                <div class="field full" data-param="video" hidden>
+                  <label for="videoNegative">不想出现的内容</label>
+                  <input class="input" id="videoNegative" spellcheck="false" placeholder="例如：低清晰度、变形、杂乱背景">
+                </div>
+              </div>
+            </details>
           </div>
-        </details>
-      </form>
+        </form>
+      </div>
     </main>
   </div>
 
+  <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="关闭侧栏"></button>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script>
     const API_BASE = "https://apihub.agnes-ai.com";
+    const STORAGE_KEY = "agnes_chat_sessions_v1";
+
     const MODE_CONFIG = {
       text: {
-        title: "写作与问答",
-        subtitle: "把想法、资料或问题交给 Agnes，整理成清晰内容。",
-        hint: "可以写目标、受众、语气和长度；需要分析图片时，可在高级设置里附加图片 URL。",
-        label: "告诉 Agnes 你想写什么",
-        button: "开始创作",
+        title: "写作",
+        placeholder: "给 Agnes 发送消息",
+        buttonLabel: "开始创作",
         tag: "写作",
-        placeholder: "例如：帮我写一段新品发布文案，语气自然、有吸引力...",
-        examples: [
-          "帮我把这段想法整理成一封专业但亲切的邮件",
-          "生成 5 个适合小红书的标题，主题是 AI 创作助手",
-          "把下面内容总结成三条重点和一个行动建议"
+        suggestions: [
+          { title: "写一段发布文案", desc: "小红书风格，语气自然、有吸引力。", prompt: "帮我写一段小红书风格的新品发布文案，主题是一个能写作、作图、生成视频的 AI 创作助手。语气自然、有吸引力。" },
+          { title: "整理成行动建议", desc: "把零散想法变成清晰计划。", prompt: "把下面内容总结成三条重点和一个行动建议：" },
+          { title: "改写得更专业", desc: "适合邮件、介绍和说明文。", prompt: "帮我把下面这段话改写得更专业但仍然亲切：" }
         ]
       },
       image: {
-        title: "图片创作",
-        subtitle: "描述画面、风格和用途，Agnes 会生成可预览的图片。",
-        hint: "说清主体、场景、风格、光线和用途；有参考图时粘贴公开图片 URL。",
-        label: "描述你想要的画面",
-        button: "生成图片",
+        title: "图片",
+        placeholder: "描述你想生成的画面",
+        buttonLabel: "生成图片",
         tag: "图片",
-        placeholder: "例如：一张温和专业的 AI 创作助手宣传海报，现代感，柔和自然光...",
-        examples: [
-          "生成一张产品发布海报，清爽科技感，留出标题位置",
-          "把参考图改成雨夜霓虹风格，但保留原构图",
-          "设计一个简洁高级的应用图标，蓝绿色，白底"
+        suggestions: [
+          { title: "生成一张海报", desc: "干净、现代、适合产品发布。", prompt: "一张温和专业的 AI 创作助手宣传海报，干净的桌面、柔和自然光、屏幕上有写作和图片创作界面，现代感，高级但不夸张" },
+          { title: "设计应用图标", desc: "简洁高级，蓝绿配色。", prompt: "设计一个简洁高级的应用图标，蓝绿色，白底，几何形状，适合 AI 创作助手" },
+          { title: "改造参考图", desc: "保留构图，改变风格。", prompt: "把参考图改成雨夜霓虹风格，但保留原构图和主体位置" }
         ]
       },
       video: {
-        title: "视频创作",
-        subtitle: "描述镜头、动作和氛围，Agnes 会创建视频并自动等待结果。",
-        hint: "视频需要一点时间生成。建议写清主体动作、镜头运动、光线和画面风格。",
-        label: "描述你想制作的视频",
-        button: "生成视频",
+        title: "视频",
+        placeholder: "描述镜头、动作和氛围",
+        buttonLabel: "生成视频",
         tag: "视频",
-        placeholder: "例如：一个 5 秒产品展示短片，镜头缓慢推进，界面光效依次亮起...",
-        examples: [
-          "产品展示短片，镜头缓慢推进，柔和光线，现代专业",
-          "让参考图中的人物轻轻转头看向镜头，自然表情",
-          "两张关键帧之间做平滑转场，保持角色一致"
+        suggestions: [
+          { title: "产品展示短片", desc: "镜头缓慢推进，专业光效。", prompt: "一个 5 秒左右的产品展示短片：镜头缓慢推进到一块简洁的 AI 创作界面，文字、图片、视频三个能力依次亮起，光线柔和，现代专业" },
+          { title: "让参考图动起来", desc: "人物或产品自然运动。", prompt: "让参考图里的主体轻微移动，镜头缓慢推进，保持自然、真实、稳定" },
+          { title: "关键帧转场", desc: "两张图之间平滑过渡。", prompt: "在两张关键帧之间生成平滑转场，保持视觉一致和自然镜头运动" }
         ]
       }
     };
 
     const state = {
+      sessions: [],
+      activeSessionId: null,
       mode: "text",
-      messages: [],
       apiKey: sessionStorage.getItem("agnes_api_key") || "",
-      busy: false
+      busy: false,
+      historyQuery: ""
     };
 
     const els = {
@@ -1115,19 +1279,23 @@
       toggleKeyButton: document.getElementById("toggleKeyButton"),
       clearKeyButton: document.getElementById("clearKeyButton"),
       keyStatus: document.getElementById("keyStatus"),
-      modeButtons: Array.from(document.querySelectorAll(".mode-button")),
-      modeTitle: document.getElementById("modeTitle"),
-      modeSubtitle: document.getElementById("modeSubtitle"),
-      params: document.getElementById("params"),
+      newChatButton: document.getElementById("newChatButton"),
+      mobileNewChatButton: document.getElementById("mobileNewChatButton"),
+      historySearchInput: document.getElementById("historySearchInput"),
+      historyList: document.getElementById("historyList"),
+      openSidebarButton: document.getElementById("openSidebarButton"),
+      closeSidebarButton: document.getElementById("closeSidebarButton"),
+      sidebarBackdrop: document.getElementById("sidebarBackdrop"),
+      chatTitle: document.getElementById("chatTitle"),
+      modePills: Array.from(document.querySelectorAll(".mode-pill")),
       simpleSettings: document.getElementById("simpleSettings"),
       advancedSettings: document.getElementById("advancedSettings"),
-      promptChips: document.getElementById("promptChips"),
+      advancedFields: document.getElementById("advancedFields"),
       promptInput: document.getElementById("promptInput"),
-      promptLabel: document.getElementById("promptLabel"),
-      modeHint: document.getElementById("modeHint"),
       sendButton: document.getElementById("sendButton"),
       composer: document.getElementById("composer"),
       emptyState: document.getElementById("emptyState"),
+      welcomeSuggestions: document.getElementById("welcomeSuggestions"),
       thread: document.getElementById("thread"),
       messages: document.getElementById("messages"),
       clearThreadButton: document.getElementById("clearThreadButton"),
@@ -1151,134 +1319,360 @@
       videoNegative: document.getElementById("videoNegative")
     };
 
-    els.apiKeyInput.value = state.apiKey;
-    updateKeyStatus();
-    renderMode();
-    applyVideoDurationPreset();
+    bootstrap();
 
-    els.apiKeyInput.addEventListener("input", () => {
-      state.apiKey = els.apiKeyInput.value.trim();
-      if (state.apiKey) {
-        sessionStorage.setItem("agnes_api_key", state.apiKey);
-      } else {
+    function bootstrap() {
+      loadSessions();
+      if (!state.sessions.length) createSession(false);
+      state.apiKey = sessionStorage.getItem("agnes_api_key") || "";
+      els.apiKeyInput.value = state.apiKey;
+      updateKeyStatus();
+      applyVideoDurationPreset();
+      bindEvents();
+      renderAll();
+    }
+
+    function bindEvents() {
+      els.apiKeyInput.addEventListener("input", () => {
+        state.apiKey = els.apiKeyInput.value.trim();
+        if (state.apiKey) sessionStorage.setItem("agnes_api_key", state.apiKey);
+        else sessionStorage.removeItem("agnes_api_key");
+        updateKeyStatus();
+      });
+
+      els.toggleKeyButton.addEventListener("click", () => {
+        els.apiKeyInput.type = els.apiKeyInput.type === "text" ? "password" : "text";
+      });
+
+      els.clearKeyButton.addEventListener("click", () => {
+        state.apiKey = "";
+        els.apiKeyInput.value = "";
         sessionStorage.removeItem("agnes_api_key");
-      }
-      updateKeyStatus();
-    });
+        updateKeyStatus();
+        toast("已断开 Agnes 连接");
+      });
 
-    els.toggleKeyButton.addEventListener("click", () => {
-      const showing = els.apiKeyInput.type === "text";
-      els.apiKeyInput.type = showing ? "password" : "text";
-    });
+      els.newChatButton.addEventListener("click", () => createSession(true));
+      els.mobileNewChatButton.addEventListener("click", () => createSession(true));
+      els.openSidebarButton.addEventListener("click", () => document.body.classList.add("sidebar-open"));
+      els.closeSidebarButton.addEventListener("click", closeSidebar);
+      els.sidebarBackdrop.addEventListener("click", closeSidebar);
 
-    els.clearKeyButton.addEventListener("click", () => {
-      state.apiKey = "";
-      els.apiKeyInput.value = "";
-      sessionStorage.removeItem("agnes_api_key");
-      updateKeyStatus();
-      toast("API Key 已清除");
-    });
+      els.historySearchInput.addEventListener("input", () => {
+        state.historyQuery = els.historySearchInput.value.trim().toLowerCase();
+        renderHistory();
+      });
 
-    els.modeButtons.forEach((button) => {
-      button.addEventListener("click", () => setMode(button.dataset.mode));
-    });
+      els.modePills.forEach((pill) => {
+        pill.addEventListener("click", () => setMode(pill.dataset.mode));
+      });
 
-    document.querySelectorAll(".quick-card").forEach((button) => {
-      button.addEventListener("click", () => {
-        setMode(button.dataset.mode);
-        els.promptInput.value = button.dataset.prompt;
+      els.welcomeSuggestions.addEventListener("click", (event) => {
+        const chip = event.target.closest(".suggestion-chip");
+        if (!chip) return;
+        setMode(chip.dataset.mode);
+        els.promptInput.value = chip.dataset.prompt;
         els.promptInput.focus();
       });
-    });
 
-    els.promptChips.addEventListener("click", (event) => {
-      const chip = event.target.closest(".prompt-chip");
-      if (!chip) return;
-      els.promptInput.value = chip.dataset.prompt;
-      els.promptInput.focus();
-    });
+      els.videoDuration.addEventListener("change", () => {
+        applyVideoDurationPreset();
+        persistActiveSettings();
+      });
 
-    els.videoDuration.addEventListener("change", applyVideoDurationPreset);
+      [els.imageSize, els.imageOutput, els.imageInputs, els.videoSize, els.videoImage, els.videoExtraImages, els.videoNegative, els.textTemperature, els.textMaxTokens, els.textImageUrl, els.textStream, els.textThinking, els.videoFrames, els.videoFrameRate, els.videoPollLimit].forEach((control) => {
+        control.addEventListener("change", persistActiveSettings);
+        control.addEventListener("input", persistActiveSettings);
+      });
 
-    els.clearThreadButton.addEventListener("click", () => {
-      state.messages = [];
-      renderThread();
-      toast("对话已清空");
-    });
+      els.clearThreadButton.addEventListener("click", () => {
+        const session = activeSession();
+        if (!session) return;
+        session.messages = [];
+        session.title = "新的对话";
+        session.updatedAt = Date.now();
+        saveSessions();
+        renderAll();
+      });
 
-    els.copyThreadButton.addEventListener("click", async () => {
-      if (!state.messages.length) {
-        toast("当前没有可复制的对话记录");
-        return;
+      els.copyThreadButton.addEventListener("click", async () => {
+        const session = activeSession();
+        if (!session || !session.messages.length) {
+          toast("当前没有可复制的对话记录");
+          return;
+        }
+        await copyText(JSON.stringify(session.messages, null, 2));
+        toast("对话记录已复制");
+      });
+
+      els.composer.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (state.busy) return;
+        const prompt = els.promptInput.value.trim();
+        if (!prompt) {
+          toast("请输入消息");
+          return;
+        }
+        if (!state.apiKey) {
+          toast("请先在左侧粘贴 Agnes API Key");
+          els.apiKeyInput.focus();
+          return;
+        }
+
+        try {
+          setBusy(true);
+          if (state.mode === "text") await handleText(prompt);
+          if (state.mode === "image") await handleImage(prompt);
+          if (state.mode === "video") await handleVideo(prompt);
+          els.promptInput.value = "";
+        } catch (error) {
+          showRequestError(error);
+        } finally {
+          setBusy(false);
+        }
+      });
+    }
+
+    function closeSidebar() {
+      document.body.classList.remove("sidebar-open");
+    }
+
+    function createSession(render) {
+      const session = {
+        id: makeId(),
+        title: "新的对话",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        mode: "text",
+        messages: [],
+        settings: defaultSettings()
+      };
+      state.sessions.unshift(session);
+      state.activeSessionId = session.id;
+      state.mode = session.mode;
+      applySettings(session.settings);
+      saveSessions();
+      if (render) {
+        renderAll();
+        closeSidebar();
+        els.promptInput.focus();
       }
-      await copyText(JSON.stringify(state.messages, null, 2));
-      toast("对话 JSON 已复制");
-    });
+      return session;
+    }
 
-    els.composer.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      if (state.busy) return;
-      const prompt = els.promptInput.value.trim();
-      if (!prompt) {
-        toast("请输入内容");
-        return;
-      }
-      if (!state.apiKey) {
-        toast("请先连接 Agnes：粘贴你的 API Key 后再开始创作");
-        els.apiKeyInput.focus();
-        return;
-      }
+    function defaultSettings() {
+      return {
+        textTemperature: "0.7",
+        textMaxTokens: "1024",
+        textImageUrl: "",
+        textStream: false,
+        textThinking: false,
+        imageSize: "1024x768",
+        imageOutput: "url",
+        imageInputs: "",
+        videoSize: "1152x768",
+        videoDuration: "121:24",
+        videoFrames: "121",
+        videoFrameRate: "24",
+        videoPollLimit: "60",
+        videoImage: "",
+        videoExtraImages: "",
+        videoNegative: ""
+      };
+    }
 
+    function loadSessions() {
       try {
-        setBusy(true);
-        if (state.mode === "text") await handleText(prompt);
-        if (state.mode === "image") await handleImage(prompt);
-        if (state.mode === "video") await handleVideo(prompt);
-        els.promptInput.value = "";
+        const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+        state.sessions = Array.isArray(parsed.sessions) ? parsed.sessions : [];
+        state.activeSessionId = parsed.activeSessionId || (state.sessions[0] && state.sessions[0].id) || null;
       } catch (error) {
-        showRequestError(error);
-      } finally {
-        setBusy(false);
+        state.sessions = [];
+        state.activeSessionId = null;
       }
-    });
+      state.sessions = state.sessions
+        .filter((session) => session && session.id)
+        .map((session) => ({
+          id: session.id,
+          title: session.title || "新的对话",
+          createdAt: session.createdAt || Date.now(),
+          updatedAt: session.updatedAt || Date.now(),
+          mode: MODE_CONFIG[session.mode] ? session.mode : "text",
+          messages: Array.isArray(session.messages) ? session.messages : [],
+          settings: { ...defaultSettings(), ...(session.settings || {}) }
+        }))
+        .sort((a, b) => b.updatedAt - a.updatedAt);
+      if (state.activeSessionId && !state.sessions.some((session) => session.id === state.activeSessionId)) {
+        state.activeSessionId = state.sessions[0] ? state.sessions[0].id : null;
+      }
+      const session = activeSession();
+      if (session) {
+        state.mode = session.mode;
+        applySettings(session.settings);
+      }
+    }
+
+    function saveSessions() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          activeSessionId: state.activeSessionId,
+          sessions: state.sessions.slice(0, 80)
+        }));
+      } catch (error) {
+        console.warn("Unable to save sessions", error);
+      }
+    }
+
+    function activeSession() {
+      return state.sessions.find((session) => session.id === state.activeSessionId) || null;
+    }
+
+    function activateSession(id) {
+      const session = state.sessions.find((item) => item.id === id);
+      if (!session) return;
+      state.activeSessionId = id;
+      state.mode = session.mode;
+      applySettings(session.settings);
+      saveSessions();
+      renderAll();
+      closeSidebar();
+    }
+
+    function deleteSession(id) {
+      state.sessions = state.sessions.filter((session) => session.id !== id);
+      if (!state.sessions.length) {
+        createSession(false);
+      } else if (state.activeSessionId === id) {
+        state.activeSessionId = state.sessions[0].id;
+      }
+      const session = activeSession();
+      if (session) {
+        state.mode = session.mode;
+        applySettings(session.settings);
+      }
+      saveSessions();
+      renderAll();
+    }
 
     function setMode(mode) {
       if (!MODE_CONFIG[mode]) return;
       state.mode = mode;
+      const session = activeSession();
+      if (session) {
+        session.mode = mode;
+        session.updatedAt = Date.now();
+      }
+      saveSessions();
       renderMode();
+      renderSuggestions();
+      renderHistory();
+    }
+
+    function renderAll() {
+      renderMode();
+      renderHistory();
+      renderThread();
+      renderSuggestions();
+      updateChatTitle();
     }
 
     function renderMode() {
       const config = MODE_CONFIG[state.mode];
-      els.modeButtons.forEach((button) => {
-        button.setAttribute("aria-pressed", String(button.dataset.mode === state.mode));
+      els.modePills.forEach((pill) => {
+        pill.setAttribute("aria-pressed", String(pill.dataset.mode === state.mode));
       });
-      els.modeTitle.textContent = config.title;
-      els.modeSubtitle.textContent = config.subtitle;
-      els.promptLabel.textContent = config.label;
-      els.modeHint.textContent = config.hint;
       els.promptInput.placeholder = config.placeholder;
-      els.sendButton.lastChild.nodeValue = " " + config.button;
+      els.sendButton.title = config.buttonLabel;
       els.advancedSettings.open = false;
-      renderPromptChips(config.examples);
       Array.from(els.simpleSettings.querySelectorAll("[data-simple-param]")).forEach((el) => {
         el.hidden = el.dataset.simpleParam !== state.mode;
       });
-      Array.from(els.params.querySelectorAll("[data-param]")).forEach((el) => {
+      Array.from(els.advancedFields.querySelectorAll("[data-param]")).forEach((el) => {
         el.hidden = el.dataset.param !== state.mode;
       });
     }
 
-    function renderPromptChips(examples) {
-      els.promptChips.innerHTML = "";
-      examples.forEach((example) => {
-        const chip = document.createElement("button");
-        chip.type = "button";
-        chip.className = "prompt-chip";
-        chip.dataset.prompt = example;
-        chip.textContent = example;
-        els.promptChips.appendChild(chip);
+    function renderSuggestions() {
+      els.welcomeSuggestions.innerHTML = "";
+      Object.entries(MODE_CONFIG).forEach(([mode, config]) => {
+        const suggestion = config.suggestions[0];
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "suggestion-chip";
+        button.dataset.mode = mode;
+        button.dataset.prompt = suggestion.prompt;
+        button.innerHTML = `<strong>${escapeHtml(suggestion.title)}</strong><span>${escapeHtml(suggestion.desc)}</span>`;
+        els.welcomeSuggestions.appendChild(button);
       });
+    }
+
+    function renderHistory() {
+      const sessions = filteredSessions();
+      els.historyList.innerHTML = "";
+      if (!sessions.length) {
+        const empty = document.createElement("div");
+        empty.className = "history-heading";
+        empty.textContent = "没有匹配的历史";
+        els.historyList.appendChild(empty);
+        return;
+      }
+      const groups = groupSessions(sessions);
+      Object.entries(groups).forEach(([label, items]) => {
+        const group = document.createElement("section");
+        group.className = "history-group";
+        const heading = document.createElement("div");
+        heading.className = "history-heading";
+        heading.textContent = label;
+        group.appendChild(heading);
+        items.forEach((session) => {
+          const row = document.createElement("div");
+          row.className = "history-row" + (session.id === state.activeSessionId ? " active" : "");
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "history-item";
+          button.textContent = session.title || "新的对话";
+          button.addEventListener("click", () => activateSession(session.id));
+          const del = document.createElement("button");
+          del.type = "button";
+          del.className = "icon-button history-delete";
+          del.title = "删除对话";
+          del.setAttribute("aria-label", "删除对话");
+          del.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path></svg>';
+          del.addEventListener("click", (event) => {
+            event.stopPropagation();
+            deleteSession(session.id);
+          });
+          row.append(button, del);
+          group.appendChild(row);
+        });
+        els.historyList.appendChild(group);
+      });
+    }
+
+    function filteredSessions() {
+      if (!state.historyQuery) return state.sessions;
+      return state.sessions.filter((session) => {
+        const lastUser = [...session.messages].reverse().find((msg) => msg.role === "user");
+        const haystack = `${session.title || ""} ${lastUser ? lastUser.content : ""}`.toLowerCase();
+        return haystack.includes(state.historyQuery);
+      });
+    }
+
+    function groupSessions(sessions) {
+      const today = startOfDay(Date.now());
+      return sessions.reduce((groups, session) => {
+        const day = startOfDay(session.updatedAt);
+        const diff = Math.round((today - day) / 86400000);
+        const label = diff <= 0 ? "今天" : diff === 1 ? "昨天" : diff <= 30 ? "30 天内" : formatMonth(session.updatedAt);
+        groups[label] = groups[label] || [];
+        groups[label].push(session);
+        return groups;
+      }, {});
+    }
+
+    function updateChatTitle() {
+      const session = activeSession();
+      els.chatTitle.textContent = session ? session.title : "新的 Agnes 对话";
     }
 
     function updateKeyStatus() {
@@ -1290,10 +1684,59 @@
     function setBusy(next) {
       state.busy = next;
       els.sendButton.disabled = next;
-      els.sendButton.textContent = next ? "处理中..." : MODE_CONFIG[state.mode].button;
-      if (!next) {
-        els.sendButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13"></path><path d="M22 2l-7 20-4-9-9-4 20-7Z"></path></svg> ' + MODE_CONFIG[state.mode].button;
-      }
+      els.sendButton.innerHTML = next
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"></path><path d="m5 12 7-7 7 7"></path></svg>';
+    }
+
+    function applySettings(settings) {
+      const data = { ...defaultSettings(), ...(settings || {}) };
+      els.textTemperature.value = data.textTemperature;
+      els.textMaxTokens.value = data.textMaxTokens;
+      els.textImageUrl.value = data.textImageUrl;
+      els.textStream.checked = Boolean(data.textStream);
+      els.textThinking.checked = Boolean(data.textThinking);
+      els.imageSize.value = data.imageSize;
+      els.imageOutput.value = data.imageOutput;
+      els.imageInputs.value = data.imageInputs;
+      els.videoSize.value = data.videoSize;
+      els.videoDuration.value = data.videoDuration;
+      els.videoFrames.value = data.videoFrames;
+      els.videoFrameRate.value = data.videoFrameRate;
+      els.videoPollLimit.value = data.videoPollLimit;
+      els.videoImage.value = data.videoImage;
+      els.videoExtraImages.value = data.videoExtraImages;
+      els.videoNegative.value = data.videoNegative;
+    }
+
+    function readSettings() {
+      return {
+        textTemperature: els.textTemperature.value,
+        textMaxTokens: els.textMaxTokens.value,
+        textImageUrl: els.textImageUrl.value,
+        textStream: els.textStream.checked,
+        textThinking: els.textThinking.checked,
+        imageSize: els.imageSize.value,
+        imageOutput: els.imageOutput.value,
+        imageInputs: els.imageInputs.value,
+        videoSize: els.videoSize.value,
+        videoDuration: els.videoDuration.value,
+        videoFrames: els.videoFrames.value,
+        videoFrameRate: els.videoFrameRate.value,
+        videoPollLimit: els.videoPollLimit.value,
+        videoImage: els.videoImage.value,
+        videoExtraImages: els.videoExtraImages.value,
+        videoNegative: els.videoNegative.value
+      };
+    }
+
+    function persistActiveSettings() {
+      const session = activeSession();
+      if (!session) return;
+      session.settings = readSettings();
+      session.updatedAt = Date.now();
+      saveSessions();
+      renderHistory();
     }
 
     async function handleText(prompt) {
@@ -1308,10 +1751,8 @@
       };
       if (els.textStream.checked) payload.stream = true;
       if (els.textThinking.checked) payload.chat_template_kwargs = { enable_thinking: true };
-
       userMessage.raw = payload;
-      renderThread();
-
+      saveActive();
       if (payload.stream) {
         await streamTextCompletion(payload, assistant.id);
       } else {
@@ -1333,7 +1774,8 @@
     }
 
     function buildChatMessages(content, excludeId) {
-      const prior = state.messages
+      const session = activeSession();
+      const prior = (session ? session.messages : [])
         .filter((msg) => msg.id !== excludeId && msg.mode === "text" && msg.status === "done" && (msg.role === "user" || msg.role === "assistant"))
         .slice(-10)
         .map((msg) => ({ role: msg.role, content: msg.content }));
@@ -1347,12 +1789,8 @@
         headers: authHeaders(),
         body: JSON.stringify(payload)
       });
-      if (!response.ok) {
-        throw await responseError(response);
-      }
-      if (!response.body) {
-        throw new Error("浏览器不支持流式响应读取。");
-      }
+      if (!response.ok) throw await responseError(response);
+      if (!response.body) throw new Error("浏览器不支持流式响应读取。");
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
@@ -1410,7 +1848,7 @@
       const url = first.url || "";
       const b64 = first.b64_json || "";
       if (!url && !b64) {
-        updateMessage(assistant.id, { status: "done", content: "图片已经处理完成，但这次没有拿到可预览的结果。可以展开原始 JSON 查看详情。", raw: data });
+        updateMessage(assistant.id, { status: "done", content: "图片已经处理完成，但这次没有拿到可预览的结果。可以展开调试详情查看。", raw: data });
         return;
       }
       updateMessage(assistant.id, {
@@ -1442,7 +1880,6 @@
       if (extraImages.length) payload.extra_body = { image: extraImages };
       const negative = els.videoNegative.value.trim();
       if (negative) payload.negative_prompt = negative;
-
       const task = await fetchAgnes("/v1/videos", { method: "POST", body: payload });
       const videoId = task.video_id;
       const taskId = task.task_id || task.id;
@@ -1458,7 +1895,7 @@
         }
       });
       if (!videoId && !taskId) {
-        updateMessage(assistant.id, { status: "done", content: "视频任务已创建，但没有拿到可自动查询的编号。可以展开原始 JSON 查看详情。", raw: task });
+        updateMessage(assistant.id, { status: "done", content: "视频任务已创建，但没有拿到可自动查询的编号。可以展开调试详情查看。", raw: task });
         return;
       }
       await pollVideoResult(assistant.id, videoId, taskId);
@@ -1506,7 +1943,7 @@
         if (status === "failed") {
           updateMessage(messageId, {
             status: "error",
-            content: "视频创作失败了。可以展开原始 JSON 查看 Agnes 返回的详细原因。",
+            content: "视频创作失败了。可以展开调试详情查看 Agnes 返回的详细原因。",
             raw: data
           });
           return;
@@ -1514,29 +1951,24 @@
       }
       updateMessage(messageId, {
         status: "done",
-        content: "等待时间到了，视频可能还在制作中。可以稍后用原始 JSON 里的 video_id 再查询。",
+        content: "等待时间到了，视频可能还在制作中。可以稍后用调试详情里的 video_id 再查询。",
         raw: last
       });
     }
 
     async function fetchAgnes(path, options) {
-      const method = options.method || "GET";
       const init = {
-        method,
+        method: options.method || "GET",
         headers: authHeaders()
       };
-      if (options.body !== undefined) {
-        init.body = typeof options.body === "string" ? options.body : JSON.stringify(options.body);
-      }
+      if (options.body !== undefined) init.body = typeof options.body === "string" ? options.body : JSON.stringify(options.body);
       let response;
       try {
         response = await fetch(API_BASE + path, init);
       } catch (error) {
         throw new Error("网络请求失败。请检查网络、API 地址，或浏览器是否阻止跨域请求。详情：" + error.message);
       }
-      if (!response.ok) {
-        throw await responseError(response);
-      }
+      if (!response.ok) throw await responseError(response);
       const text = await response.text();
       if (!text) return {};
       try {
@@ -1571,8 +2003,9 @@
     }
 
     function appendMessage(partial) {
+      const session = activeSession() || createSession(false);
       const message = {
-        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+        id: makeId(),
         mode: partial.mode || state.mode,
         role: partial.role,
         content: partial.content || "",
@@ -1582,35 +2015,87 @@
         result: partial.result || null,
         task: partial.task || null
       };
-      state.messages.push(message);
+      session.messages.push(message);
+      if (message.role === "user" && (session.title === "新的对话" || !session.title)) {
+        session.title = makeTitle(message.content);
+      }
+      session.mode = state.mode;
+      session.settings = readSettings();
+      session.updatedAt = Date.now();
+      moveActiveToTop();
+      saveSessions();
       renderThread();
+      renderHistory();
+      updateChatTitle();
       return message;
     }
 
     function updateMessage(id, patch, shallow) {
-      const message = state.messages.find((item) => item.id === id);
+      const session = activeSession();
+      if (!session) return;
+      const message = session.messages.find((item) => item.id === id);
       if (!message) return;
       Object.assign(message, patch);
+      session.updatedAt = Date.now();
+      moveActiveToTop();
+      saveSessions();
       if (!shallow || !updateLiveMessage(message)) renderThread();
+      renderHistory();
+      updateChatTitle();
       scrollToBottom();
     }
 
     function showRequestError(error) {
-      const loading = [...state.messages].reverse().find((message) => message.role === "assistant" && message.status === "loading");
+      const session = activeSession();
+      const loading = session ? [...session.messages].reverse().find((message) => message.role === "assistant" && message.status === "loading") : null;
       const patch = {
         status: "error",
         content: formatError(error),
         raw: error && error.raw ? error.raw : null
       };
-      if (loading) {
-        updateMessage(loading.id, patch);
-      } else {
-        appendMessage({
-          mode: state.mode,
-          role: "assistant",
-          ...patch
-        });
-      }
+      if (loading) updateMessage(loading.id, patch);
+      else appendMessage({ mode: state.mode, role: "assistant", ...patch });
+    }
+
+    function renderThread() {
+      const session = activeSession();
+      const hasMessages = Boolean(session && session.messages.length);
+      els.emptyState.hidden = hasMessages;
+      els.thread.hidden = !hasMessages;
+      els.thread.innerHTML = "";
+      if (session) session.messages.forEach((message) => els.thread.appendChild(renderMessage(message)));
+      scrollToBottom();
+    }
+
+    function renderMessage(message) {
+      const article = document.createElement("article");
+      article.className = "message " + message.role;
+      article.dataset.messageId = message.id;
+      const avatar = document.createElement("div");
+      avatar.className = "avatar";
+      avatar.textContent = message.role === "user" ? "你" : "A";
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      const tag = document.createElement("span");
+      tag.className = "mode-tag";
+      tag.textContent = MODE_CONFIG[message.mode].tag;
+      const time = document.createElement("span");
+      time.textContent = new Date(message.createdAt).toLocaleString();
+      const status = document.createElement("span");
+      status.textContent = statusLabel(message.status);
+      status.className = message.status === "error" ? "error-text" : "";
+      meta.append(tag, time, status);
+      const body = document.createElement("div");
+      body.className = "message-body";
+      body.textContent = message.content || "";
+      bubble.append(meta, body);
+      if (message.task) bubble.appendChild(renderTask(message.task));
+      if (message.result) bubble.appendChild(renderResult(message.result));
+      if (message.raw) bubble.appendChild(renderRaw(message.raw, message.id));
+      article.append(avatar, bubble);
+      return article;
     }
 
     function updateLiveMessage(message) {
@@ -1625,62 +2110,18 @@
         const status = task.querySelector("[data-task-status]");
         const progress = task.querySelector("[data-task-progress]");
         const fill = task.querySelector(".progress-fill");
-        if (status) status.textContent = message.task.status || "unknown";
+        if (status) status.textContent = statusLabel(message.task.status || "unknown");
         if (progress) progress.textContent = String(message.task.progress || 0) + "%";
         if (fill) fill.style.width = String(Math.min(100, Math.max(0, message.task.progress || 0))) + "%";
       }
       return true;
     }
 
-    function renderThread() {
-      const hasMessages = state.messages.length > 0;
-      els.emptyState.hidden = hasMessages;
-      els.thread.hidden = !hasMessages;
-      els.thread.innerHTML = "";
-      state.messages.forEach((message) => els.thread.appendChild(renderMessage(message)));
-      scrollToBottom();
-    }
-
-    function renderMessage(message) {
-      const article = document.createElement("article");
-      article.className = "message " + message.role;
-      article.dataset.messageId = message.id;
-      const avatar = document.createElement("div");
-      avatar.className = "avatar";
-      avatar.textContent = message.role === "user" ? "You" : "AI";
-      const bubble = document.createElement("div");
-      bubble.className = "bubble";
-
-      const meta = document.createElement("div");
-      meta.className = "meta";
-      const tag = document.createElement("span");
-      tag.className = "mode-tag";
-      tag.textContent = MODE_CONFIG[message.mode].tag;
-      const time = document.createElement("span");
-      time.textContent = new Date(message.createdAt).toLocaleString();
-      const status = document.createElement("span");
-      status.textContent = statusLabel(message.status);
-      status.className = message.status === "error" ? "error-text" : "";
-      meta.append(tag, time, status);
-
-      const body = document.createElement("div");
-      body.className = "message-body";
-      body.textContent = message.content || "";
-      bubble.append(meta, body);
-
-      if (message.task) bubble.appendChild(renderTask(message.task));
-      if (message.result) bubble.appendChild(renderResult(message.result));
-      if (message.raw) bubble.appendChild(renderRaw(message.raw, message.id));
-
-      article.append(avatar, bubble);
-      return article;
-    }
-
     function renderTask(task) {
       const wrap = document.createElement("div");
       wrap.className = "task-progress";
       const line = document.createElement("div");
-      line.className = "hint";
+      line.className = "meta";
       line.innerHTML = '状态：<strong data-task-status></strong> · 进度：<strong data-task-progress></strong>';
       const bar = document.createElement("div");
       bar.className = "progress-bar";
@@ -1688,13 +2129,13 @@
       fill.className = "progress-fill";
       bar.appendChild(fill);
       const ids = document.createElement("div");
-      ids.className = "hint";
+      ids.className = "meta";
       ids.textContent = [task.videoId ? "video_id: " + task.videoId : "", task.taskId ? "task_id: " + task.taskId : ""].filter(Boolean).join(" · ");
       wrap.append(line, bar, ids);
       setTimeout(() => {
         const status = wrap.querySelector("[data-task-status]");
         const progress = wrap.querySelector("[data-task-progress]");
-        if (status) status.textContent = task.status || "unknown";
+        if (status) status.textContent = statusLabel(task.status || "unknown");
         if (progress) progress.textContent = String(task.progress || 0) + "%";
         fill.style.width = String(Math.min(100, Math.max(0, task.progress || 0))) + "%";
       });
@@ -1718,13 +2159,13 @@
       const actions = document.createElement("div");
       actions.className = "message-actions";
       const open = document.createElement("a");
-      open.className = "secondary-button";
+      open.className = "debug-button";
       open.href = result.url;
       open.target = "_blank";
       open.rel = "noopener noreferrer";
       open.textContent = "打开";
       const download = document.createElement("a");
-      download.className = "secondary-button";
+      download.className = "debug-button";
       download.href = result.url;
       download.download = result.downloadName || "agnes-result";
       download.textContent = "下载";
@@ -1734,47 +2175,48 @@
     }
 
     function renderRaw(raw, id) {
-      const wrap = document.createElement("details");
-      wrap.className = "json-preview";
+      const details = document.createElement("details");
+      details.className = "debug-details";
       const summary = document.createElement("summary");
-      summary.textContent = "原始 JSON";
+      summary.textContent = "调试详情";
       const pre = document.createElement("pre");
       pre.className = "raw-block";
       pre.textContent = stringify(raw);
+      const actions = document.createElement("div");
+      actions.className = "message-actions";
       const button = document.createElement("button");
-      button.className = "secondary-button";
+      button.className = "debug-button";
       button.type = "button";
-      button.textContent = "复制原始 JSON";
+      button.textContent = "复制调试详情";
       button.addEventListener("click", async () => {
         await copyText(stringify(raw));
-        toast("消息 " + id.slice(0, 8) + " 的 JSON 已复制");
+        toast("调试详情已复制");
       });
-      wrap.append(summary, pre, button);
-      return wrap;
+      actions.appendChild(button);
+      details.append(summary, pre, actions);
+      return details;
     }
 
-    function splitList(value) {
-      return value
-        .split(/[\n,]+/)
-        .map((item) => item.trim())
-        .filter(Boolean);
+    function saveActive() {
+      const session = activeSession();
+      if (!session) return;
+      session.settings = readSettings();
+      session.updatedAt = Date.now();
+      moveActiveToTop();
+      saveSessions();
+      renderHistory();
     }
 
-    function statusLabel(status) {
-      return {
-        done: "完成",
-        loading: "创作中",
-        error: "需要处理",
-        queued: "排队中",
-        in_progress: "生成中",
-        completed: "完成",
-        failed: "失败",
-        unknown: "处理中"
-      }[status] || status;
+    function moveActiveToTop() {
+      const idx = state.sessions.findIndex((session) => session.id === state.activeSessionId);
+      if (idx > 0) {
+        const [session] = state.sessions.splice(idx, 1);
+        state.sessions.unshift(session);
+      }
     }
 
     function applyVideoDurationPreset() {
-      if (els.videoDuration.value === "custom") return;
+      if (!els.videoDuration || els.videoDuration.value === "custom") return;
       const [frames, fps] = els.videoDuration.value.split(":");
       els.videoFrames.value = frames;
       els.videoFrameRate.value = fps;
@@ -1786,6 +2228,10 @@
         num_frames: Math.min(441, Math.max(9, parseInt(els.videoFrames.value, 10) || 121)),
         frame_rate: Math.min(60, Math.max(1, parseFloat(els.videoFrameRate.value) || 24))
       };
+    }
+
+    function splitList(value) {
+      return value.split(/[\n,]+/).map((item) => item.trim()).filter(Boolean);
     }
 
     function numberOrDefault(value, fallback) {
@@ -1811,9 +2257,45 @@
         return "这次没有连上 Agnes。请检查网络连接，稍后再试。";
       }
       if (error && error.status) {
-        return "这次创作没有成功。可以展开原始 JSON 查看 Agnes 返回的详细信息。";
+        return "这次创作没有成功。可以展开调试详情查看 Agnes 返回的信息。";
       }
       return message;
+    }
+
+    function statusLabel(status) {
+      return {
+        done: "完成",
+        loading: "生成中",
+        error: "需要处理",
+        queued: "排队中",
+        in_progress: "生成中",
+        completed: "完成",
+        failed: "失败",
+        unknown: "处理中"
+      }[status] || status;
+    }
+
+    function makeTitle(content) {
+      return content.replace(/\s+/g, " ").trim().slice(0, 26) || "新的对话";
+    }
+
+    function makeId() {
+      return crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
+    }
+
+    function startOfDay(time) {
+      const date = new Date(time);
+      date.setHours(0, 0, 0, 0);
+      return date.getTime();
+    }
+
+    function formatMonth(time) {
+      const date = new Date(time);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char]));
     }
 
     function scrollToBottom() {
