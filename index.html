@@ -1699,7 +1699,7 @@
                   </div>
                 </div>
               </details>
-              <button class="advanced-mode-button" id="advancedModeButton" type="button" aria-pressed="false">高级</button>
+              <button class="advanced-mode-button" id="advancedModeButton" type="button" aria-pressed="false">高级选项</button>
               <span class="attachment-hint" id="attachmentHint"></span>
             </div>
             <div class="composer-right-tools">
@@ -2407,7 +2407,7 @@
       els.promptInput.placeholder = config.placeholder;
       els.sendButton.title = config.buttonLabel;
       els.advancedModeButton.setAttribute("aria-pressed", String(state.advancedMode));
-      els.advancedModeButton.textContent = state.advancedMode ? "普通" : "高级";
+      els.advancedModeButton.textContent = "高级选项";
       els.advancedSettings.hidden = !state.advancedMode;
       els.advancedSettings.open = state.advancedMode;
       const hasSimpleOptions = Array.from(els.simpleSettings.querySelectorAll("[data-simple-param]")).some((el) => el.dataset.simpleParam === state.mode);
