@@ -261,9 +261,9 @@
     }
 
     .textarea {
-      min-height: 118px;
-      max-height: 240px;
-      padding: 12px 8px;
+      min-height: 88px;
+      max-height: 200px;
+      padding: 8px 6px;
       border: 0;
       background: transparent;
       resize: none;
@@ -868,17 +868,17 @@
     }
 
     .composer-wrap {
-      padding: 0 24px 22px;
+      padding: 0 24px 18px;
     }
 
     .composer {
       display: grid;
-      gap: 12px;
+      gap: 9px;
       width: min(900px, 100%);
       margin: 0 auto;
-      padding: 18px;
+      padding: 14px;
       border: 1px solid var(--line);
-      border-radius: 28px;
+      border-radius: 24px;
       background: color-mix(in srgb, var(--panel), var(--bg) 6%);
       box-shadow: var(--shadow);
     }
@@ -919,7 +919,6 @@
       gap: 10px;
       align-items: end;
       min-width: 0;
-      padding-top: 2px;
     }
 
     .composer-left-tools,
@@ -955,8 +954,8 @@
     .send-button {
       display: inline-grid;
       place-items: center;
-      width: 48px;
-      height: 48px;
+      width: 44px;
+      height: 44px;
       border-radius: 999px;
       color: #fff;
       background: color-mix(in srgb, var(--brand), var(--panel-3) 18%);
@@ -973,6 +972,7 @@
     }
 
     .advanced-mode-button,
+    .composer-options,
     .composer-toggle {
       position: relative;
       display: inline-flex;
@@ -996,6 +996,7 @@
     }
 
     .advanced-mode-button[aria-pressed="true"],
+    .composer-options[aria-expanded="true"],
     .composer-toggle:has(input:checked) {
       color: color-mix(in srgb, var(--brand), white 14%);
       border-color: color-mix(in srgb, var(--brand), var(--line) 28%);
@@ -1236,40 +1237,9 @@
       gap: 10px;
     }
 
-    .composer-options {
-      border-top: 1px solid var(--line);
-      padding-top: 8px;
-    }
-
     .composer-toolbar .composer-options {
       grid-column: 1;
       grid-row: 1;
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      min-height: 32px;
-      padding: 0;
-      border: 0;
-      color: var(--muted);
-      background: transparent;
-      font-size: 13px;
-      font-weight: 800;
-      list-style: none;
-      cursor: pointer;
-    }
-
-    .composer-options::after {
-      content: "";
-      width: 8px;
-      height: 8px;
-      border-right: 2px solid currentColor;
-      border-bottom: 2px solid currentColor;
-      transform: rotate(45deg) translateY(-1px);
-      transition: transform 150ms ease;
-    }
-
-    .composer-options[aria-expanded="true"]::after {
-      transform: rotate(225deg) translate(-1px, -1px);
     }
 
     .composer-toolbar .simple-settings {
@@ -1500,7 +1470,7 @@
       }
 
       .send-button {
-        width: 48px;
+        width: 44px;
       }
 
       .quick-text-options:not([hidden]) {
