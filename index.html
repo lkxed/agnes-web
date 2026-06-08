@@ -1351,21 +1351,6 @@
             </button>
           </div>
         </div>
-        <div class="connection-card">
-          <div class="connection-head">
-            <span class="connection-title">连接图床</span>
-            <span class="status-pill" id="imageHostStatus"><span class="status-dot"></span><span>未连接</span></span>
-          </div>
-          <div class="api-key-row">
-            <input class="input" id="imageHostTokenInput" autocomplete="off" spellcheck="false" type="password" placeholder="粘贴 s.ee Authorization">
-            <button class="icon-button" id="toggleImageHostTokenButton" type="button" title="显示或隐藏图床授权" aria-label="显示或隐藏图床授权">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-            </button>
-            <button class="icon-button" id="clearImageHostTokenButton" type="button" title="清除图床授权" aria-label="清除图床授权">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path></svg>
-            </button>
-          </div>
-        </div>
       </div>
     </aside>
 
@@ -1574,7 +1559,7 @@
 
   <script>
     const API_BASE = "https://apihub.agnes-ai.com";
-    const IMAGE_HOST_UPLOAD_URL = "https://s.ee/api/v1/file/upload";
+    const IMAGE_HOST_UPLOAD_URL = "https://img.scdn.io/api/v1.php";
     const STORAGE_KEY = "agnes_chat_sessions_v1";
     const TEXT_DEFAULT_MODEL = "agnes-2.0-flash";
     const TEXT_IMAGE_MODEL = "agnes-1.5-flash";
@@ -1689,7 +1674,6 @@
       activeSessionId: null,
       mode: "text",
       apiKey: sessionStorage.getItem("agnes_api_key") || "",
-      imageHostToken: sessionStorage.getItem("see_image_host_token") || "",
       busy: false,
       historyQuery: "",
       attachments: emptyAttachments(),
@@ -1704,10 +1688,6 @@
       toggleKeyButton: document.getElementById("toggleKeyButton"),
       clearKeyButton: document.getElementById("clearKeyButton"),
       keyStatus: document.getElementById("keyStatus"),
-      imageHostTokenInput: document.getElementById("imageHostTokenInput"),
-      toggleImageHostTokenButton: document.getElementById("toggleImageHostTokenButton"),
-      clearImageHostTokenButton: document.getElementById("clearImageHostTokenButton"),
-      imageHostStatus: document.getElementById("imageHostStatus"),
       newChatButton: document.getElementById("newChatButton"),
       mobileNewChatButton: document.getElementById("mobileNewChatButton"),
       historySearchInput: document.getElementById("historySearchInput"),
@@ -1772,13 +1752,9 @@
       loadSessions();
       if (!state.sessions.length) createSession(false);
       state.apiKey = sessionStorage.getItem("agnes_api_key") || "";
-      state.imageHostToken = sessionStorage.getItem("see_image_host_token") || "";
       els.apiKeyInput.value = state.apiKey;
-      els.imageHostTokenInput.value = state.imageHostToken;
       updateKeyStatus();
-      updateImageHostStatus();
       updateKeyVisibilityIcon();
-      updateImageHostVisibilityIcon();
       applyVideoDurationPreset();
       bindEvents();
       renderAll();
@@ -1803,26 +1779,6 @@
         sessionStorage.removeItem("agnes_api_key");
         updateKeyStatus();
         toast("已断开 Agnes 连接");
-      });
-
-      els.imageHostTokenInput.addEventListener("input", () => {
-        state.imageHostToken = els.imageHostTokenInput.value.trim();
-        if (state.imageHostToken) sessionStorage.setItem("see_image_host_token", state.imageHostToken);
-        else sessionStorage.removeItem("see_image_host_token");
-        updateImageHostStatus();
-      });
-
-      els.toggleImageHostTokenButton.addEventListener("click", () => {
-        els.imageHostTokenInput.type = els.imageHostTokenInput.type === "text" ? "password" : "text";
-        updateImageHostVisibilityIcon();
-      });
-
-      els.clearImageHostTokenButton.addEventListener("click", () => {
-        state.imageHostToken = "";
-        els.imageHostTokenInput.value = "";
-        sessionStorage.removeItem("see_image_host_token");
-        updateImageHostStatus();
-        toast("已清除图床授权");
       });
 
       els.newChatButton.addEventListener("click", () => createSession(true));
@@ -2272,24 +2228,11 @@
       els.keyStatus.querySelector("span:last-child").textContent = isReady ? "已连接" : "未连接";
     }
 
-    function updateImageHostStatus() {
-      const isReady = Boolean(state.imageHostToken);
-      els.imageHostStatus.classList.toggle("ready", isReady);
-      els.imageHostStatus.querySelector("span:last-child").textContent = isReady ? "已连接" : "未连接";
-    }
-
     function updateKeyVisibilityIcon() {
       const isVisible = els.apiKeyInput.type === "text";
       els.toggleKeyButton.innerHTML = isVisible ? ICONS.eyeOff : ICONS.eye;
       els.toggleKeyButton.title = isVisible ? "隐藏 API Key" : "显示 API Key";
       els.toggleKeyButton.setAttribute("aria-label", els.toggleKeyButton.title);
-    }
-
-    function updateImageHostVisibilityIcon() {
-      const isVisible = els.imageHostTokenInput.type === "text";
-      els.toggleImageHostTokenButton.innerHTML = isVisible ? ICONS.eyeOff : ICONS.eye;
-      els.toggleImageHostTokenButton.title = isVisible ? "隐藏图床授权" : "显示图床授权";
-      els.toggleImageHostTokenButton.setAttribute("aria-label", els.toggleImageHostTokenButton.title);
     }
 
     function setBusy(next) {
@@ -2480,20 +2423,19 @@
     }
 
     async function uploadImageToHost(item) {
-      if (!state.imageHostToken) throw new Error("请先在左侧填写图床 Authorization，再使用本地参考图生成视频。");
       if (!item || !item.dataUrl) throw new Error("图床上传失败：没有可上传的本地图片。");
       const blob = await dataUrlToBlob(item.dataUrl);
       const form = new FormData();
-      form.set("file", blob, safeUploadName(item.name || "agnes-reference.png", blob.type));
+      form.set("image", blob, safeUploadName(item.name || "agnes-reference.png", blob.type));
+      form.set("cdn_domain", "img.scdn.io");
       let response;
       try {
         response = await fetch(IMAGE_HOST_UPLOAD_URL, {
           method: "POST",
-          headers: { Authorization: state.imageHostToken },
           body: form
         });
       } catch (error) {
-        throw new Error("图床上传失败：网络请求没有成功。请检查图床授权、网络或浏览器跨域限制。详情：" + error.message);
+        throw new Error("图床上传失败：网络请求没有成功。请检查网络或浏览器跨域限制。详情：" + error.message);
       }
       const text = await response.text();
       let data = null;
@@ -2503,14 +2445,13 @@
         throw new Error("图床上传失败：响应不是有效 JSON。");
       }
       if (!response.ok) {
-        throw new Error("图床上传失败：" + (data.message || response.statusText || String(response.status)));
+        throw new Error("图床上传失败：" + (data.message || data.error || response.statusText || String(response.status)));
       }
-      const code = data && data.code;
-      if (code !== undefined && Number(code) !== 0) {
-        throw new Error("图床上传失败：" + (data.message || "返回 code " + String(code)));
+      if (data && data.success === false) {
+        throw new Error("图床上传失败：" + (data.message || data.error || "上传接口返回失败"));
       }
-      const url = data && data.data && data.data.url;
-      if (!url) throw new Error("图床上传失败：响应中没有 data.url。");
+      const url = (data && data.data && data.data.url) || (data && data.url) || "";
+      if (!url) throw new Error("图床上传失败：响应中没有 url 或 data.url。");
       return { url, raw: data };
     }
 
@@ -2676,9 +2617,6 @@
     async function handleVideo(prompt) {
       const imageFields = [els.videoImage.value, els.videoExtraImages.value].join("\n");
       const localImages = state.attachments.video || [];
-      if (localImages.length && !state.imageHostToken) {
-        throw new Error("请先在左侧填写图床 Authorization。视频本地参考图需要先上传到图床，Agnes 才能读取。");
-      }
       const remoteImages = collectImageUrls(imageFields);
       appendMessage({ mode: "video", role: "user", status: "done", content: prompt, attachments: attachmentMetas("video", imageFields) });
       const assistant = appendMessage({
