@@ -1603,11 +1603,11 @@
               <div class="quick-text-options" id="quickTextOptions" data-simple-param="text" hidden>
                 <label class="composer-toggle" for="textThinking">
                   <input id="textThinking" type="checkbox">
-                  <span data-basic-label="思考模式" data-advanced-label="chat_template_kwargs.enable_thinking">思考模式</span>
+                  <span data-basic-label="思考模式" data-advanced-label="chat_template_kwargs.enable_thinking" data-keep-basic-label>思考模式</span>
                 </label>
                 <label class="composer-toggle" for="textStream">
                   <input id="textStream" type="checkbox">
-                  <span data-basic-label="流式输出" data-advanced-label="stream">流式输出</span>
+                  <span data-basic-label="流式输出" data-advanced-label="stream" data-keep-basic-label>流式输出</span>
                 </label>
               </div>
               <button class="composer-options" id="optionsSettings" type="button" aria-expanded="false">创作选项</button>
@@ -2391,7 +2391,8 @@
     function renderFieldLabels() {
       const key = state.advancedMode ? "advancedLabel" : "basicLabel";
       document.querySelectorAll("[data-basic-label][data-advanced-label]").forEach((node) => {
-        node.textContent = node.dataset[key] || node.textContent;
+        const labelKey = node.hasAttribute("data-keep-basic-label") ? "basicLabel" : key;
+        node.textContent = node.dataset[labelKey] || node.textContent;
       });
     }
 
