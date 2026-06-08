@@ -760,6 +760,12 @@
       height: 17px;
     }
 
+    .message-footer .debug-button {
+      min-height: 30px;
+      padding: 5px 9px;
+      font-size: 12px;
+    }
+
     .message-actions {
       display: flex;
       flex-wrap: wrap;
@@ -3449,8 +3455,23 @@
       if (message.role === "user") {
         actions.appendChild(renderMessageAction("编辑", "edit", () => startEditMessage(message.id)));
       }
+      if (message.result && message.result.url) {
+        actions.appendChild(renderResultAction("新标签页打开", () => openInNewTab(message.result.url)));
+        if (message.result.kind === "video") {
+          actions.appendChild(renderResultAction("下载", () => downloadImage(message.result.url, message.result.downloadName || "agnes-result")));
+        }
+      }
       footer.append(info, actions);
       return footer;
+    }
+
+    function renderResultAction(label, handler) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "debug-button";
+      button.textContent = label;
+      button.addEventListener("click", handler);
+      return button;
     }
 
     function renderMessageAction(label, icon, handler) {
@@ -3627,23 +3648,6 @@
       }
       media.src = result.url;
       wrap.appendChild(media);
-      const actions = document.createElement("div");
-      actions.className = "message-actions";
-      const open = document.createElement("button");
-      open.className = "debug-button";
-      open.type = "button";
-      open.textContent = result.kind === "image" ? "新标签页打开" : "打开";
-      open.addEventListener("click", () => openInNewTab(result.url));
-      actions.appendChild(open);
-      if (result.kind === "video") {
-        const download = document.createElement("button");
-        download.className = "debug-button";
-        download.type = "button";
-        download.textContent = "下载";
-        download.addEventListener("click", () => downloadImage(result.url, result.downloadName || "agnes-result"));
-        actions.appendChild(download);
-      }
-      wrap.appendChild(actions);
       return wrap;
     }
 
