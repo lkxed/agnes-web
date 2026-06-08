@@ -945,23 +945,34 @@
     }
 
     .message-attachment {
-      grid-template-columns: 34px minmax(0, 1fr);
+      grid-template-columns: 42px minmax(0, 1fr);
       max-width: 360px;
+      color: inherit;
+      text-decoration: none;
     }
 
+    .message-attachment-preview,
     .message-attachment-icon {
       display: grid;
       place-items: center;
-      width: 34px;
-      height: 34px;
+      width: 42px;
+      height: 42px;
       border-radius: 9px;
       color: color-mix(in srgb, var(--brand), white 18%);
       background: color-mix(in srgb, var(--brand), transparent 86%);
+      overflow: hidden;
     }
 
     .message-attachment-icon svg {
       width: 17px;
       height: 17px;
+    }
+
+    .message-attachment-preview img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
     .simple-settings,
@@ -1341,6 +1352,7 @@
               <div class="field" data-simple-param="image" hidden>
                 <label for="imageSize" data-basic-label="画面比例" data-advanced-label="size">画面比例</label>
                 <select class="select" id="imageSize">
+                  <option value="auto">保持原比例 · 自动</option>
                   <option value="1024x768">横版海报 · 1024x768</option>
                   <option value="768x1024">竖版封面 · 768x1024</option>
                   <option value="1024x1024">方形头像 · 1024x1024</option>
@@ -1355,6 +1367,7 @@
               <div class="field" data-simple-param="video" hidden>
                 <label for="videoSize" data-basic-label="画面比例" data-advanced-label="width / height">画面比例</label>
                 <select class="select" id="videoSize">
+                  <option value="auto">保持原比例 · 自动</option>
                   <option value="1152x768">横版短片 · 1152x768</option>
                   <option value="1280x768">宽屏展示 · 1280x768</option>
                   <option value="1024x576">轻量横版 · 1024x576</option>
@@ -1457,6 +1470,7 @@
     const OPTION_TEXT = {
       imageSize: {
         basic: {
+          auto: "保持原比例 · 自动",
           "1024x768": "横版海报 · 1024x768",
           "768x1024": "竖版封面 · 768x1024",
           "1024x1024": "方形头像 · 1024x1024",
@@ -1464,6 +1478,7 @@
           "720x1280": "手机竖屏 · 720x1280"
         },
         advanced: {
+          auto: "size omitted · keep source/default ratio",
           "1024x768": "size = 1024x768 · landscape 4:3",
           "768x1024": "size = 768x1024 · portrait 3:4",
           "1024x1024": "size = 1024x1024 · square 1:1",
@@ -1473,12 +1488,14 @@
       },
       videoSize: {
         basic: {
+          auto: "保持原比例 · 自动",
           "1152x768": "横版短片 · 1152x768",
           "1280x768": "宽屏展示 · 1280x768",
           "1024x576": "轻量横版 · 1024x576",
           "768x1152": "手机竖屏 · 768x1152"
         },
         advanced: {
+          auto: "width / height omitted · keep source/default ratio",
           "1152x768": "width = 1152 · height = 768",
           "1280x768": "width = 1280 · height = 768",
           "1024x576": "width = 1024 · height = 576",
@@ -1782,10 +1799,10 @@
         textImageUrl: "",
         textStream: false,
         textThinking: false,
-        imageSize: "1024x768",
+        imageSize: "auto",
         imageOutput: "url",
         imageInputs: "",
-        videoSize: "1152x768",
+        videoSize: "auto",
         videoDuration: "121:24",
         videoFrames: "121",
         videoFrameRate: "24",
@@ -1848,8 +1865,19 @@
           result: sanitizeResultForStorage(message.result),
           thinking: message.thinking || "",
           usage: message.usage || null,
-          attachments: (message.attachments || []).map(({ id, name, type, size }) => ({ id, name, type, size }))
+          attachments: (message.attachments || []).map(sanitizeAttachmentForStorage)
         }))
+      };
+    }
+
+    function sanitizeAttachmentForStorage(item) {
+      const previewUrl = typeof item.previewUrl === "string" && item.previewUrl.startsWith("data:image/") ? "" : item.previewUrl || "";
+      return {
+        id: item.id,
+        name: item.name,
+        type: item.type,
+        size: item.size || 0,
+        previewUrl
       };
     }
 
@@ -2221,8 +2249,22 @@
       renderAttachments();
     }
 
-    function attachmentMetas(mode) {
-      return (state.attachments[mode] || []).map(({ id, name, type, size }) => ({ id, name, type, size }));
+    function attachmentMetas(mode, urlText) {
+      const local = (state.attachments[mode] || []).map(({ id, name, type, size, dataUrl }) => ({
+        id,
+        name,
+        type,
+        size,
+        previewUrl: dataUrl
+      }));
+      const remote = splitList(urlText || "").map((url, index) => ({
+        id: "url-" + mode + "-" + index + "-" + makeId(),
+        name: shortUrlName(url),
+        type: "image/url",
+        size: 0,
+        previewUrl: url
+      }));
+      return [...remote, ...local];
     }
 
     function attachmentDataUrls(mode) {
@@ -2244,7 +2286,7 @@
 
     async function handleText(prompt) {
       const textImages = collectImages("text", els.textImageUrl.value);
-      const userMessage = appendMessage({ mode: "text", role: "user", status: "done", content: prompt, attachments: attachmentMetas("text") });
+      const userMessage = appendMessage({ mode: "text", role: "user", status: "done", content: prompt, attachments: attachmentMetas("text", els.textImageUrl.value) });
       const assistant = appendMessage({ mode: "text", role: "assistant", status: "loading", content: "" });
       const content = buildTextContent(prompt, textImages);
       const hasImages = textImages.length > 0;
@@ -2350,15 +2392,15 @@
     }
 
     async function handleImage(prompt) {
-      appendMessage({ mode: "image", role: "user", status: "done", content: prompt, attachments: attachmentMetas("image") });
+      appendMessage({ mode: "image", role: "user", status: "done", content: prompt, attachments: attachmentMetas("image", els.imageInputs.value) });
       const assistant = appendMessage({ mode: "image", role: "assistant", status: "loading", content: "正在创作图片，请稍等..." });
       const inputImages = collectImages("image", els.imageInputs.value);
       const output = els.imageOutput.value;
       const payload = {
         model: "agnes-image-2.1-flash",
-        prompt,
-        size: els.imageSize.value
+        prompt
       };
+      if (els.imageSize.value !== "auto") payload.size = els.imageSize.value;
       if (inputImages.length) {
         payload.extra_body = { image: inputImages, response_format: output === "base64" ? "b64_json" : "url" };
       } else if (output === "base64") {
@@ -2387,17 +2429,19 @@
     }
 
     async function handleVideo(prompt) {
-      appendMessage({ mode: "video", role: "user", status: "done", content: prompt, attachments: attachmentMetas("video") });
+      appendMessage({ mode: "video", role: "user", status: "done", content: prompt, attachments: attachmentMetas("video", [els.videoImage.value, els.videoExtraImages.value].join("\n")) });
       const assistant = appendMessage({ mode: "video", role: "assistant", status: "loading", content: "正在开始制作视频..." });
-      const [width, height] = els.videoSize.value.split("x").map((value) => parseInt(value, 10));
       const inputImages = collectImages("video", [els.videoImage.value, els.videoExtraImages.value].join("\n"));
       const payload = {
         model: "agnes-video-v2.0",
         prompt,
-        width,
-        height,
         ...getVideoTiming()
       };
+      if (els.videoSize.value !== "auto") {
+        const [width, height] = els.videoSize.value.split("x").map((value) => parseInt(value, 10));
+        payload.width = width;
+        payload.height = height;
+      }
       if (inputImages.length === 1) payload.image = inputImages[0];
       if (inputImages.length > 1) payload.extra_body = { image: inputImages };
       const negative = els.videoNegative.value.trim();
@@ -2710,20 +2754,37 @@
       const wrap = document.createElement("div");
       wrap.className = "message-attachments";
       attachments.forEach((item) => {
-        const row = document.createElement("div");
+        const hasPreview = Boolean(item.previewUrl);
+        const row = document.createElement(hasPreview ? "a" : "div");
         row.className = "message-attachment";
-        const icon = document.createElement("div");
-        icon.className = "message-attachment-icon";
-        icon.innerHTML = ICONS.image;
+        if (hasPreview) {
+          row.href = item.previewUrl;
+          row.target = "_blank";
+          row.rel = "noopener noreferrer";
+          row.title = "预览 " + (item.name || "参考图");
+        }
+        let preview;
+        if (hasPreview) {
+          preview = document.createElement("div");
+          preview.className = "message-attachment-preview";
+          const img = document.createElement("img");
+          img.src = item.previewUrl;
+          img.alt = item.name || "参考图";
+          preview.appendChild(img);
+        } else {
+          preview = document.createElement("div");
+          preview.className = "message-attachment-icon";
+          preview.innerHTML = ICONS.image;
+        }
         const text = document.createElement("div");
         const name = document.createElement("div");
         name.className = "message-attachment-name";
-        name.textContent = item.name || "本地图片";
+        name.textContent = item.name || "参考图";
         const size = document.createElement("div");
         size.className = "message-attachment-size";
-        size.textContent = formatBytes(item.size || 0);
+        size.textContent = hasPreview ? "点击预览" : formatBytes(item.size || 0);
         text.append(name, size);
-        row.append(icon, text);
+        row.append(preview, text);
         wrap.appendChild(row);
       });
       return wrap;
@@ -2844,6 +2905,16 @@
 
     function splitList(value) {
       return value.split(/[\n,]+/).map((item) => item.trim()).filter(Boolean);
+    }
+
+    function shortUrlName(url) {
+      try {
+        const parsed = new URL(url);
+        const last = parsed.pathname.split("/").filter(Boolean).pop();
+        return last || parsed.hostname || "参考图 URL";
+      } catch (error) {
+        return "参考图 URL";
+      }
     }
 
     function numberOrDefault(value, fallback) {
