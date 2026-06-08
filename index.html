@@ -2367,7 +2367,7 @@
       const count = (state.attachments[state.mode] || []).length;
       if (state.mode === "text") return count ? "图片理解模式" : "可添加图片一起提问";
       if (state.mode === "image") return count ? "已作为参考图" : "可添加多张参考图";
-      return count ? "已作为视频参考图" : "可添加多张参考图或关键帧";
+      return count ? "本地图片仅用于预览；生成视频请填写公开图片 URL" : "视频参考图需要公开图片 URL";
     }
 
     function removeAttachment(mode, id) {
@@ -2380,14 +2380,15 @@
       renderAttachments();
     }
 
-    function attachmentMetas(mode, urlText) {
-      const local = (state.attachments[mode] || []).map(({ id, name, type, size, dataUrl }) => ({
+    function attachmentMetas(mode, urlText, options = {}) {
+      const includeLocal = options.includeLocal !== false;
+      const local = includeLocal ? (state.attachments[mode] || []).map(({ id, name, type, size, dataUrl }) => ({
         id,
         name,
         type,
         size,
         previewUrl: dataUrl
-      }));
+      })) : [];
       const remote = splitList(urlText || "").map((url, index) => ({
         id: "url-" + mode + "-" + index + "-" + makeId(),
         name: shortUrlName(url),
@@ -2404,6 +2405,10 @@
 
     function collectImages(mode, urlText) {
       return [...splitList(urlText || ""), ...attachmentDataUrls(mode)];
+    }
+
+    function collectImageUrls(urlText) {
+      return splitList(urlText || "");
     }
 
     function fileToDataUrl(file) {
@@ -2560,9 +2565,17 @@
     }
 
     async function handleVideo(prompt) {
-      appendMessage({ mode: "video", role: "user", status: "done", content: prompt, attachments: attachmentMetas("video", [els.videoImage.value, els.videoExtraImages.value].join("\n")) });
+      const imageFields = [els.videoImage.value, els.videoExtraImages.value].join("\n");
+      const localImageCount = (state.attachments.video || []).length;
+      const inputImages = collectImageUrls(imageFields);
+      if (localImageCount && !inputImages.length) {
+        throw new Error("视频生成暂不支持直接上传本地参考图。Agnes 视频 API 需要可公开访问的图片 URL，请先把图片上传到图床，或在“参考图 URL / 关键帧 URL”里粘贴公开图片地址后再生成。");
+      }
+      if (localImageCount && inputImages.length) {
+        toast("本地上传图片仅用于预览；本次视频会使用已填写的公开图片 URL。");
+      }
+      appendMessage({ mode: "video", role: "user", status: "done", content: prompt, attachments: attachmentMetas("video", imageFields, { includeLocal: false }) });
       const assistant = appendMessage({ mode: "video", role: "assistant", status: "loading", content: "正在开始制作视频..." });
-      const inputImages = collectImages("video", [els.videoImage.value, els.videoExtraImages.value].join("\n"));
       const payload = {
         model: "agnes-video-v2.0",
         prompt,
