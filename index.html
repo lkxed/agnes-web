@@ -3471,9 +3471,6 @@
       }
       if (message.result && message.result.url) {
         actions.appendChild(createTextButton("新标签页打开", () => openInNewTab(message.result.url)));
-        if (message.result.kind === "video") {
-          actions.appendChild(createTextButton("下载", () => downloadMedia(message.result.url, message.result.downloadName || "agnes-result")));
-        }
       }
       footer.append(info, actions);
       return footer;
