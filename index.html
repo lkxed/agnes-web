@@ -168,6 +168,7 @@
     .ghost-button,
     .send-button,
     .mode-pill,
+    .tool-button,
     .suggestion-chip,
     .history-item,
     .debug-button {
@@ -195,6 +196,7 @@
     .ghost-button svg,
     .send-button svg,
     .mode-pill svg,
+    .tool-button svg,
     .debug-button svg {
       width: 18px;
       height: 18px;
@@ -783,6 +785,116 @@
       gap: 10px;
     }
 
+    .attachment-panel {
+      display: grid;
+      gap: 9px;
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+    }
+
+    .attachment-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .tool-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 36px;
+      padding: 8px 12px;
+      color: var(--muted);
+      background: var(--panel-2);
+      font-size: 13px;
+      font-weight: 800;
+      transition: background 150ms ease, color 150ms ease, transform 120ms ease;
+    }
+
+    .tool-button:hover {
+      color: var(--text);
+      background: var(--panel-3);
+      transform: translateY(-1px);
+    }
+
+    .attachment-hint {
+      color: var(--subtle);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .attachment-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 8px;
+    }
+
+    .attachment-chip,
+    .message-attachment {
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      min-width: 0;
+      padding: 7px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: color-mix(in srgb, var(--panel), var(--bg) 8%);
+    }
+
+    .attachment-chip img {
+      width: 42px;
+      height: 42px;
+      border-radius: 9px;
+      object-fit: cover;
+      background: var(--panel-2);
+    }
+
+    .attachment-name,
+    .message-attachment-name {
+      min-width: 0;
+      overflow: hidden;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 800;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .attachment-size,
+    .message-attachment-size {
+      color: var(--subtle);
+      font-size: 11px;
+    }
+
+    .message-attachments {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .message-attachment {
+      grid-template-columns: 34px minmax(0, 1fr);
+      max-width: 360px;
+    }
+
+    .message-attachment-icon {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      color: color-mix(in srgb, var(--brand), white 18%);
+      background: color-mix(in srgb, var(--brand), transparent 86%);
+    }
+
+    .message-attachment-icon svg {
+      width: 17px;
+      height: 17px;
+    }
+
     .simple-settings,
     .advanced-fields {
       display: grid;
@@ -1125,45 +1237,61 @@
           </div>
 
           <div class="composer-tools">
+            <div class="attachment-panel" id="attachmentPanel">
+              <div class="attachment-actions">
+                <button class="tool-button" id="uploadImagesButton" type="button">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.6-8.5 8.5a5 5 0 0 1-7.1-7.1l9.2-9.2a3.5 3.5 0 0 1 5 5l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"></path></svg>
+                  <span id="uploadImagesLabel">添加图片</span>
+                </button>
+                <button class="tool-button" id="clearAttachmentsButton" type="button" hidden>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path></svg>
+                  清除图片
+                </button>
+                <span class="attachment-hint" id="attachmentHint"></span>
+              </div>
+              <input id="imageFileInput" type="file" accept="image/*" multiple hidden>
+              <div class="attachment-list" id="attachmentList" aria-label="已添加图片" hidden></div>
+            </div>
+
             <div class="simple-settings" id="simpleSettings">
               <div class="field" data-simple-param="image" hidden>
                 <label for="imageSize">画面比例</label>
                 <select class="select" id="imageSize">
-                  <option value="1024x768">横版海报</option>
-                  <option value="768x1024">竖版封面</option>
-                  <option value="1024x1024">方形头像</option>
-                  <option value="1280x720">宽屏封面</option>
-                  <option value="720x1280">手机竖屏</option>
+                  <option value="1024x768">横版海报 · 1024x768</option>
+                  <option value="768x1024">竖版封面 · 768x1024</option>
+                  <option value="1024x1024">方形头像 · 1024x1024</option>
+                  <option value="1280x720">宽屏封面 · 1280x720</option>
+                  <option value="720x1280">手机竖屏 · 720x1280</option>
                 </select>
               </div>
               <div class="field wide" data-simple-param="image" hidden>
-                <label for="imageInputs">参考图片</label>
+                <label for="imageInputs">参考图 URL</label>
                 <input class="input" id="imageInputs" spellcheck="false" placeholder="公开图片 URL，多个可用换行分隔">
               </div>
               <div class="field" data-simple-param="video" hidden>
                 <label for="videoSize">画面比例</label>
                 <select class="select" id="videoSize">
-                  <option value="1152x768">横版短片</option>
-                  <option value="1280x768">宽屏展示</option>
-                  <option value="1024x576">轻量横版</option>
-                  <option value="768x1152">手机竖屏</option>
+                  <option value="1152x768">横版短片 · 1152x768</option>
+                  <option value="1280x768">宽屏展示 · 1280x768</option>
+                  <option value="1024x576">轻量横版 · 1024x576</option>
+                  <option value="768x1152">手机竖屏 · 768x1152</option>
                 </select>
               </div>
               <div class="field" data-simple-param="video" hidden>
                 <label for="videoDuration">视频长度</label>
                 <select class="select" id="videoDuration">
-                  <option value="121:24">标准短片</option>
-                  <option value="81:24">更短更快</option>
-                  <option value="201:24">更长展示</option>
-                  <option value="custom">使用高级设置</option>
+                  <option value="121:24">标准短片 · 121 帧 / 24 FPS</option>
+                  <option value="81:24">更短更快 · 81 帧 / 24 FPS</option>
+                  <option value="201:24">更长展示 · 201 帧 / 24 FPS</option>
+                  <option value="custom">使用高级设置 · 自定义帧数 / FPS</option>
                 </select>
               </div>
               <div class="field wide" data-simple-param="video" hidden>
-                <label for="videoImage">参考图</label>
+                <label for="videoImage">参考图 URL</label>
                 <input class="input" id="videoImage" type="url" placeholder="公开图片 URL">
               </div>
               <div class="field wide" data-simple-param="video" hidden>
-                <label for="videoExtraImages">关键帧</label>
+                <label for="videoExtraImages">关键帧 URL</label>
                 <input class="input" id="videoExtraImages" spellcheck="false" placeholder="多张公开图片 URL，可用换行分隔">
               </div>
             </div>
@@ -1228,6 +1356,16 @@
   <script>
     const API_BASE = "https://apihub.agnes-ai.com";
     const STORAGE_KEY = "agnes_chat_sessions_v1";
+    const TEXT_DEFAULT_MODEL = "agnes-2.0-flash";
+    const TEXT_IMAGE_MODEL = "agnes-1.5-flash";
+    const MAX_ATTACHMENTS = 8;
+    const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
+
+    const ICONS = {
+      eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>',
+      eyeOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 2 20 20"></path><path d="M6.7 6.7C3.9 8.7 2 12 2 12s3 7 10 7c1.7 0 3.2-.4 4.5-1"></path><path d="M10.1 5.2A10.8 10.8 0 0 1 12 5c7 0 10 7 10 7a14.2 14.2 0 0 1-3.1 4.2"></path><path d="M14.1 14.1A3 3 0 0 1 9.9 9.9"></path></svg>',
+      image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M21 15l-5-5L5 21"></path></svg>'
+    };
 
     const MODE_CONFIG = {
       text: {
@@ -1271,7 +1409,8 @@
       mode: "text",
       apiKey: sessionStorage.getItem("agnes_api_key") || "",
       busy: false,
-      historyQuery: ""
+      historyQuery: "",
+      attachments: emptyAttachments()
     };
 
     const els = {
@@ -1306,6 +1445,12 @@
       textImageUrl: document.getElementById("textImageUrl"),
       textStream: document.getElementById("textStream"),
       textThinking: document.getElementById("textThinking"),
+      uploadImagesButton: document.getElementById("uploadImagesButton"),
+      uploadImagesLabel: document.getElementById("uploadImagesLabel"),
+      clearAttachmentsButton: document.getElementById("clearAttachmentsButton"),
+      imageFileInput: document.getElementById("imageFileInput"),
+      attachmentHint: document.getElementById("attachmentHint"),
+      attachmentList: document.getElementById("attachmentList"),
       imageSize: document.getElementById("imageSize"),
       imageOutput: document.getElementById("imageOutput"),
       imageInputs: document.getElementById("imageInputs"),
@@ -1327,6 +1472,7 @@
       state.apiKey = sessionStorage.getItem("agnes_api_key") || "";
       els.apiKeyInput.value = state.apiKey;
       updateKeyStatus();
+      updateKeyVisibilityIcon();
       applyVideoDurationPreset();
       bindEvents();
       renderAll();
@@ -1342,6 +1488,7 @@
 
       els.toggleKeyButton.addEventListener("click", () => {
         els.apiKeyInput.type = els.apiKeyInput.type === "text" ? "password" : "text";
+        updateKeyVisibilityIcon();
       });
 
       els.clearKeyButton.addEventListener("click", () => {
@@ -1375,6 +1522,10 @@
         els.promptInput.focus();
       });
 
+      els.uploadImagesButton.addEventListener("click", () => els.imageFileInput.click());
+      els.imageFileInput.addEventListener("change", handleImageFileSelection);
+      els.clearAttachmentsButton.addEventListener("click", () => clearModeAttachments(state.mode));
+
       els.videoDuration.addEventListener("change", () => {
         applyVideoDurationPreset();
         persistActiveSettings();
@@ -1401,7 +1552,7 @@
           toast("当前没有可复制的对话记录");
           return;
         }
-        await copyText(JSON.stringify(session.messages, null, 2));
+        await copyText(JSON.stringify(serializeSession(session).messages, null, 2));
         toast("对话记录已复制");
       });
 
@@ -1421,10 +1572,12 @@
 
         try {
           setBusy(true);
-          if (state.mode === "text") await handleText(prompt);
-          if (state.mode === "image") await handleImage(prompt);
-          if (state.mode === "video") await handleVideo(prompt);
+          const mode = state.mode;
+          if (mode === "text") await handleText(prompt);
+          if (mode === "image") await handleImage(prompt);
+          if (mode === "video") await handleVideo(prompt);
           els.promptInput.value = "";
+          clearModeAttachments(mode);
         } catch (error) {
           showRequestError(error);
         } finally {
@@ -1450,6 +1603,7 @@
       state.sessions.unshift(session);
       state.activeSessionId = session.id;
       state.mode = session.mode;
+      state.attachments = emptyAttachments();
       applySettings(session.settings);
       saveSessions();
       if (render) {
@@ -1516,11 +1670,46 @@
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
           activeSessionId: state.activeSessionId,
-          sessions: state.sessions.slice(0, 80)
+          sessions: state.sessions.slice(0, 80).map(serializeSession)
         }));
       } catch (error) {
         console.warn("Unable to save sessions", error);
       }
+    }
+
+    function serializeSession(session) {
+      return {
+        ...session,
+        settings: { ...defaultSettings(), ...(session.settings || {}) },
+        messages: (session.messages || []).map((message) => ({
+          ...message,
+          raw: sanitizeForStorage(message.raw),
+          result: sanitizeResultForStorage(message.result),
+          attachments: (message.attachments || []).map(({ id, name, type, size }) => ({ id, name, type, size }))
+        }))
+      };
+    }
+
+    function sanitizeResultForStorage(result) {
+      if (!result) return null;
+      if (typeof result.url === "string" && result.url.startsWith("data:image/")) {
+        return null;
+      }
+      return sanitizeForStorage(result);
+    }
+
+    function sanitizeForStorage(value) {
+      if (value == null) return value;
+      if (typeof value === "string") {
+        if (value.startsWith("data:image/")) return "[local image omitted]";
+        if (value.length > 16000) return value.slice(0, 12000) + "\n...[truncated]";
+        return value;
+      }
+      if (Array.isArray(value)) return value.map(sanitizeForStorage);
+      if (typeof value === "object") {
+        return Object.fromEntries(Object.entries(value).map(([key, val]) => [key, sanitizeForStorage(val)]));
+      }
+      return value;
     }
 
     function activeSession() {
@@ -1532,6 +1721,7 @@
       if (!session) return;
       state.activeSessionId = id;
       state.mode = session.mode;
+      state.attachments = emptyAttachments();
       applySettings(session.settings);
       saveSessions();
       renderAll();
@@ -1548,6 +1738,7 @@
       const session = activeSession();
       if (session) {
         state.mode = session.mode;
+        state.attachments = emptyAttachments();
         applySettings(session.settings);
       }
       saveSessions();
@@ -1564,6 +1755,7 @@
       }
       saveSessions();
       renderMode();
+      renderAttachments();
       renderSuggestions();
       renderHistory();
     }
@@ -1572,6 +1764,7 @@
       renderMode();
       renderHistory();
       renderThread();
+      renderAttachments();
       renderSuggestions();
       updateChatTitle();
     }
@@ -1590,6 +1783,7 @@
       Array.from(els.advancedFields.querySelectorAll("[data-param]")).forEach((el) => {
         el.hidden = el.dataset.param !== state.mode;
       });
+      renderAttachments();
     }
 
     function renderSuggestions() {
@@ -1681,6 +1875,13 @@
       els.keyStatus.querySelector("span:last-child").textContent = isReady ? "已连接" : "未连接";
     }
 
+    function updateKeyVisibilityIcon() {
+      const isVisible = els.apiKeyInput.type === "text";
+      els.toggleKeyButton.innerHTML = isVisible ? ICONS.eyeOff : ICONS.eye;
+      els.toggleKeyButton.title = isVisible ? "隐藏 API Key" : "显示 API Key";
+      els.toggleKeyButton.setAttribute("aria-label", els.toggleKeyButton.title);
+    }
+
     function setBusy(next) {
       state.busy = next;
       els.sendButton.disabled = next;
@@ -1739,19 +1940,130 @@
       renderHistory();
     }
 
+    function emptyAttachments() {
+      return { text: [], image: [], video: [] };
+    }
+
+    async function handleImageFileSelection(event) {
+      const files = Array.from(event.target.files || []).filter((file) => file.type && file.type.startsWith("image/"));
+      event.target.value = "";
+      if (!files.length) return;
+      const bucket = state.attachments[state.mode] || [];
+      const remaining = Math.max(0, MAX_ATTACHMENTS - bucket.length);
+      if (!remaining) {
+        toast("最多可添加 " + MAX_ATTACHMENTS + " 张图片");
+        return;
+      }
+      if (files.length > remaining) toast("最多可添加 " + MAX_ATTACHMENTS + " 张图片，已保留前 " + remaining + " 张");
+      const accepted = files.slice(0, remaining);
+      for (const file of accepted) {
+        if (file.size > MAX_ATTACHMENT_BYTES) {
+          toast(file.name + " 超过 8MB，已跳过");
+          continue;
+        }
+        try {
+          const dataUrl = await fileToDataUrl(file);
+          bucket.push({
+            id: makeId(),
+            name: file.name || "本地图片",
+            type: file.type || "image/png",
+            size: file.size || 0,
+            dataUrl
+          });
+        } catch (error) {
+          toast("读取图片失败：" + (file.name || "本地图片"));
+        }
+      }
+      state.attachments[state.mode] = bucket;
+      renderAttachments();
+    }
+
+    function renderAttachments() {
+      const items = state.attachments[state.mode] || [];
+      els.clearAttachmentsButton.hidden = !items.length;
+      els.uploadImagesLabel.textContent = items.length ? "添加图片 (" + items.length + "/" + MAX_ATTACHMENTS + ")" : "添加图片";
+      els.attachmentHint.textContent = attachmentHint();
+      els.attachmentList.hidden = !items.length;
+      els.attachmentList.innerHTML = "";
+      items.forEach((item) => {
+        const chip = document.createElement("div");
+        chip.className = "attachment-chip";
+        const img = document.createElement("img");
+        img.src = item.dataUrl;
+        img.alt = item.name || "本地图片";
+        const info = document.createElement("div");
+        const name = document.createElement("div");
+        name.className = "attachment-name";
+        name.textContent = item.name || "本地图片";
+        const size = document.createElement("div");
+        size.className = "attachment-size";
+        size.textContent = formatBytes(item.size || 0);
+        info.append(name, size);
+        const remove = document.createElement("button");
+        remove.className = "icon-button";
+        remove.type = "button";
+        remove.title = "移除图片";
+        remove.setAttribute("aria-label", "移除图片");
+        remove.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>';
+        remove.addEventListener("click", () => removeAttachment(state.mode, item.id));
+        chip.append(img, info, remove);
+        els.attachmentList.appendChild(chip);
+      });
+    }
+
+    function attachmentHint() {
+      const count = (state.attachments[state.mode] || []).length;
+      if (state.mode === "text") return count ? "图片理解模式" : "可添加图片一起提问";
+      if (state.mode === "image") return count ? "已作为参考图" : "可添加多张参考图";
+      return count ? "已作为视频参考图" : "可添加多张参考图或关键帧";
+    }
+
+    function removeAttachment(mode, id) {
+      state.attachments[mode] = (state.attachments[mode] || []).filter((item) => item.id !== id);
+      renderAttachments();
+    }
+
+    function clearModeAttachments(mode) {
+      state.attachments[mode] = [];
+      renderAttachments();
+    }
+
+    function attachmentMetas(mode) {
+      return (state.attachments[mode] || []).map(({ id, name, type, size }) => ({ id, name, type, size }));
+    }
+
+    function attachmentDataUrls(mode) {
+      return (state.attachments[mode] || []).map((item) => item.dataUrl).filter(Boolean);
+    }
+
+    function collectImages(mode, urlText) {
+      return [...splitList(urlText || ""), ...attachmentDataUrls(mode)];
+    }
+
+    function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(reader.error || new Error("File read failed"));
+        reader.readAsDataURL(file);
+      });
+    }
+
     async function handleText(prompt) {
-      const userMessage = appendMessage({ mode: "text", role: "user", status: "done", content: prompt });
+      const textImages = collectImages("text", els.textImageUrl.value);
+      const userMessage = appendMessage({ mode: "text", role: "user", status: "done", content: prompt, attachments: attachmentMetas("text") });
       const assistant = appendMessage({ mode: "text", role: "assistant", status: "loading", content: "" });
-      const content = buildTextContent(prompt);
+      const content = buildTextContent(prompt, textImages);
+      const hasImages = textImages.length > 0;
       const payload = {
-        model: "agnes-2.0-flash",
+        model: hasImages ? TEXT_IMAGE_MODEL : TEXT_DEFAULT_MODEL,
         messages: buildChatMessages(content, userMessage.id),
         temperature: numberOrDefault(els.textTemperature.value, 0.7),
         max_tokens: Math.max(1, parseInt(els.textMaxTokens.value, 10) || 1024)
       };
-      if (els.textStream.checked) payload.stream = true;
-      if (els.textThinking.checked) payload.chat_template_kwargs = { enable_thinking: true };
-      userMessage.raw = payload;
+      if (!hasImages && els.textStream.checked) payload.stream = true;
+      if (!hasImages && els.textThinking.checked) payload.chat_template_kwargs = { enable_thinking: true };
+      userMessage.raw = sanitizeForStorage(payload);
       saveActive();
       if (payload.stream) {
         await streamTextCompletion(payload, assistant.id);
@@ -1764,12 +2076,11 @@
       }
     }
 
-    function buildTextContent(prompt) {
-      const imageUrl = els.textImageUrl.value.trim();
-      if (!imageUrl) return prompt;
+    function buildTextContent(prompt, imageUrls) {
+      if (!imageUrls.length) return prompt;
       return [
         { type: "text", text: prompt },
-        { type: "image_url", image_url: { url: imageUrl } }
+        ...imageUrls.map((url) => ({ type: "image_url", image_url: { url } }))
       ];
     }
 
@@ -1827,9 +2138,9 @@
     }
 
     async function handleImage(prompt) {
-      appendMessage({ mode: "image", role: "user", status: "done", content: prompt });
+      appendMessage({ mode: "image", role: "user", status: "done", content: prompt, attachments: attachmentMetas("image") });
       const assistant = appendMessage({ mode: "image", role: "assistant", status: "loading", content: "正在创作图片，请稍等..." });
-      const inputImages = splitList(els.imageInputs.value);
+      const inputImages = collectImages("image", els.imageInputs.value);
       const output = els.imageOutput.value;
       const payload = {
         model: "agnes-image-2.1-flash",
@@ -1864,10 +2175,10 @@
     }
 
     async function handleVideo(prompt) {
-      appendMessage({ mode: "video", role: "user", status: "done", content: prompt });
+      appendMessage({ mode: "video", role: "user", status: "done", content: prompt, attachments: attachmentMetas("video") });
       const assistant = appendMessage({ mode: "video", role: "assistant", status: "loading", content: "正在开始制作视频..." });
       const [width, height] = els.videoSize.value.split("x").map((value) => parseInt(value, 10));
-      const extraImages = splitList(els.videoExtraImages.value);
+      const inputImages = collectImages("video", [els.videoImage.value, els.videoExtraImages.value].join("\n"));
       const payload = {
         model: "agnes-video-v2.0",
         prompt,
@@ -1875,9 +2186,8 @@
         height,
         ...getVideoTiming()
       };
-      const singleImage = els.videoImage.value.trim();
-      if (singleImage) payload.image = singleImage;
-      if (extraImages.length) payload.extra_body = { image: extraImages };
+      if (inputImages.length === 1) payload.image = inputImages[0];
+      if (inputImages.length > 1) payload.extra_body = { image: inputImages };
       const negative = els.videoNegative.value.trim();
       if (negative) payload.negative_prompt = negative;
       const task = await fetchAgnes("/v1/videos", { method: "POST", body: payload });
@@ -2013,7 +2323,8 @@
         createdAt: new Date().toISOString(),
         raw: partial.raw || null,
         result: partial.result || null,
-        task: partial.task || null
+        task: partial.task || null,
+        attachments: Array.isArray(partial.attachments) ? partial.attachments : []
       };
       session.messages.push(message);
       if (message.role === "user" && (session.title === "新的对话" || !session.title)) {
@@ -2091,6 +2402,7 @@
       body.className = "message-body";
       body.textContent = message.content || "";
       bubble.append(meta, body);
+      if (message.attachments && message.attachments.length) bubble.appendChild(renderMessageAttachments(message.attachments));
       if (message.task) bubble.appendChild(renderTask(message.task));
       if (message.result) bubble.appendChild(renderResult(message.result));
       if (message.raw) bubble.appendChild(renderRaw(message.raw, message.id));
@@ -2115,6 +2427,29 @@
         if (fill) fill.style.width = String(Math.min(100, Math.max(0, message.task.progress || 0))) + "%";
       }
       return true;
+    }
+
+    function renderMessageAttachments(attachments) {
+      const wrap = document.createElement("div");
+      wrap.className = "message-attachments";
+      attachments.forEach((item) => {
+        const row = document.createElement("div");
+        row.className = "message-attachment";
+        const icon = document.createElement("div");
+        icon.className = "message-attachment-icon";
+        icon.innerHTML = ICONS.image;
+        const text = document.createElement("div");
+        const name = document.createElement("div");
+        name.className = "message-attachment-name";
+        name.textContent = item.name || "本地图片";
+        const size = document.createElement("div");
+        size.className = "message-attachment-size";
+        size.textContent = formatBytes(item.size || 0);
+        text.append(name, size);
+        row.append(icon, text);
+        wrap.appendChild(row);
+      });
+      return wrap;
     }
 
     function renderTask(task) {
@@ -2237,6 +2572,13 @@
     function numberOrDefault(value, fallback) {
       const num = Number(value);
       return Number.isFinite(num) ? num : fallback;
+    }
+
+    function formatBytes(bytes) {
+      if (!bytes) return "本地图片";
+      if (bytes < 1024) return bytes + " B";
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+      return (bytes / 1024 / 1024).toFixed(1) + " MB";
     }
 
     function stringify(value) {
