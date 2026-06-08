@@ -1090,6 +1090,7 @@
     .composer-options summary {
       display: inline-flex;
       align-items: center;
+      gap: 7px;
       min-height: 32px;
       color: var(--muted);
       font-size: 13px;
@@ -1100,6 +1101,20 @@
 
     .composer-options summary::-webkit-details-marker {
       display: none;
+    }
+
+    .composer-options summary::after {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-right: 2px solid currentColor;
+      border-bottom: 2px solid currentColor;
+      transform: rotate(45deg) translateY(-1px);
+      transition: transform 150ms ease;
+    }
+
+    .composer-options[open] summary::after {
+      transform: rotate(225deg) translate(-1px, -1px);
     }
 
     .composer-options .simple-settings {
@@ -1475,6 +1490,12 @@
             <details class="composer-options" id="optionsSettings">
               <summary>创作选项</summary>
               <div class="simple-settings" id="simpleSettings">
+                <div class="field full" data-simple-param="text" hidden>
+                  <div class="option-row">
+                    <label class="check" for="textStream"><input id="textStream" type="checkbox"><span data-basic-label="流式输出" data-advanced-label="stream">流式输出</span></label>
+                    <label class="check" for="textThinking"><input id="textThinking" type="checkbox"><span data-basic-label="思考模式" data-advanced-label="chat_template_kwargs.enable_thinking">思考模式</span></label>
+                  </div>
+                </div>
                 <div class="field" data-simple-param="image" hidden>
                   <label for="imageSize" data-basic-label="画面比例" data-advanced-label="size">画面比例</label>
                   <select class="select" id="imageSize">
@@ -1538,13 +1559,6 @@
                   <label for="textImageUrl" data-basic-label="附加图片 URL" data-advanced-label="messages.content[].image_url.url">附加图片 URL</label>
                   <input class="input" id="textImageUrl" type="url" placeholder="https://example.com/image.jpg">
                 </div>
-                <div class="field full" data-param="text">
-                  <div class="option-row">
-                    <label class="check" for="textStream"><input id="textStream" type="checkbox"><span data-basic-label="边写边显示" data-advanced-label="stream">边写边显示</span></label>
-                    <label class="check" for="textThinking"><input id="textThinking" type="checkbox"><span data-basic-label="加强推理" data-advanced-label="chat_template_kwargs.enable_thinking">加强推理</span></label>
-                  </div>
-                </div>
-
                 <div class="field" data-param="image" hidden>
                   <label for="imageOutput" data-basic-label="结果格式" data-advanced-label="response_format / return_base64">结果格式</label>
                   <select class="select" id="imageOutput">
