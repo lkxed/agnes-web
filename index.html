@@ -1351,6 +1351,21 @@
             </button>
           </div>
         </div>
+        <div class="connection-card">
+          <div class="connection-head">
+            <span class="connection-title">连接图床</span>
+            <span class="status-pill" id="imageHostStatus"><span class="status-dot"></span><span>未连接</span></span>
+          </div>
+          <div class="api-key-row">
+            <input class="input" id="imageHostTokenInput" autocomplete="off" spellcheck="false" type="password" placeholder="粘贴 s.ee Authorization">
+            <button class="icon-button" id="toggleImageHostTokenButton" type="button" title="显示或隐藏图床授权" aria-label="显示或隐藏图床授权">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+            <button class="icon-button" id="clearImageHostTokenButton" type="button" title="清除图床授权" aria-label="清除图床授权">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path></svg>
+            </button>
+          </div>
+        </div>
       </div>
     </aside>
 
@@ -1559,6 +1574,7 @@
 
   <script>
     const API_BASE = "https://apihub.agnes-ai.com";
+    const IMAGE_HOST_UPLOAD_URL = "https://s.ee/api/v1/file/upload";
     const STORAGE_KEY = "agnes_chat_sessions_v1";
     const TEXT_DEFAULT_MODEL = "agnes-2.0-flash";
     const TEXT_IMAGE_MODEL = "agnes-1.5-flash";
@@ -1673,6 +1689,7 @@
       activeSessionId: null,
       mode: "text",
       apiKey: sessionStorage.getItem("agnes_api_key") || "",
+      imageHostToken: sessionStorage.getItem("see_image_host_token") || "",
       busy: false,
       historyQuery: "",
       attachments: emptyAttachments(),
@@ -1687,6 +1704,10 @@
       toggleKeyButton: document.getElementById("toggleKeyButton"),
       clearKeyButton: document.getElementById("clearKeyButton"),
       keyStatus: document.getElementById("keyStatus"),
+      imageHostTokenInput: document.getElementById("imageHostTokenInput"),
+      toggleImageHostTokenButton: document.getElementById("toggleImageHostTokenButton"),
+      clearImageHostTokenButton: document.getElementById("clearImageHostTokenButton"),
+      imageHostStatus: document.getElementById("imageHostStatus"),
       newChatButton: document.getElementById("newChatButton"),
       mobileNewChatButton: document.getElementById("mobileNewChatButton"),
       historySearchInput: document.getElementById("historySearchInput"),
@@ -1751,9 +1772,13 @@
       loadSessions();
       if (!state.sessions.length) createSession(false);
       state.apiKey = sessionStorage.getItem("agnes_api_key") || "";
+      state.imageHostToken = sessionStorage.getItem("see_image_host_token") || "";
       els.apiKeyInput.value = state.apiKey;
+      els.imageHostTokenInput.value = state.imageHostToken;
       updateKeyStatus();
+      updateImageHostStatus();
       updateKeyVisibilityIcon();
+      updateImageHostVisibilityIcon();
       applyVideoDurationPreset();
       bindEvents();
       renderAll();
@@ -1778,6 +1803,26 @@
         sessionStorage.removeItem("agnes_api_key");
         updateKeyStatus();
         toast("已断开 Agnes 连接");
+      });
+
+      els.imageHostTokenInput.addEventListener("input", () => {
+        state.imageHostToken = els.imageHostTokenInput.value.trim();
+        if (state.imageHostToken) sessionStorage.setItem("see_image_host_token", state.imageHostToken);
+        else sessionStorage.removeItem("see_image_host_token");
+        updateImageHostStatus();
+      });
+
+      els.toggleImageHostTokenButton.addEventListener("click", () => {
+        els.imageHostTokenInput.type = els.imageHostTokenInput.type === "text" ? "password" : "text";
+        updateImageHostVisibilityIcon();
+      });
+
+      els.clearImageHostTokenButton.addEventListener("click", () => {
+        state.imageHostToken = "";
+        els.imageHostTokenInput.value = "";
+        sessionStorage.removeItem("see_image_host_token");
+        updateImageHostStatus();
+        toast("已清除图床授权");
       });
 
       els.newChatButton.addEventListener("click", () => createSession(true));
@@ -2227,11 +2272,24 @@
       els.keyStatus.querySelector("span:last-child").textContent = isReady ? "已连接" : "未连接";
     }
 
+    function updateImageHostStatus() {
+      const isReady = Boolean(state.imageHostToken);
+      els.imageHostStatus.classList.toggle("ready", isReady);
+      els.imageHostStatus.querySelector("span:last-child").textContent = isReady ? "已连接" : "未连接";
+    }
+
     function updateKeyVisibilityIcon() {
       const isVisible = els.apiKeyInput.type === "text";
       els.toggleKeyButton.innerHTML = isVisible ? ICONS.eyeOff : ICONS.eye;
       els.toggleKeyButton.title = isVisible ? "隐藏 API Key" : "显示 API Key";
       els.toggleKeyButton.setAttribute("aria-label", els.toggleKeyButton.title);
+    }
+
+    function updateImageHostVisibilityIcon() {
+      const isVisible = els.imageHostTokenInput.type === "text";
+      els.toggleImageHostTokenButton.innerHTML = isVisible ? ICONS.eyeOff : ICONS.eye;
+      els.toggleImageHostTokenButton.title = isVisible ? "隐藏图床授权" : "显示图床授权";
+      els.toggleImageHostTokenButton.setAttribute("aria-label", els.toggleImageHostTokenButton.title);
     }
 
     function setBusy(next) {
@@ -2367,7 +2425,7 @@
       const count = (state.attachments[state.mode] || []).length;
       if (state.mode === "text") return count ? "图片理解模式" : "可添加图片一起提问";
       if (state.mode === "image") return count ? "已作为参考图" : "可添加多张参考图";
-      return count ? "本地图片仅用于预览；生成视频请填写公开图片 URL" : "视频参考图需要公开图片 URL";
+      return count ? "生成视频前会先上传到图床" : "可添加本地参考图，或填写公开图片 URL";
     }
 
     function removeAttachment(mode, id) {
@@ -2409,6 +2467,57 @@
 
     function collectImageUrls(urlText) {
       return splitList(urlText || "");
+    }
+
+    async function uploadVideoReferenceImages(items, messageId) {
+      const uploads = [];
+      for (let index = 0; index < items.length; index += 1) {
+        const item = items[index];
+        updateMessage(messageId, { content: "正在上传参考图 " + String(index + 1) + " / " + String(items.length) + "..." }, true);
+        uploads.push(await uploadImageToHost(item));
+      }
+      return uploads;
+    }
+
+    async function uploadImageToHost(item) {
+      if (!state.imageHostToken) throw new Error("请先在左侧填写图床 Authorization，再使用本地参考图生成视频。");
+      if (!item || !item.dataUrl) throw new Error("图床上传失败：没有可上传的本地图片。");
+      const blob = await dataUrlToBlob(item.dataUrl);
+      const form = new FormData();
+      form.set("file", blob, safeUploadName(item.name || "agnes-reference.png", blob.type));
+      let response;
+      try {
+        response = await fetch(IMAGE_HOST_UPLOAD_URL, {
+          method: "POST",
+          headers: { Authorization: state.imageHostToken },
+          body: form
+        });
+      } catch (error) {
+        throw new Error("图床上传失败：网络请求没有成功。请检查图床授权、网络或浏览器跨域限制。详情：" + error.message);
+      }
+      const text = await response.text();
+      let data = null;
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (error) {
+        throw new Error("图床上传失败：响应不是有效 JSON。");
+      }
+      if (!response.ok) {
+        throw new Error("图床上传失败：" + (data.message || response.statusText || String(response.status)));
+      }
+      const code = data && data.code;
+      if (code !== undefined && Number(code) !== 0) {
+        throw new Error("图床上传失败：" + (data.message || "返回 code " + String(code)));
+      }
+      const url = data && data.data && data.data.url;
+      if (!url) throw new Error("图床上传失败：响应中没有 data.url。");
+      return { url, raw: data };
+    }
+
+    async function dataUrlToBlob(dataUrl) {
+      const response = await fetch(dataUrl);
+      if (!response.ok) throw new Error("读取本地图片失败。");
+      return response.blob();
     }
 
     function fileToDataUrl(file) {
@@ -2566,16 +2675,23 @@
 
     async function handleVideo(prompt) {
       const imageFields = [els.videoImage.value, els.videoExtraImages.value].join("\n");
-      const localImageCount = (state.attachments.video || []).length;
-      const inputImages = collectImageUrls(imageFields);
-      if (localImageCount && !inputImages.length) {
-        throw new Error("视频生成暂不支持直接上传本地参考图。Agnes 视频 API 需要可公开访问的图片 URL，请先把图片上传到图床，或在“参考图 URL / 关键帧 URL”里粘贴公开图片地址后再生成。");
+      const localImages = state.attachments.video || [];
+      if (localImages.length && !state.imageHostToken) {
+        throw new Error("请先在左侧填写图床 Authorization。视频本地参考图需要先上传到图床，Agnes 才能读取。");
       }
-      if (localImageCount && inputImages.length) {
-        toast("本地上传图片仅用于预览；本次视频会使用已填写的公开图片 URL。");
+      const remoteImages = collectImageUrls(imageFields);
+      appendMessage({ mode: "video", role: "user", status: "done", content: prompt, attachments: attachmentMetas("video", imageFields) });
+      const assistant = appendMessage({
+        mode: "video",
+        role: "assistant",
+        status: "loading",
+        content: localImages.length ? "正在上传本地参考图..." : "正在开始制作视频..."
+      });
+      const uploadedImages = localImages.length ? await uploadVideoReferenceImages(localImages, assistant.id) : [];
+      const inputImages = [...remoteImages, ...uploadedImages.map((item) => item.url)];
+      if (localImages.length) {
+        updateMessage(assistant.id, { content: "参考图已上传，正在开始制作视频..." }, true);
       }
-      appendMessage({ mode: "video", role: "user", status: "done", content: prompt, attachments: attachmentMetas("video", imageFields, { includeLocal: false }) });
-      const assistant = appendMessage({ mode: "video", role: "assistant", status: "loading", content: "正在开始制作视频..." });
       const payload = {
         model: "agnes-video-v2.0",
         prompt,
@@ -3188,6 +3304,10 @@
       return /\.[a-z0-9]{2,5}$/i.test(clean) ? clean : clean + fallbackExt;
     }
 
+    function safeUploadName(name, mimeType) {
+      return safeDownloadName(name || "agnes-reference", mimeType);
+    }
+
     function numberOrDefault(value, fallback) {
       const num = Number(value);
       return Number.isFinite(num) ? num : fallback;
@@ -3211,6 +3331,9 @@
 
     function formatError(error) {
       const message = error && error.message ? error.message : String(error);
+      if (message.includes("图床")) {
+        return message;
+      }
       if ((error && error.status === 401) || message.includes("无效的令牌")) {
         return "连接 Agnes 失败：这个 API Key 看起来无效或已过期，请重新粘贴后再试。";
       }
