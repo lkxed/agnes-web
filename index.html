@@ -1082,6 +1082,30 @@
       gap: 10px;
     }
 
+    .composer-options {
+      border-top: 1px solid var(--line);
+      padding-top: 8px;
+    }
+
+    .composer-options summary {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+      list-style: none;
+      cursor: pointer;
+    }
+
+    .composer-options summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .composer-options .simple-settings {
+      margin-top: 8px;
+    }
+
     .simple-settings .wide,
     .advanced-fields .wide {
       grid-column: span 2;
@@ -1448,50 +1472,53 @@
               <div class="attachment-list" id="attachmentList" aria-label="已添加图片" hidden></div>
             </div>
 
-            <div class="simple-settings" id="simpleSettings">
-              <div class="field" data-simple-param="image" hidden>
-                <label for="imageSize" data-basic-label="画面比例" data-advanced-label="size">画面比例</label>
-                <select class="select" id="imageSize">
-                  <option value="auto">保持原比例 · 自动</option>
-                  <option value="1024x768">横版海报 · 1024x768</option>
-                  <option value="768x1024">竖版封面 · 768x1024</option>
-                  <option value="1024x1024">方形头像 · 1024x1024</option>
-                  <option value="1280x720">宽屏封面 · 1280x720</option>
-                  <option value="720x1280">手机竖屏 · 720x1280</option>
-                </select>
+            <details class="composer-options" id="optionsSettings">
+              <summary>创作选项</summary>
+              <div class="simple-settings" id="simpleSettings">
+                <div class="field" data-simple-param="image" hidden>
+                  <label for="imageSize" data-basic-label="画面比例" data-advanced-label="size">画面比例</label>
+                  <select class="select" id="imageSize">
+                    <option value="auto">保持原比例 · 自动</option>
+                    <option value="1024x768">横版海报 · 1024x768</option>
+                    <option value="768x1024">竖版封面 · 768x1024</option>
+                    <option value="1024x1024">方形头像 · 1024x1024</option>
+                    <option value="1280x720">宽屏封面 · 1280x720</option>
+                    <option value="720x1280">手机竖屏 · 720x1280</option>
+                  </select>
+                </div>
+                <div class="field wide" data-simple-param="image" hidden>
+                  <label for="imageInputs" data-basic-label="参考图 URL" data-advanced-label="extra_body.image[]">参考图 URL</label>
+                  <input class="input" id="imageInputs" spellcheck="false" placeholder="公开图片 URL，多个可用换行分隔">
+                </div>
+                <div class="field" data-simple-param="video" hidden>
+                  <label for="videoSize" data-basic-label="画面比例" data-advanced-label="width / height">画面比例</label>
+                  <select class="select" id="videoSize">
+                    <option value="auto">保持原比例 · 自动</option>
+                    <option value="1152x768">横版短片 · 1152x768</option>
+                    <option value="1280x768">宽屏展示 · 1280x768</option>
+                    <option value="1024x576">轻量横版 · 1024x576</option>
+                    <option value="768x1152">手机竖屏 · 768x1152</option>
+                  </select>
+                </div>
+                <div class="field" data-simple-param="video" hidden>
+                  <label for="videoDuration" data-basic-label="视频长度" data-advanced-label="num_frames / frame_rate">视频长度</label>
+                  <select class="select" id="videoDuration">
+                    <option value="121:24">标准短片 · 121 帧 / 24 FPS</option>
+                    <option value="81:24">更短更快 · 81 帧 / 24 FPS</option>
+                    <option value="201:24">更长展示 · 201 帧 / 24 FPS</option>
+                    <option value="custom">使用高级设置 · 自定义帧数 / FPS</option>
+                  </select>
+                </div>
+                <div class="field wide" data-simple-param="video" hidden>
+                  <label for="videoImage" data-basic-label="参考图 URL" data-advanced-label="image">参考图 URL</label>
+                  <input class="input" id="videoImage" type="url" placeholder="公开图片 URL">
+                </div>
+                <div class="field wide" data-simple-param="video" hidden>
+                  <label for="videoExtraImages" data-basic-label="关键帧 URL" data-advanced-label="extra_body.image[]">关键帧 URL</label>
+                  <input class="input" id="videoExtraImages" spellcheck="false" placeholder="多张公开图片 URL，可用换行分隔">
+                </div>
               </div>
-              <div class="field wide" data-simple-param="image" hidden>
-                <label for="imageInputs" data-basic-label="参考图 URL" data-advanced-label="extra_body.image[]">参考图 URL</label>
-                <input class="input" id="imageInputs" spellcheck="false" placeholder="公开图片 URL，多个可用换行分隔">
-              </div>
-              <div class="field" data-simple-param="video" hidden>
-                <label for="videoSize" data-basic-label="画面比例" data-advanced-label="width / height">画面比例</label>
-                <select class="select" id="videoSize">
-                  <option value="auto">保持原比例 · 自动</option>
-                  <option value="1152x768">横版短片 · 1152x768</option>
-                  <option value="1280x768">宽屏展示 · 1280x768</option>
-                  <option value="1024x576">轻量横版 · 1024x576</option>
-                  <option value="768x1152">手机竖屏 · 768x1152</option>
-                </select>
-              </div>
-              <div class="field" data-simple-param="video" hidden>
-                <label for="videoDuration" data-basic-label="视频长度" data-advanced-label="num_frames / frame_rate">视频长度</label>
-                <select class="select" id="videoDuration">
-                  <option value="121:24">标准短片 · 121 帧 / 24 FPS</option>
-                  <option value="81:24">更短更快 · 81 帧 / 24 FPS</option>
-                  <option value="201:24">更长展示 · 201 帧 / 24 FPS</option>
-                  <option value="custom">使用高级设置 · 自定义帧数 / FPS</option>
-                </select>
-              </div>
-              <div class="field wide" data-simple-param="video" hidden>
-                <label for="videoImage" data-basic-label="参考图 URL" data-advanced-label="image">参考图 URL</label>
-                <input class="input" id="videoImage" type="url" placeholder="公开图片 URL">
-              </div>
-              <div class="field wide" data-simple-param="video" hidden>
-                <label for="videoExtraImages" data-basic-label="关键帧 URL" data-advanced-label="extra_body.image[]">关键帧 URL</label>
-                <input class="input" id="videoExtraImages" spellcheck="false" placeholder="多张公开图片 URL，可用换行分隔">
-              </div>
-            </div>
+            </details>
 
             <details class="advanced-settings" id="advancedSettings">
               <summary>API 选项</summary>
@@ -1714,6 +1741,7 @@
       sidebarBackdrop: document.getElementById("sidebarBackdrop"),
       chatTitle: document.getElementById("chatTitle"),
       modePills: Array.from(document.querySelectorAll(".mode-pill")),
+      optionsSettings: document.getElementById("optionsSettings"),
       simpleSettings: document.getElementById("simpleSettings"),
       advancedSettings: document.getElementById("advancedSettings"),
       advancedFields: document.getElementById("advancedFields"),
@@ -2120,6 +2148,8 @@
       els.advancedModeButton.textContent = state.advancedMode ? "普通" : "高级";
       els.advancedSettings.hidden = !state.advancedMode;
       els.advancedSettings.open = state.advancedMode;
+      const hasSimpleOptions = Array.from(els.simpleSettings.querySelectorAll("[data-simple-param]")).some((el) => el.dataset.simpleParam === state.mode);
+      els.optionsSettings.hidden = !hasSimpleOptions;
       Array.from(els.simpleSettings.querySelectorAll("[data-simple-param]")).forEach((el) => {
         el.hidden = el.dataset.simpleParam !== state.mode;
       });
