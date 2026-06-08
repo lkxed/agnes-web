@@ -373,11 +373,13 @@
       gap: 6px;
       min-height: 24px;
       padding: 4px 8px;
+      border: 0;
       border-radius: 999px;
       color: var(--muted);
       background: var(--panel-2);
       font-size: 12px;
       font-weight: 800;
+      cursor: pointer;
     }
 
     .status-dot {
@@ -389,6 +391,14 @@
 
     .status-pill.ready .status-dot {
       background: var(--success);
+    }
+
+    .status-pill.checking .status-dot {
+      background: var(--brand);
+    }
+
+    .status-pill.invalid .status-dot {
+      background: var(--danger);
     }
 
     .api-key-row {
@@ -1395,7 +1405,7 @@
         <div class="connection-card">
           <div class="connection-head">
             <span class="connection-title">连接 Agnes</span>
-            <span class="status-pill" id="keyStatus"><span class="status-dot"></span><span>未连接</span></span>
+            <button class="status-pill" id="keyStatus" type="button" title="点击检测 API Key"><span class="status-dot"></span><span>未连接</span></button>
           </div>
           <div class="api-key-row">
             <input class="input" id="apiKeyInput" autocomplete="off" spellcheck="false" type="password" placeholder="粘贴 API Key">
@@ -1619,6 +1629,7 @@
     const API_BASE = "https://apihub.agnes-ai.com";
     const IMAGE_HOST_UPLOAD_URL = "https://img.scdn.io/api/v1.php";
     const STORAGE_KEY = "agnes_chat_sessions_v1";
+    const API_KEY_STORAGE_KEY = "agnes_api_key";
     const TEXT_DEFAULT_MODEL = "agnes-2.0-flash";
     const TEXT_IMAGE_MODEL = "agnes-1.5-flash";
     const MAX_ATTACHMENTS = 8;
@@ -1731,7 +1742,8 @@
       sessions: [],
       activeSessionId: null,
       mode: "text",
-      apiKey: sessionStorage.getItem("agnes_api_key") || "",
+      apiKey: loadStoredApiKey(),
+      keyState: "empty",
       busy: false,
       historyQuery: "",
       attachments: emptyAttachments(),
@@ -1810,7 +1822,8 @@
     function bootstrap() {
       loadSessions();
       if (!state.sessions.length) createSession(false);
-      state.apiKey = sessionStorage.getItem("agnes_api_key") || "";
+      state.apiKey = loadStoredApiKey();
+      state.keyState = state.apiKey ? "unknown" : "empty";
       els.apiKeyInput.value = state.apiKey;
       updateKeyStatus();
       updateKeyVisibilityIcon();
@@ -1822,10 +1835,18 @@
     function bindEvents() {
       els.apiKeyInput.addEventListener("input", () => {
         state.apiKey = els.apiKeyInput.value.trim();
-        if (state.apiKey) sessionStorage.setItem("agnes_api_key", state.apiKey);
-        else sessionStorage.removeItem("agnes_api_key");
+        if (state.apiKey) {
+          localStorage.setItem(API_KEY_STORAGE_KEY, state.apiKey);
+          state.keyState = "unknown";
+        } else {
+          localStorage.removeItem(API_KEY_STORAGE_KEY);
+          sessionStorage.removeItem(API_KEY_STORAGE_KEY);
+          state.keyState = "empty";
+        }
         updateKeyStatus();
       });
+
+      els.keyStatus.addEventListener("click", () => validateApiKey());
 
       els.toggleKeyButton.addEventListener("click", () => {
         els.apiKeyInput.type = els.apiKeyInput.type === "text" ? "password" : "text";
@@ -1834,8 +1855,10 @@
 
       els.clearKeyButton.addEventListener("click", () => {
         state.apiKey = "";
+        state.keyState = "empty";
         els.apiKeyInput.value = "";
-        sessionStorage.removeItem("agnes_api_key");
+        localStorage.removeItem(API_KEY_STORAGE_KEY);
+        sessionStorage.removeItem(API_KEY_STORAGE_KEY);
         updateKeyStatus();
         toast("已断开 Agnes 连接");
       });
@@ -2283,10 +2306,68 @@
       els.chatTitle.textContent = session ? session.title : "新的 Agnes 对话";
     }
 
+    function loadStoredApiKey() {
+      const localKey = localStorage.getItem(API_KEY_STORAGE_KEY) || "";
+      if (localKey) {
+        sessionStorage.removeItem(API_KEY_STORAGE_KEY);
+        return localKey;
+      }
+      const legacySessionKey = sessionStorage.getItem(API_KEY_STORAGE_KEY) || "";
+      if (legacySessionKey) {
+        localStorage.setItem(API_KEY_STORAGE_KEY, legacySessionKey);
+        sessionStorage.removeItem(API_KEY_STORAGE_KEY);
+      }
+      return legacySessionKey;
+    }
+
     function updateKeyStatus() {
-      const isReady = Boolean(state.apiKey);
-      els.keyStatus.classList.toggle("ready", isReady);
-      els.keyStatus.querySelector("span:last-child").textContent = isReady ? "已连接" : "未连接";
+      els.keyStatus.classList.toggle("ready", state.keyState === "valid");
+      els.keyStatus.classList.toggle("checking", state.keyState === "checking");
+      els.keyStatus.classList.toggle("invalid", state.keyState === "invalid");
+      const label = {
+        empty: "未连接",
+        unknown: "未验证",
+        checking: "检测中",
+        valid: "已连接",
+        invalid: "无效"
+      }[state.keyState] || "未验证";
+      els.keyStatus.querySelector("span:last-child").textContent = label;
+      els.keyStatus.title = state.apiKey ? "点击检测 API Key" : "请先粘贴 API Key";
+      els.keyStatus.disabled = state.keyState === "checking";
+    }
+
+    function markApiKeyConnected() {
+      if (!state.apiKey) return;
+      state.keyState = "valid";
+      updateKeyStatus();
+    }
+
+    async function validateApiKey() {
+      if (!state.apiKey) {
+        toast("请先粘贴 Agnes API Key");
+        els.apiKeyInput.focus();
+        return;
+      }
+      if (state.keyState === "checking") return;
+      state.keyState = "checking";
+      updateKeyStatus();
+      try {
+        await fetchAgnes("/v1/chat/completions", {
+          method: "POST",
+          body: {
+            model: TEXT_DEFAULT_MODEL,
+            messages: [{ role: "user", content: "ping" }],
+            max_tokens: 1,
+            temperature: 0
+          }
+        });
+        markApiKeyConnected();
+        toast("Agnes 已连接");
+      } catch (error) {
+        state.keyState = error && error.status === 401 ? "invalid" : "unknown";
+        updateKeyStatus();
+        toast(error && error.status === 401 ? "API Key 无效或已过期" : "暂时无法检测 API Key，请稍后再试");
+      }
     }
 
     function updateKeyVisibilityIcon() {
@@ -2589,6 +2670,7 @@
         body: JSON.stringify(payload)
       });
       if (!response.ok) throw await responseError(response);
+      markApiKeyConnected();
       if (!response.body) throw new Error("浏览器不支持流式响应读取。");
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -2794,6 +2876,7 @@
         throw new Error("网络请求失败。请检查网络、API 地址，或浏览器是否阻止跨域请求。详情：" + error.message);
       }
       if (!response.ok) throw await responseError(response);
+      markApiKeyConnected();
       const text = await response.text();
       if (!text) return {};
       try {
@@ -2824,6 +2907,10 @@
       const err = new Error("Agnes API 返回 " + response.status + "：" + detail);
       err.raw = text;
       err.status = response.status;
+      if (response.status === 401) {
+        state.keyState = "invalid";
+        updateKeyStatus();
+      }
       return err;
     }
 

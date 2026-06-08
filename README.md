@@ -13,7 +13,7 @@
 - 高级模式：发送按钮下方可切换，开启后显示当前创作模式支持的全部 API 选项、专业字段名，并可显示或隐藏每条消息的调试详情。
 - 思考模式：文本流式输出开启 Thinking 时，思考内容会显示在可展开/收起的引用块中，默认只露出 3 行。
 - 主题跟随系统深浅色，深色模式下接近 DeepSeek/ChatGPT 一类聊天界面。
-- Agnes API Key 仅保存在 `sessionStorage`。关闭浏览器标签页后会清空，不会写入仓库或本地历史。
+- Agnes API Key 会和对话历史一样保存在浏览器 `localStorage`；连接状态需要点击检测或首次请求成功后才会显示“已连接”。
 
 ## 本地使用
 
@@ -47,10 +47,10 @@ git push -u origin main
 - 不要把真实 API Key 写进 `index.html`、README 或任何提交。
 - 这个 App 是纯前端应用，用户填写的 API Key 会从浏览器直接发送到 `https://apihub.agnes-ai.com`。
 - 视频本地参考图会从浏览器上传到 `https://img.scdn.io/api/v1.php`，图床返回的公开 URL 会继续发送给 Agnes 视频 API。
-- 会话历史保存在浏览器 `localStorage`，只包含对话内容、模式和非敏感设置，不保存 API Key。
+- 会话历史和 Agnes API Key 保存在浏览器 `localStorage`。API Key 不会写入仓库，但会保留在当前浏览器里，直到用户清除连接或清理浏览器数据。
 - 本地上传的图片只在当前页面内存中用于请求，不以 Base64 形式长期保存到 `localStorage`。
 - 图片下载和另存为会优先通过浏览器直接保存；另存为依赖浏览器的文件保存对话框支持。如果远程图片服务阻止跨域读取，浏览器可能无法从纯前端直接保存，需要新标签页打开后手动保存。
-- API Key 保存在浏览器 `sessionStorage`，关闭标签页后需要重新连接 Agnes。
+- 输入 API Key 后会先显示“未验证”；点击连接状态检测成功，或首次 API 请求成功后，才会显示“已连接”。
 - 如果你把页面公开发布，访问者需要使用自己的 Agnes AI API Key。
 
 ## 高级说明
@@ -59,7 +59,7 @@ git push -u origin main
 - 文本流式响应会拆分 `delta.content` 与 `delta.reasoning_content`，正文和思考过程分开渲染。
 - 图片使用 `agnes-image-2.1-flash`，普通设置提供画面比例、参考图 URL 和本地参考图上传，高级设置保留结果格式。
 - 视频使用 `agnes-video-v2.0`，普通设置提供画面比例、视频长度和公开参考图 URL；本地上传图片会先通过 img.scdn.io 图床换成公开 URL，高级设置保留帧数、FPS、检查次数和负面提示词。
-- 本地历史使用 `agnes_chat_sessions_v1` 作为 `localStorage` key；Agnes API Key 使用 `agnes_api_key` 作为 `sessionStorage` key。
+- 本地历史使用 `agnes_chat_sessions_v1` 作为 `localStorage` key；Agnes API Key 使用 `agnes_api_key` 作为 `localStorage` key。
 
 ## API 文档
 
