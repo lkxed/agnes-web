@@ -914,11 +914,10 @@
     }
 
     .composer-toolbar {
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
       gap: 10px;
-      align-items: center;
-      justify-content: space-between;
+      align-items: end;
       min-width: 0;
       padding-top: 2px;
     }
@@ -933,13 +932,18 @@
     }
 
     .composer-left-tools {
-      flex: 1 1 420px;
+      grid-column: 1;
+      max-width: 100%;
     }
 
     .composer-right-tools {
-      flex: 0 0 auto;
+      grid-column: 2;
       justify-content: flex-end;
       margin-left: auto;
+    }
+
+    .composer-toolbar:has(.composer-options[open]) .composer-left-tools {
+      align-items: flex-start;
     }
 
     .quick-text-options {
@@ -1241,11 +1245,14 @@
 
     .composer-toolbar .composer-options {
       flex: 0 1 auto;
+      min-width: 0;
+      max-width: 100%;
       border-top: 0;
       padding-top: 0;
     }
 
     .composer-toolbar .composer-options[open] {
+      width: 100%;
       flex-basis: 100%;
       order: 10;
     }
@@ -1287,6 +1294,7 @@
     .composer-toolbar .composer-options .simple-settings {
       width: 100%;
       padding-top: 8px;
+      grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
     }
 
     .simple-settings .wide,
@@ -1302,12 +1310,14 @@
     .field {
       display: grid;
       gap: 6px;
+      min-width: 0;
     }
 
     .field label {
       color: var(--muted);
       font-size: 12px;
       font-weight: 800;
+      overflow-wrap: anywhere;
     }
 
     .option-row {
@@ -1338,6 +1348,7 @@
     }
 
     .advanced-settings {
+      min-width: 0;
       border-top: 1px solid var(--line);
       padding-top: 8px;
     }
@@ -1358,6 +1369,7 @@
     }
 
     .advanced-fields {
+      grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
       margin-top: 8px;
     }
 
@@ -1810,12 +1822,12 @@
           "720x1280": "手机竖屏 · 720x1280"
         },
         advanced: {
-          auto: "size omitted · keep source/default ratio",
-          "1024x768": "size = 1024x768 · landscape 4:3",
-          "768x1024": "size = 768x1024 · portrait 3:4",
-          "1024x1024": "size = 1024x1024 · square 1:1",
-          "1280x720": "size = 1280x720 · landscape 16:9",
-          "720x1280": "size = 720x1280 · portrait 9:16"
+          auto: "size omitted · keep ratio",
+          "1024x768": "size = 1024x768 · 4:3",
+          "768x1024": "size = 768x1024 · 3:4",
+          "1024x1024": "size = 1024x1024 · 1:1",
+          "1280x720": "size = 1280x720 · 16:9",
+          "720x1280": "size = 720x1280 · 9:16"
         }
       },
       videoSize: {
@@ -1827,7 +1839,7 @@
           "768x1152": "手机竖屏 · 768x1152"
         },
         advanced: {
-          auto: "width / height omitted · keep source/default ratio",
+          auto: "width / height omitted · keep ratio",
           "1152x768": "width = 1152 · height = 768",
           "1280x768": "width = 1280 · height = 768",
           "1024x576": "width = 1024 · height = 576",
@@ -1854,8 +1866,8 @@
           base64: "Base64"
         },
         advanced: {
-          url: 'extra_body.response_format = "url"',
-          base64: 'return_base64 = true / response_format = "b64_json"'
+          url: 'response_format = "url"',
+          base64: 'response_format = "b64_json"'
         }
       }
     };
