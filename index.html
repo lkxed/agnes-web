@@ -951,6 +951,10 @@
       align-items: center;
     }
 
+    .quick-text-options:not([hidden]) {
+      display: contents;
+    }
+
     .send-button {
       display: inline-grid;
       place-items: center;
@@ -1471,10 +1475,6 @@
 
       .send-button {
         width: 44px;
-      }
-
-      .quick-text-options:not([hidden]) {
-        grid-column: 1 / -1;
       }
 
       .simple-settings,
