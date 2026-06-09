@@ -1070,13 +1070,12 @@
       transition: transform 120ms ease, opacity 150ms ease;
     }
 
-    .send-button:not(:disabled):hover {
+    .send-button:hover {
       transform: translateY(-1px);
     }
 
-    .send-button:disabled {
-      cursor: not-allowed;
-      opacity: 0.55;
+    .send-button[data-state="cancel"] {
+      background: color-mix(in srgb, var(--danger), var(--panel-3) 10%);
     }
 
     .advanced-mode-button,
@@ -1988,6 +1987,8 @@
       apiKey: loadStoredApiKey(),
       keyState: "empty",
       busy: false,
+      abortController: null,
+      cancelRequested: false,
       historyQuery: "",
       attachments: emptyAttachments(),
       advancedMode: false,
@@ -2076,6 +2077,7 @@
       els.apiKeyInput.value = state.apiKey;
       updateKeyStatus();
       updateKeyVisibilityIcon();
+      setBusy(false);
       applyVideoDurationPreset();
       bindEvents();
       renderAll();
@@ -2219,7 +2221,10 @@
 
       els.composer.addEventListener("submit", async (event) => {
         event.preventDefault();
-        if (state.busy) return;
+        if (state.busy) {
+          cancelGeneration();
+          return;
+        }
         const prompt = els.promptInput.value.trim();
         if (!prompt) {
           toast("请输入消息");
@@ -2232,16 +2237,16 @@
         }
 
         try {
-          setBusy(true);
+          beginGeneration();
           const mode = state.mode;
           await submitPrompt(prompt, state.editingMessageId);
           els.promptInput.value = "";
           state.editingMessageId = null;
           clearModeAttachments(mode);
         } catch (error) {
-          showRequestError(error);
+          if (!isAbortError(error)) showRequestError(error);
         } finally {
-          setBusy(false);
+          endGeneration();
         }
       });
     }
@@ -2515,7 +2520,10 @@
         pill.setAttribute("aria-pressed", String(pill.dataset.mode === state.mode));
       });
       els.promptInput.placeholder = config.placeholder;
-      els.sendButton.title = config.buttonLabel;
+      if (!state.busy) {
+        els.sendButton.title = config.buttonLabel;
+        els.sendButton.setAttribute("aria-label", config.buttonLabel);
+      }
       els.advancedModeButton.setAttribute("aria-pressed", String(state.advancedMode));
       els.advancedModeButton.textContent = "高级选项";
       els.advancedSettings.hidden = !state.advancedMode;
@@ -2822,11 +2830,55 @@
       els.keyHelpButton.setAttribute("aria-expanded", "false");
     }
 
+    function beginGeneration() {
+      state.abortController = typeof AbortController !== "undefined" ? new AbortController() : null;
+      state.cancelRequested = false;
+      setBusy(true);
+    }
+
+    function endGeneration() {
+      state.abortController = null;
+      state.cancelRequested = false;
+      setBusy(false);
+    }
+
+    function cancelGeneration() {
+      if (!state.busy) return;
+      if (state.cancelRequested) return;
+      state.cancelRequested = true;
+      if (state.abortController) state.abortController.abort();
+      markLatestAssistantCanceled();
+      toast("已取消本次回复");
+    }
+
+    function markLatestAssistantCanceled() {
+      const session = activeSession();
+      const message = session ? [...session.messages].reverse().find((item) => item.role === "assistant" && item.status === "loading") : null;
+      if (!message) return;
+      const hasVideoTask = message.mode === "video" && message.task && (message.task.videoId || message.task.taskId);
+      updateMessage(message.id, {
+        status: "canceled",
+        content: hasVideoTask
+          ? "已停止等待视频结果。Agnes 端任务可能仍会继续生成；当前文档没有提供取消视频任务的接口。"
+          : "已取消本次回复。"
+      });
+    }
+
+    function currentSignal() {
+      return state.abortController ? state.abortController.signal : undefined;
+    }
+
+    function isAbortError(error) {
+      return Boolean(error && (error.name === "AbortError" || error.message === "AbortError"));
+    }
+
     function setBusy(next) {
       state.busy = next;
-      els.sendButton.disabled = next;
+      els.sendButton.dataset.state = next ? "cancel" : "send";
+      els.sendButton.title = next ? "取消回复" : MODE_CONFIG[state.mode].buttonLabel;
+      els.sendButton.setAttribute("aria-label", els.sendButton.title);
       els.sendButton.innerHTML = next
-        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle></svg>'
+        ? '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"></rect></svg>'
         : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"></path><path d="m5 12 7-7 7 7"></path></svg>';
     }
 
@@ -3011,9 +3063,11 @@
       try {
         response = await fetch(IMAGE_HOST_UPLOAD_URL, {
           method: "POST",
-          body: form
+          body: form,
+          signal: currentSignal()
         });
       } catch (error) {
+        if (isAbortError(error)) throw error;
         const err = new Error("图床上传失败：网络请求没有成功。请检查网络或浏览器跨域限制。详情：" + error.message);
         err.raw = {
           type: "image_host_network_error",
@@ -3147,7 +3201,8 @@
       const response = await fetch(API_BASE + "/v1/chat/completions", {
         method: "POST",
         headers: authHeaders(),
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        signal: currentSignal()
       });
       if (!response.ok) throw await responseError(response, "/v1/chat/completions", "POST");
       markApiKeyConnected();
@@ -3292,7 +3347,7 @@
       const limit = Math.min(120, Math.max(1, parseInt(els.videoPollLimit.value, 10) || 60));
       let last = null;
       for (let attempt = 1; attempt <= limit; attempt += 1) {
-        await wait(attempt === 1 ? 1500 : 5000);
+        await wait(attempt === 1 ? 1500 : 5000, currentSignal());
         const path = videoId
           ? "/agnesapi?video_id=" + encodeURIComponent(videoId) + "&model_name=agnes-video-v2.0"
           : "/v1/videos/" + encodeURIComponent(taskId);
@@ -3348,11 +3403,14 @@
         method: options.method || "GET",
         headers: authHeaders()
       };
+      const signal = currentSignal();
+      if (signal) init.signal = signal;
       if (options.body !== undefined) init.body = typeof options.body === "string" ? options.body : JSON.stringify(options.body);
       let response;
       try {
         response = await fetch(API_BASE + path, init);
       } catch (error) {
+        if (isAbortError(error)) throw error;
         const err = new Error("网络请求失败。请检查网络、API 地址，或浏览器是否阻止跨域请求。详情：" + error.message);
         err.raw = {
           type: "network_error",
@@ -4054,6 +4112,7 @@
       return {
         done: "完成",
         loading: "生成中",
+        canceled: "已取消",
         error: "需要处理",
         queued: "排队中",
         in_progress: "生成中",
@@ -4124,8 +4183,32 @@
       });
     }
 
-    function wait(ms) {
-      return new Promise((resolve) => setTimeout(resolve, ms));
+    function wait(ms, signal) {
+      return new Promise((resolve, reject) => {
+        if (signal && signal.aborted) {
+          reject(abortError());
+          return;
+        }
+        const timer = setTimeout(() => {
+          if (signal) signal.removeEventListener("abort", onAbort);
+          resolve();
+        }, ms);
+        function onAbort() {
+          clearTimeout(timer);
+          reject(abortError());
+        }
+        if (signal) signal.addEventListener("abort", onAbort, { once: true });
+      });
+    }
+
+    function abortError() {
+      try {
+        return new DOMException("AbortError", "AbortError");
+      } catch (error) {
+        const err = new Error("AbortError");
+        err.name = "AbortError";
+        return err;
+      }
     }
 
     async function copyText(text) {
