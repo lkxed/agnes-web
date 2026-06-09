@@ -616,6 +616,12 @@
       font-weight: 900;
     }
 
+    .welcome-copy {
+      display: grid;
+      gap: 14px;
+      justify-items: center;
+    }
+
     .welcome h1 {
       margin: 0;
       font-size: 30px;
@@ -1644,7 +1650,7 @@
         <div class="welcome" id="emptyState">
           <div class="welcome-inner">
             <div class="welcome-logo" aria-hidden="true">A</div>
-            <div>
+            <div class="welcome-copy">
               <h1>使用 Agnes 开始创作</h1>
               <p>像聊天一样描述需求。可以聊天、生成图片、制作视频，也可以在一个对话里持续修改方向。</p>
             </div>
@@ -1701,7 +1707,7 @@
                     </select>
                   </div>
                   <div class="field wide" data-simple-param="image" hidden>
-                    <label for="imageInputs" data-basic-label="参考图 URL" data-advanced-label="extra_body.image[]">参考图 URL</label>
+                    <label for="imageInputs" data-basic-label="公开参考图 URL" data-advanced-label="extra_body.image[]">公开参考图 URL</label>
                     <input class="input" id="imageInputs" spellcheck="false" placeholder="公开图片 URL，多个可用换行分隔">
                   </div>
                   <div class="field" data-simple-param="video" hidden>
@@ -1724,11 +1730,11 @@
                     </select>
                   </div>
                   <div class="field wide" data-simple-param="video" hidden>
-                    <label for="videoImage" data-basic-label="参考图 URL" data-advanced-label="image">参考图 URL</label>
+                    <label for="videoImage" data-basic-label="首帧参考图 URL" data-advanced-label="image">首帧参考图 URL</label>
                     <input class="input" id="videoImage" type="url" placeholder="公开图片 URL">
                   </div>
                   <div class="field wide" data-simple-param="video" hidden>
-                    <label for="videoExtraImages" data-basic-label="关键帧 URL" data-advanced-label="extra_body.image[]">关键帧 URL</label>
+                    <label for="videoExtraImages" data-basic-label="更多关键帧 URL" data-advanced-label="extra_body.image[]">更多关键帧 URL</label>
                     <input class="input" id="videoExtraImages" spellcheck="false" placeholder="多张公开图片 URL，可用换行分隔">
                   </div>
                 </div>
@@ -1756,35 +1762,35 @@
               <summary>更多设置</summary>
               <div class="advanced-fields" id="advancedFields">
                 <div class="field" data-param="text">
-                  <label for="textTemperature" data-basic-label="创意程度" data-advanced-label="temperature">创意程度</label>
+                  <label for="textTemperature" data-basic-label="采样温度" data-advanced-label="temperature">采样温度</label>
                   <input class="input" id="textTemperature" type="number" min="0" max="2" step="0.1" value="0.7">
                 </div>
                 <div class="field" data-param="text">
-                  <label for="textMaxTokens" data-basic-label="回答长度" data-advanced-label="max_tokens">回答长度</label>
+                  <label for="textMaxTokens" data-basic-label="最大回复长度" data-advanced-label="max_tokens">最大回复长度</label>
                   <input class="input" id="textMaxTokens" type="number" min="1" step="1" value="1024">
                 </div>
                 <div class="field wide" data-param="text">
-                  <label for="textImageUrl" data-basic-label="图片 URL" data-advanced-label="messages.content[].image_url.url">图片 URL</label>
+                  <label for="textImageUrl" data-basic-label="公开图片 URL" data-advanced-label="messages.content[].image_url.url">公开图片 URL</label>
                   <input class="input" id="textImageUrl" spellcheck="false" placeholder="公开图片 URL，多个可用换行分隔">
                 </div>
                 <div class="field" data-param="image" hidden>
-                  <label for="imageOutput" data-basic-label="结果保存方式" data-advanced-label="response_format / return_base64">结果保存方式</label>
+                  <label for="imageOutput" data-basic-label="返回格式" data-advanced-label="response_format / return_base64">返回格式</label>
                   <select class="select" id="imageOutput">
                     <option value="url">直接预览</option>
-                    <option value="base64">保存为页面数据</option>
+                    <option value="base64">嵌入页面数据</option>
                   </select>
                 </div>
 
                 <div class="field" data-param="video" hidden>
-                  <label for="videoFrames" data-basic-label="画面数量" data-advanced-label="num_frames">画面数量</label>
+                  <label for="videoFrames" data-basic-label="视频帧数" data-advanced-label="num_frames">视频帧数</label>
                   <input class="input" id="videoFrames" type="number" min="9" max="441" step="8" value="121">
                 </div>
                 <div class="field" data-param="video" hidden>
-                  <label for="videoFrameRate" data-basic-label="流畅度" data-advanced-label="frame_rate">流畅度</label>
+                  <label for="videoFrameRate" data-basic-label="帧率" data-advanced-label="frame_rate">帧率</label>
                   <input class="input" id="videoFrameRate" type="number" min="1" max="60" step="1" value="24">
                 </div>
                 <div class="field" data-param="video" hidden>
-                  <label for="videoPollLimit" data-basic-label="等待次数" data-advanced-label="poll_limit">等待次数</label>
+                  <label for="videoPollLimit" data-basic-label="结果检查次数" data-advanced-label="poll_limit">结果检查次数</label>
                   <input class="input" id="videoPollLimit" type="number" min="1" max="120" step="1" value="60">
                 </div>
                 <div class="field full" data-param="video" hidden>
@@ -1891,7 +1897,7 @@
       imageOutput: {
         basic: {
           url: "直接预览",
-          base64: "保存为页面数据"
+          base64: "嵌入页面数据"
         },
         advanced: {
           url: 'response_format = "url"',

@@ -101,7 +101,7 @@ https://<user>.github.io/
 - 文本默认使用 `agnes-2.0-flash`；当用户添加图片或填写图片 URL 时，会自动使用支持文本+图片输入的 `agnes-1.5-flash`。
 - 文本流式响应会拆分 `delta.content` 与 `delta.reasoning_content`，正文和思考过程分开渲染。
 - 图片使用 `agnes-image-2.1-flash`，选项里提供画面比例、参考图 URL、本地参考图上传和结果保存方式。
-- 视频使用 `agnes-video-v2.0`，选项里提供画面比例、视频长度、公开参考图 URL、画面数量、流畅度、等待次数和不想出现的内容；本地上传图片会先通过 img.scdn.io 图床换成公开 URL。
+- 视频使用 `agnes-video-v2.0`，选项里提供画面比例、视频长度、公开参考图 URL、视频帧数、帧率、结果检查次数和不想出现的内容；本地上传图片会先通过 img.scdn.io 图床换成公开 URL。
 - 本地历史使用 `agnes_chat_sessions_v1` 作为 `localStorage` key；Agnes API Key 使用 `agnes_api_key` 作为 `localStorage` key。
 
 ## API 文档
