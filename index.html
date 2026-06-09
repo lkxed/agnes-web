@@ -3014,23 +3014,66 @@
           body: form
         });
       } catch (error) {
-        throw new Error("图床上传失败：网络请求没有成功。请检查网络或浏览器跨域限制。详情：" + error.message);
+        const err = new Error("图床上传失败：网络请求没有成功。请检查网络或浏览器跨域限制。详情：" + error.message);
+        err.raw = {
+          type: "image_host_network_error",
+          endpoint: IMAGE_HOST_UPLOAD_URL,
+          method: "POST",
+          file: item.name || "agnes-reference.png",
+          message: error.message,
+          created_at: new Date().toISOString()
+        };
+        throw err;
       }
       const text = await response.text();
       let data = null;
       try {
         data = text ? JSON.parse(text) : {};
       } catch (error) {
-        throw new Error("图床上传失败：响应不是有效 JSON。");
+        const err = new Error("图床上传失败：响应不是有效 JSON。");
+        err.raw = {
+          type: "image_host_invalid_json",
+          endpoint: IMAGE_HOST_UPLOAD_URL,
+          method: "POST",
+          status: response.status,
+          body: text
+        };
+        throw err;
       }
       if (!response.ok) {
-        throw new Error("图床上传失败：" + (data.message || data.error || response.statusText || String(response.status)));
+        const err = new Error("图床上传失败：" + (data.message || data.error || response.statusText || String(response.status)));
+        err.status = response.status;
+        err.raw = {
+          type: "image_host_http_error",
+          endpoint: IMAGE_HOST_UPLOAD_URL,
+          method: "POST",
+          status: response.status,
+          status_text: response.statusText,
+          body: data
+        };
+        throw err;
       }
       if (data && data.success === false) {
-        throw new Error("图床上传失败：" + (data.message || data.error || "上传接口返回失败"));
+        const err = new Error("图床上传失败：" + (data.message || data.error || "上传接口返回失败"));
+        err.raw = {
+          type: "image_host_upload_error",
+          endpoint: IMAGE_HOST_UPLOAD_URL,
+          method: "POST",
+          body: data
+        };
+        throw err;
       }
       const url = (data && data.data && data.data.url) || (data && data.url) || "";
-      if (!url) throw new Error("图床上传失败：响应中没有 url 或 data.url。");
+      if (!url) {
+        const err = new Error("图床上传失败：响应中没有 url 或 data.url。");
+        err.raw = {
+          type: "image_host_missing_url",
+          endpoint: IMAGE_HOST_UPLOAD_URL,
+          method: "POST",
+          body: data
+        };
+        throw err;
+      }
       return { url, raw: data };
     }
 
@@ -3106,7 +3149,7 @@
         headers: authHeaders(),
         body: JSON.stringify(payload)
       });
-      if (!response.ok) throw await responseError(response);
+      if (!response.ok) throw await responseError(response, "/v1/chat/completions", "POST");
       markApiKeyConnected();
       if (!response.body) throw new Error("浏览器不支持流式响应读取。");
       const reader = response.body.getReader();
@@ -3310,9 +3353,17 @@
       try {
         response = await fetch(API_BASE + path, init);
       } catch (error) {
-        throw new Error("网络请求失败。请检查网络、API 地址，或浏览器是否阻止跨域请求。详情：" + error.message);
+        const err = new Error("网络请求失败。请检查网络、API 地址，或浏览器是否阻止跨域请求。详情：" + error.message);
+        err.raw = {
+          type: "network_error",
+          endpoint: API_BASE + path,
+          method: init.method,
+          message: error.message,
+          created_at: new Date().toISOString()
+        };
+        throw err;
       }
-      if (!response.ok) throw await responseError(response);
+      if (!response.ok) throw await responseError(response, path, init.method);
       markApiKeyConnected();
       const text = await response.text();
       if (!text) return {};
@@ -3332,17 +3383,26 @@
       };
     }
 
-    async function responseError(response) {
+    async function responseError(response, path, method) {
       const text = await response.text();
       let detail = text;
+      let body = text;
       try {
         const json = JSON.parse(text);
+        body = json;
         detail = json.error && json.error.message ? json.error.message : JSON.stringify(json, null, 2);
       } catch (error) {
         detail = text || response.statusText;
       }
       const err = new Error("Agnes API 返回 " + response.status + "：" + detail);
-      err.raw = text;
+      err.raw = {
+        type: "http_error",
+        endpoint: API_BASE + path,
+        method,
+        status: response.status,
+        status_text: response.statusText,
+        body
+      };
       err.status = response.status;
       if (response.status === 401) {
         state.keyState = "invalid";
@@ -3475,7 +3535,7 @@
       const patch = {
         status: "error",
         content: formatError(error),
-        raw: error && error.raw ? error.raw : null
+        raw: debugErrorDetails(error)
       };
       if (loading) updateMessage(loading.id, patch);
       else appendMessage({ mode: state.mode, role: "assistant", ...patch });
@@ -3584,7 +3644,17 @@
       const footer = node.querySelector(".message-footer");
       if (footer) footer.replaceWith(renderMessageFooter(message));
       const raw = node.querySelector(".raw-block");
-      if (raw && message.raw) raw.textContent = stringify(message.raw);
+      const rawDetails = node.querySelector(".debug-details");
+      if (state.advancedMode && state.showDebug && message.raw) {
+        if (raw) {
+          raw.textContent = stringify(message.raw);
+        } else {
+          const bubble = node.querySelector(".bubble");
+          if (bubble) bubble.appendChild(renderRaw(message.raw, message.id));
+        }
+      } else if (rawDetails) {
+        rawDetails.remove();
+      }
       const task = node.querySelector(".task-progress");
       if (task && message.task) {
         const status = task.querySelector("[data-task-status]");
@@ -3957,12 +4027,27 @@
         return "连接 Agnes 失败：这个 API Key 看起来无效或已过期，请重新粘贴后再试。";
       }
       if (message.includes("网络请求失败") || message.includes("跨域")) {
+        if (state.mode === "video") {
+          return "视频请求暂时没有连上 Agnes。请检查网络连接，稍后再试。";
+        }
         return "这次没有连上 Agnes。请检查网络连接，稍后再试。";
       }
       if (error && error.status) {
         return "这次创作没有成功。可以展开调试详情查看 Agnes 返回的信息。";
       }
       return message;
+    }
+
+    function debugErrorDetails(error) {
+      if (error && error.raw) return error.raw;
+      return {
+        type: "client_error",
+        mode: state.mode,
+        message: error && error.message ? error.message : String(error),
+        name: error && error.name ? error.name : "Error",
+        status: error && error.status ? error.status : null,
+        created_at: new Date().toISOString()
+      };
     }
 
     function statusLabel(status) {
