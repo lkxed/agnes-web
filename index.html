@@ -1115,11 +1115,6 @@
       pointer-events: none;
     }
 
-    .composer-tools {
-      display: grid;
-      gap: 10px;
-    }
-
     .attachment-panel {
       display: grid;
       gap: 8px;
@@ -1379,8 +1374,7 @@
       object-fit: contain;
     }
 
-    .simple-settings,
-    .advanced-fields {
+    .simple-settings {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 10px;
@@ -1389,6 +1383,10 @@
     .composer-toolbar .composer-options {
       grid-column: 1;
       grid-row: 1;
+    }
+
+    .quick-text-options:not([hidden]) + .composer-options {
+      grid-column: 2;
     }
 
     .composer-toolbar .simple-settings {
@@ -1400,13 +1398,15 @@
       grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
     }
 
-    .simple-settings .wide,
-    .advanced-fields .wide {
+    .simple-settings > .advanced-fields {
+      display: contents;
+    }
+
+    .simple-settings .wide {
       grid-column: span 2;
     }
 
-    .simple-settings .full,
-    .advanced-fields .full {
+    .simple-settings .full {
       grid-column: 1 / -1;
     }
 
@@ -1450,40 +1450,6 @@
       accent-color: var(--brand);
     }
 
-    .advanced-settings {
-      min-width: 0;
-      border-top: 1px solid var(--line);
-      padding-top: 8px;
-    }
-
-    .advanced-settings summary {
-      display: inline-flex;
-      align-items: center;
-      min-height: 32px;
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 800;
-      list-style: none;
-      cursor: pointer;
-    }
-
-    .advanced-settings summary::-webkit-details-marker {
-      display: none;
-    }
-
-    .advanced-fields {
-      grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
-      margin-top: 8px;
-    }
-
-    .advanced-toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-      margin: 2px 0 8px;
-    }
-
     .toast {
       position: fixed;
       right: 18px;
@@ -1520,8 +1486,7 @@
         grid-template-columns: 1fr;
       }
 
-      .simple-settings,
-      .advanced-fields {
+      .simple-settings {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
@@ -1622,13 +1587,11 @@
         width: 44px;
       }
 
-      .simple-settings,
-      .advanced-fields {
+      .simple-settings {
         grid-template-columns: 1fr;
       }
 
-      .simple-settings .wide,
-      .advanced-fields .wide {
+      .simple-settings .wide {
         grid-column: auto;
       }
 
@@ -1810,6 +1773,43 @@
                     <label for="videoExtraImages" data-basic-label="更多关键帧 URL" data-advanced-label="extra_body.image[]">更多关键帧 URL</label>
                     <input class="input" id="videoExtraImages" spellcheck="false" placeholder="多张公开图片 URL，可用换行分隔">
                   </div>
+                  <div class="advanced-fields" id="advancedFields">
+                    <div class="field" data-param="text">
+                      <label for="textTemperature" data-basic-label="采样温度" data-advanced-label="temperature">采样温度</label>
+                      <input class="input" id="textTemperature" type="number" min="0" max="2" step="0.1" value="0.7">
+                    </div>
+                    <div class="field" data-param="text">
+                      <label for="textMaxTokens" data-basic-label="最大回复长度" data-advanced-label="max_tokens">最大回复长度</label>
+                      <input class="input" id="textMaxTokens" type="number" min="1" step="1" value="1024">
+                    </div>
+                    <div class="field wide" data-param="text">
+                      <label for="textImageUrl" data-basic-label="公开图片 URL" data-advanced-label="messages.content[].image_url.url">公开图片 URL</label>
+                      <input class="input" id="textImageUrl" spellcheck="false" placeholder="公开图片 URL，多个可用换行分隔">
+                    </div>
+                    <div class="field" data-param="image" hidden>
+                      <label for="imageOutput" data-basic-label="返回格式" data-advanced-label="response_format / return_base64">返回格式</label>
+                      <select class="select" id="imageOutput">
+                        <option value="url">直接预览</option>
+                        <option value="base64">嵌入页面数据</option>
+                      </select>
+                    </div>
+                    <div class="field" data-param="video" hidden>
+                      <label for="videoFrames" data-basic-label="视频帧数" data-advanced-label="num_frames">视频帧数</label>
+                      <input class="input" id="videoFrames" type="number" min="9" max="441" step="8" value="121">
+                    </div>
+                    <div class="field" data-param="video" hidden>
+                      <label for="videoFrameRate" data-basic-label="帧率" data-advanced-label="frame_rate">帧率</label>
+                      <input class="input" id="videoFrameRate" type="number" min="1" max="60" step="1" value="24">
+                    </div>
+                    <div class="field" data-param="video" hidden>
+                      <label for="videoPollLimit" data-basic-label="结果检查次数" data-advanced-label="poll_limit">结果检查次数</label>
+                      <input class="input" id="videoPollLimit" type="number" min="1" max="120" step="1" value="60">
+                    </div>
+                    <div class="field full" data-param="video" hidden>
+                      <label for="videoNegative" data-basic-label="不想出现的内容" data-advanced-label="negative_prompt">不想出现的内容</label>
+                      <input class="input" id="videoNegative" spellcheck="false" placeholder="例如：低清晰度、变形、杂乱背景">
+                    </div>
+                  </div>
                 </div>
             </div>
             <div class="composer-right-tools">
@@ -1828,50 +1828,6 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"></path><path d="m5 12 7-7 7 7"></path></svg>
               </button>
             </div>
-          </div>
-
-          <div class="composer-tools">
-            <details class="advanced-settings" id="advancedSettings">
-              <summary>更多设置</summary>
-              <div class="advanced-fields" id="advancedFields">
-                <div class="field" data-param="text">
-                  <label for="textTemperature" data-basic-label="采样温度" data-advanced-label="temperature">采样温度</label>
-                  <input class="input" id="textTemperature" type="number" min="0" max="2" step="0.1" value="0.7">
-                </div>
-                <div class="field" data-param="text">
-                  <label for="textMaxTokens" data-basic-label="最大回复长度" data-advanced-label="max_tokens">最大回复长度</label>
-                  <input class="input" id="textMaxTokens" type="number" min="1" step="1" value="1024">
-                </div>
-                <div class="field wide" data-param="text">
-                  <label for="textImageUrl" data-basic-label="公开图片 URL" data-advanced-label="messages.content[].image_url.url">公开图片 URL</label>
-                  <input class="input" id="textImageUrl" spellcheck="false" placeholder="公开图片 URL，多个可用换行分隔">
-                </div>
-                <div class="field" data-param="image" hidden>
-                  <label for="imageOutput" data-basic-label="返回格式" data-advanced-label="response_format / return_base64">返回格式</label>
-                  <select class="select" id="imageOutput">
-                    <option value="url">直接预览</option>
-                    <option value="base64">嵌入页面数据</option>
-                  </select>
-                </div>
-
-                <div class="field" data-param="video" hidden>
-                  <label for="videoFrames" data-basic-label="视频帧数" data-advanced-label="num_frames">视频帧数</label>
-                  <input class="input" id="videoFrames" type="number" min="9" max="441" step="8" value="121">
-                </div>
-                <div class="field" data-param="video" hidden>
-                  <label for="videoFrameRate" data-basic-label="帧率" data-advanced-label="frame_rate">帧率</label>
-                  <input class="input" id="videoFrameRate" type="number" min="1" max="60" step="1" value="24">
-                </div>
-                <div class="field" data-param="video" hidden>
-                  <label for="videoPollLimit" data-basic-label="结果检查次数" data-advanced-label="poll_limit">结果检查次数</label>
-                  <input class="input" id="videoPollLimit" type="number" min="1" max="120" step="1" value="60">
-                </div>
-                <div class="field full" data-param="video" hidden>
-                  <label for="videoNegative" data-basic-label="不想出现的内容" data-advanced-label="negative_prompt">不想出现的内容</label>
-                  <input class="input" id="videoNegative" spellcheck="false" placeholder="例如：低清晰度、变形、杂乱背景">
-                </div>
-              </div>
-            </details>
           </div>
         </form>
       </div>
@@ -2054,7 +2010,6 @@
       quickTextOptions: document.getElementById("quickTextOptions"),
       optionsSettings: document.getElementById("optionsSettings"),
       simpleSettings: document.getElementById("simpleSettings"),
-      advancedSettings: document.getElementById("advancedSettings"),
       advancedFields: document.getElementById("advancedFields"),
       promptInput: document.getElementById("promptInput"),
       sendButton: document.getElementById("sendButton"),
@@ -2574,9 +2529,7 @@
       if (!hasOptions) state.optionsOpen = false;
       els.optionsSettings.hidden = !hasOptions;
       els.optionsSettings.setAttribute("aria-expanded", String(state.optionsOpen));
-      els.simpleSettings.hidden = !hasSimpleOptions || !state.optionsOpen;
-      els.advancedSettings.hidden = !hasExtraOptions || !state.optionsOpen;
-      els.advancedSettings.open = hasExtraOptions && state.optionsOpen;
+      els.simpleSettings.hidden = !hasOptions || !state.optionsOpen;
       Array.from(els.simpleSettings.querySelectorAll("[data-simple-param]")).forEach((el) => {
         el.hidden = el.dataset.simpleParam !== state.mode;
       });
