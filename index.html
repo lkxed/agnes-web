@@ -815,39 +815,6 @@
       margin-top: 12px;
     }
 
-    .debug-details {
-      margin-top: 12px;
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: color-mix(in srgb, var(--panel), var(--bg) 10%);
-    }
-
-    .debug-details summary {
-      min-height: 38px;
-      padding: 9px 12px;
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 800;
-      cursor: pointer;
-      list-style: none;
-    }
-
-    .debug-details summary::-webkit-details-marker {
-      display: none;
-    }
-
-    .raw-block {
-      max-height: 260px;
-      margin: 0;
-      padding: 12px;
-      overflow: auto;
-      border-top: 1px solid var(--line);
-      color: color-mix(in srgb, var(--text), var(--muted) 18%);
-      font-size: 12px;
-      line-height: 1.55;
-      white-space: pre-wrap;
-    }
-
     .debug-button,
     .ghost-button {
       display: inline-flex;
@@ -1717,11 +1684,7 @@
               <div class="quick-text-options" id="quickTextOptions" data-simple-param="text" hidden>
                 <label class="composer-toggle" for="textThinking">
                   <input id="textThinking" type="checkbox">
-                  <span data-basic-label="思考模式" data-advanced-label="chat_template_kwargs.enable_thinking" data-keep-basic-label>思考模式</span>
-                </label>
-                <label class="composer-toggle" for="textStream">
-                  <input id="textStream" type="checkbox">
-                  <span data-basic-label="流式输出" data-advanced-label="stream" data-keep-basic-label>流式输出</span>
+                  <span data-basic-label="思考" data-advanced-label="chat_template_kwargs.enable_thinking" data-keep-basic-label>思考</span>
                 </label>
               </div>
               <button class="composer-options" id="optionsSettings" type="button" aria-expanded="false">选项</button>
@@ -1791,9 +1754,6 @@
           <div class="composer-tools">
             <details class="advanced-settings" id="advancedSettings">
               <summary>更多设置</summary>
-              <div class="advanced-toolbar">
-                <button class="tool-button" id="debugToggleButton" type="button" aria-pressed="false">显示问题详情</button>
-              </div>
               <div class="advanced-fields" id="advancedFields">
                 <div class="field" data-param="text">
                   <label for="textTemperature" data-basic-label="创意程度" data-advanced-label="temperature">创意程度</label>
@@ -1987,7 +1947,6 @@
       cancelRequested: false,
       historyQuery: "",
       attachments: emptyAttachments(),
-      showDebug: false,
       previewItems: [],
       previewIndex: 0,
       openHistoryMenuId: null,
@@ -2017,7 +1976,6 @@
       simpleSettings: document.getElementById("simpleSettings"),
       advancedSettings: document.getElementById("advancedSettings"),
       advancedFields: document.getElementById("advancedFields"),
-      debugToggleButton: document.getElementById("debugToggleButton"),
       promptInput: document.getElementById("promptInput"),
       sendButton: document.getElementById("sendButton"),
       composer: document.getElementById("composer"),
@@ -2031,7 +1989,6 @@
       textTemperature: document.getElementById("textTemperature"),
       textMaxTokens: document.getElementById("textMaxTokens"),
       textImageUrl: document.getElementById("textImageUrl"),
-      textStream: document.getElementById("textStream"),
       textThinking: document.getElementById("textThinking"),
       uploadImagesButton: document.getElementById("uploadImagesButton"),
       uploadImagesLabel: document.getElementById("uploadImagesLabel"),
@@ -2141,12 +2098,6 @@
         pill.addEventListener("click", () => setMode(pill.dataset.mode));
       });
 
-      els.debugToggleButton.addEventListener("click", () => {
-        state.showDebug = !state.showDebug;
-        renderDebugToggle();
-        renderThread();
-      });
-
       els.welcomeSuggestions.addEventListener("click", (event) => {
         const chip = event.target.closest(".suggestion-chip");
         if (!chip) return;
@@ -2181,7 +2132,7 @@
         persistActiveSettings();
       });
 
-      [els.imageSize, els.imageOutput, els.imageInputs, els.videoSize, els.videoImage, els.videoExtraImages, els.videoNegative, els.textTemperature, els.textMaxTokens, els.textImageUrl, els.textStream, els.textThinking, els.videoFrames, els.videoFrameRate, els.videoPollLimit].forEach((control) => {
+      [els.imageSize, els.imageOutput, els.imageInputs, els.videoSize, els.videoImage, els.videoExtraImages, els.videoNegative, els.textTemperature, els.textMaxTokens, els.textImageUrl, els.textThinking, els.videoFrames, els.videoFrameRate, els.videoPollLimit].forEach((control) => {
         control.addEventListener("change", persistActiveSettings);
         control.addEventListener("input", persistActiveSettings);
       });
@@ -2272,7 +2223,6 @@
         textTemperature: "0.7",
         textMaxTokens: "1024",
         textImageUrl: "",
-        textStream: false,
         textThinking: false,
         imageSize: "auto",
         imageOutput: "url",
@@ -2529,7 +2479,6 @@
       });
       renderFieldLabels();
       renderOptionText();
-      renderDebugToggle();
       renderAttachments();
     }
 
@@ -2548,12 +2497,6 @@
           option.textContent = labels[option.value] || option.textContent;
         });
       });
-    }
-
-    function renderDebugToggle() {
-      els.debugToggleButton.hidden = !state.optionsOpen;
-      els.debugToggleButton.setAttribute("aria-pressed", String(state.showDebug));
-      els.debugToggleButton.textContent = state.showDebug ? "隐藏问题详情" : "显示问题详情";
     }
 
     function renderSuggestions() {
@@ -2872,7 +2815,6 @@
       els.textTemperature.value = data.textTemperature;
       els.textMaxTokens.value = data.textMaxTokens;
       els.textImageUrl.value = data.textImageUrl;
-      els.textStream.checked = Boolean(data.textStream);
       els.textThinking.checked = Boolean(data.textThinking);
       els.imageSize.value = data.imageSize;
       els.imageOutput.value = data.imageOutput;
@@ -2892,7 +2834,6 @@
         textTemperature: els.textTemperature.value,
         textMaxTokens: els.textMaxTokens.value,
         textImageUrl: els.textImageUrl.value,
-        textStream: els.textStream.checked,
         textThinking: els.textThinking.checked,
         imageSize: els.imageSize.value,
         imageOutput: els.imageOutput.value,
@@ -3137,14 +3078,17 @@
       const assistant = appendMessage({ mode: "text", role: "assistant", status: "loading", content: "" });
       const content = buildTextContent(prompt, textImages);
       const hasImages = textImages.length > 0;
+      const useThinking = !hasImages && els.textThinking.checked;
       const payload = {
         model: hasImages ? TEXT_IMAGE_MODEL : TEXT_DEFAULT_MODEL,
         messages: buildChatMessages(content, userMessage.id),
         temperature: numberOrDefault(els.textTemperature.value, 0.7),
         max_tokens: Math.max(1, parseInt(els.textMaxTokens.value, 10) || 1024)
       };
-      if (!hasImages && els.textStream.checked) payload.stream = true;
-      if (!hasImages && els.textThinking.checked) payload.chat_template_kwargs = { enable_thinking: true };
+      if (useThinking) {
+        payload.stream = true;
+        payload.chat_template_kwargs = { enable_thinking: true };
+      }
       userMessage.raw = sanitizeForStorage(payload);
       saveActive();
       if (payload.stream) {
@@ -3262,7 +3206,7 @@
       const url = first.url || "";
       const b64 = first.b64_json || "";
       if (!url && !b64) {
-        updateMessage(assistant.id, { status: "done", content: "图片已经处理完成，但这次没有拿到可预览的结果。可以在选项里显示问题详情查看。", raw: data });
+        updateMessage(assistant.id, { status: "done", content: "图片已经处理完成，但这次没有拿到可预览的结果。可以换个描述后再试。", raw: data });
         return;
       }
       updateMessage(assistant.id, {
@@ -3322,7 +3266,7 @@
         }
       });
       if (!videoId && !taskId) {
-        updateMessage(assistant.id, { status: "done", content: "视频任务已创建，但没有拿到可自动查询的编号。可以在选项里显示问题详情查看。", raw: task });
+        updateMessage(assistant.id, { status: "done", content: "视频任务已创建，但没有拿到可自动查询的编号。可以稍后重新尝试。", raw: task });
         return;
       }
       await pollVideoResult(assistant.id, videoId, taskId);
@@ -3370,7 +3314,7 @@
         if (status === "failed") {
           updateMessage(messageId, {
             status: "error",
-            content: "视频创作失败了。可以在选项里显示问题详情查看 Agnes 返回的详细原因。",
+            content: "视频创作失败了。可以调整描述或参考图后再试。",
             raw: data
           });
           return;
@@ -3378,7 +3322,7 @@
       }
       updateMessage(messageId, {
         status: "done",
-        content: "等待时间到了，视频可能还在制作中。可以稍后用问题详情里的 video_id 再查询。",
+        content: "等待时间到了，视频可能还在制作中。可以稍后再试。",
         raw: last
       });
     }
@@ -3613,7 +3557,6 @@
       if (message.attachments && message.attachments.length) bubble.appendChild(renderMessageAttachments(message.attachments));
       if (message.task) bubble.appendChild(renderTask(message.task));
       if (message.result) bubble.appendChild(renderResult(message.result));
-      if (state.showDebug && message.raw) bubble.appendChild(renderRaw(message.raw, message.id));
       content.append(bubble, renderMessageFooter(message));
       article.append(avatar, content);
       return article;
@@ -3624,15 +3567,6 @@
       footer.className = "message-footer";
       const info = document.createElement("div");
       info.className = "message-footer-info";
-      if (state.showDebug) {
-        const tag = document.createElement("span");
-        tag.className = "mode-tag";
-        tag.textContent = MODE_CONFIG[message.mode].tag;
-        const status = document.createElement("span");
-        status.textContent = statusLabel(message.status);
-        status.className = message.status === "error" ? "error-text" : "";
-        info.append(tag, status);
-      }
       const time = document.createElement("span");
       time.textContent = formatMessageTime(message.createdAt);
       time.title = formatExactTime(message.createdAt);
@@ -3686,18 +3620,6 @@
       if (body) body.textContent = message.content || "";
       const footer = node.querySelector(".message-footer");
       if (footer) footer.replaceWith(renderMessageFooter(message));
-      const raw = node.querySelector(".raw-block");
-      const rawDetails = node.querySelector(".debug-details");
-      if (state.showDebug && message.raw) {
-        if (raw) {
-          raw.textContent = stringify(message.raw);
-        } else {
-          const bubble = node.querySelector(".bubble");
-          if (bubble) bubble.appendChild(renderRaw(message.raw, message.id));
-        }
-      } else if (rawDetails) {
-        rawDetails.remove();
-      }
       const task = node.querySelector(".task-progress");
       if (task && message.task) {
         const status = task.querySelector("[data-task-status]");
@@ -3850,25 +3772,6 @@
       media.src = result.url;
       wrap.appendChild(media);
       return wrap;
-    }
-
-    function renderRaw(raw, id) {
-      const details = document.createElement("details");
-      details.className = "debug-details";
-      const summary = document.createElement("summary");
-      summary.textContent = "问题详情";
-      const pre = document.createElement("pre");
-      pre.className = "raw-block";
-      pre.textContent = stringify(raw);
-      const actions = document.createElement("div");
-      actions.className = "message-actions";
-      const button = createTextButton("复制问题详情", async () => {
-        await copyText(stringify(raw));
-        toast("问题详情已复制");
-      });
-      actions.appendChild(button);
-      details.append(summary, pre, actions);
-      return details;
     }
 
     function saveActive() {
@@ -4076,7 +3979,7 @@
         return "这次没有连上 Agnes。请检查网络连接，稍后再试。";
       }
       if (error && error.status) {
-        return "这次创作没有成功。可以在选项里显示问题详情查看 Agnes 返回的信息。";
+        return "这次创作没有成功。可以调整内容后再试。";
       }
       return message;
     }
