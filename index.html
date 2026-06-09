@@ -1078,7 +1078,6 @@
       background: color-mix(in srgb, var(--danger), var(--panel-3) 10%);
     }
 
-    .advanced-mode-button,
     .composer-options,
     .composer-toggle {
       position: relative;
@@ -1097,12 +1096,10 @@
       white-space: nowrap;
     }
 
-    .composer-left-tools:has(.composer-options:not([hidden])) > .advanced-mode-button {
-      grid-column: 2;
-      grid-row: 1;
+    .composer-options {
+      justify-self: start;
     }
 
-    .advanced-mode-button[aria-pressed="true"],
     .composer-options[aria-expanded="true"],
     .composer-toggle:has(input:checked) {
       color: color-mix(in srgb, var(--brand), white 14%);
@@ -1727,7 +1724,7 @@
                   <span data-basic-label="流式输出" data-advanced-label="stream" data-keep-basic-label>流式输出</span>
                 </label>
               </div>
-              <button class="composer-options" id="optionsSettings" type="button" aria-expanded="false">创作选项</button>
+              <button class="composer-options" id="optionsSettings" type="button" aria-expanded="false">选项</button>
                 <div class="simple-settings" id="simpleSettings" hidden>
                   <div class="field" data-simple-param="image" hidden>
                     <label for="imageSize" data-basic-label="画面比例" data-advanced-label="size">画面比例</label>
@@ -1757,10 +1754,10 @@
                   <div class="field" data-simple-param="video" hidden>
                     <label for="videoDuration" data-basic-label="视频长度" data-advanced-label="num_frames / frame_rate">视频长度</label>
                     <select class="select" id="videoDuration">
-                      <option value="121:24">标准短片 · 121 帧 / 24 FPS</option>
-                      <option value="81:24">更短更快 · 81 帧 / 24 FPS</option>
-                      <option value="201:24">更长展示 · 201 帧 / 24 FPS</option>
-                      <option value="custom">使用高级设置 · 自定义帧数 / FPS</option>
+                      <option value="121:24">标准短片 · 约 5 秒</option>
+                      <option value="81:24">更短更快 · 约 3 秒</option>
+                      <option value="201:24">更长展示 · 约 8 秒</option>
+                      <option value="custom">自定义长度 · 手动设置</option>
                     </select>
                   </div>
                   <div class="field wide" data-simple-param="video" hidden>
@@ -1772,11 +1769,10 @@
                     <input class="input" id="videoExtraImages" spellcheck="false" placeholder="多张公开图片 URL，可用换行分隔">
                   </div>
                 </div>
-              <button class="advanced-mode-button" id="advancedModeButton" type="button" aria-pressed="false">高级选项</button>
             </div>
             <div class="composer-right-tools">
               <div class="attachment-actions">
-                <button class="tool-button" id="uploadImagesButton" type="button">
+                <button class="tool-button" id="uploadImagesButton" type="button" title="添加图片，切换聊天、图片、视频后仍可使用" aria-label="添加图片，切换聊天、图片、视频后仍可使用">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.6-8.5 8.5a5 5 0 0 1-7.1-7.1l9.2-9.2a3.5 3.5 0 0 1 5 5l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"></path></svg>
                   <span id="uploadImagesLabel">添加图片</span>
                 </button>
@@ -1794,9 +1790,9 @@
 
           <div class="composer-tools">
             <details class="advanced-settings" id="advancedSettings">
-              <summary>API 选项</summary>
+              <summary>更多设置</summary>
               <div class="advanced-toolbar">
-                <button class="tool-button" id="debugToggleButton" type="button" aria-pressed="false">显示调试信息</button>
+                <button class="tool-button" id="debugToggleButton" type="button" aria-pressed="false">显示问题详情</button>
               </div>
               <div class="advanced-fields" id="advancedFields">
                 <div class="field" data-param="text">
@@ -1808,27 +1804,27 @@
                   <input class="input" id="textMaxTokens" type="number" min="1" step="1" value="1024">
                 </div>
                 <div class="field wide" data-param="text">
-                  <label for="textImageUrl" data-basic-label="附加图片 URL" data-advanced-label="messages.content[].image_url.url">附加图片 URL</label>
-                  <input class="input" id="textImageUrl" type="url" placeholder="https://example.com/image.jpg">
+                  <label for="textImageUrl" data-basic-label="图片 URL" data-advanced-label="messages.content[].image_url.url">图片 URL</label>
+                  <input class="input" id="textImageUrl" spellcheck="false" placeholder="公开图片 URL，多个可用换行分隔">
                 </div>
                 <div class="field" data-param="image" hidden>
-                  <label for="imageOutput" data-basic-label="结果格式" data-advanced-label="response_format / return_base64">结果格式</label>
+                  <label for="imageOutput" data-basic-label="结果保存方式" data-advanced-label="response_format / return_base64">结果保存方式</label>
                   <select class="select" id="imageOutput">
                     <option value="url">直接预览</option>
-                    <option value="base64">Base64</option>
+                    <option value="base64">保存为页面数据</option>
                   </select>
                 </div>
 
                 <div class="field" data-param="video" hidden>
-                  <label for="videoFrames" data-basic-label="帧数" data-advanced-label="num_frames">帧数</label>
+                  <label for="videoFrames" data-basic-label="画面数量" data-advanced-label="num_frames">画面数量</label>
                   <input class="input" id="videoFrames" type="number" min="9" max="441" step="8" value="121">
                 </div>
                 <div class="field" data-param="video" hidden>
-                  <label for="videoFrameRate" data-basic-label="FPS" data-advanced-label="frame_rate">FPS</label>
+                  <label for="videoFrameRate" data-basic-label="流畅度" data-advanced-label="frame_rate">流畅度</label>
                   <input class="input" id="videoFrameRate" type="number" min="1" max="60" step="1" value="24">
                 </div>
                 <div class="field" data-param="video" hidden>
-                  <label for="videoPollLimit" data-basic-label="检查次数" data-advanced-label="poll_limit">检查次数</label>
+                  <label for="videoPollLimit" data-basic-label="等待次数" data-advanced-label="poll_limit">等待次数</label>
                   <input class="input" id="videoPollLimit" type="number" min="1" max="120" step="1" value="60">
                 </div>
                 <div class="field full" data-param="video" hidden>
@@ -1920,10 +1916,10 @@
       },
       videoDuration: {
         basic: {
-          "121:24": "标准短片 · 121 帧 / 24 FPS",
-          "81:24": "更短更快 · 81 帧 / 24 FPS",
-          "201:24": "更长展示 · 201 帧 / 24 FPS",
-          custom: "使用高级设置 · 自定义帧数 / FPS"
+          "121:24": "标准短片 · 约 5 秒",
+          "81:24": "更短更快 · 约 3 秒",
+          "201:24": "更长展示 · 约 8 秒",
+          custom: "自定义长度 · 手动设置"
         },
         advanced: {
           "121:24": "num_frames = 121 · frame_rate = 24",
@@ -1935,7 +1931,7 @@
       imageOutput: {
         basic: {
           url: "直接预览",
-          base64: "Base64"
+          base64: "保存为页面数据"
         },
         advanced: {
           url: 'response_format = "url"',
@@ -1991,7 +1987,6 @@
       cancelRequested: false,
       historyQuery: "",
       attachments: emptyAttachments(),
-      advancedMode: false,
       showDebug: false,
       previewItems: [],
       previewIndex: 0,
@@ -2022,7 +2017,6 @@
       simpleSettings: document.getElementById("simpleSettings"),
       advancedSettings: document.getElementById("advancedSettings"),
       advancedFields: document.getElementById("advancedFields"),
-      advancedModeButton: document.getElementById("advancedModeButton"),
       debugToggleButton: document.getElementById("debugToggleButton"),
       promptInput: document.getElementById("promptInput"),
       sendButton: document.getElementById("sendButton"),
@@ -2145,13 +2139,6 @@
 
       els.modePills.forEach((pill) => {
         pill.addEventListener("click", () => setMode(pill.dataset.mode));
-      });
-
-      els.advancedModeButton.addEventListener("click", () => {
-        state.advancedMode = !state.advancedMode;
-        if (!state.advancedMode) state.showDebug = false;
-        renderMode();
-        renderThread();
       });
 
       els.debugToggleButton.addEventListener("click", () => {
@@ -2524,16 +2511,16 @@
         els.sendButton.title = config.buttonLabel;
         els.sendButton.setAttribute("aria-label", config.buttonLabel);
       }
-      els.advancedModeButton.setAttribute("aria-pressed", String(state.advancedMode));
-      els.advancedModeButton.textContent = "高级选项";
-      els.advancedSettings.hidden = !state.advancedMode;
-      els.advancedSettings.open = state.advancedMode;
       const hasSimpleOptions = Array.from(els.simpleSettings.querySelectorAll("[data-simple-param]")).some((el) => el.dataset.simpleParam === state.mode);
+      const hasExtraOptions = Array.from(els.advancedFields.querySelectorAll("[data-param]")).some((el) => el.dataset.param === state.mode);
+      const hasOptions = hasSimpleOptions || hasExtraOptions;
       els.quickTextOptions.hidden = state.mode !== "text";
-      if (!hasSimpleOptions) state.optionsOpen = false;
-      els.optionsSettings.hidden = !hasSimpleOptions;
+      if (!hasOptions) state.optionsOpen = false;
+      els.optionsSettings.hidden = !hasOptions;
       els.optionsSettings.setAttribute("aria-expanded", String(state.optionsOpen));
       els.simpleSettings.hidden = !hasSimpleOptions || !state.optionsOpen;
+      els.advancedSettings.hidden = !hasExtraOptions || !state.optionsOpen;
+      els.advancedSettings.open = hasExtraOptions && state.optionsOpen;
       Array.from(els.simpleSettings.querySelectorAll("[data-simple-param]")).forEach((el) => {
         el.hidden = el.dataset.simpleParam !== state.mode;
       });
@@ -2547,10 +2534,8 @@
     }
 
     function renderFieldLabels() {
-      const key = state.advancedMode ? "advancedLabel" : "basicLabel";
       document.querySelectorAll("[data-basic-label][data-advanced-label]").forEach((node) => {
-        const labelKey = node.hasAttribute("data-keep-basic-label") ? "basicLabel" : key;
-        node.textContent = node.dataset[labelKey] || node.textContent;
+        node.textContent = node.dataset.basicLabel || node.textContent;
       });
     }
 
@@ -2558,7 +2543,7 @@
       Object.entries(OPTION_TEXT).forEach(([id, modes]) => {
         const select = document.getElementById(id);
         if (!select) return;
-        const labels = state.advancedMode ? modes.advanced : modes.basic;
+        const labels = modes.basic;
         Array.from(select.options).forEach((option) => {
           option.textContent = labels[option.value] || option.textContent;
         });
@@ -2566,9 +2551,9 @@
     }
 
     function renderDebugToggle() {
-      els.debugToggleButton.hidden = !state.advancedMode;
+      els.debugToggleButton.hidden = !state.optionsOpen;
       els.debugToggleButton.setAttribute("aria-pressed", String(state.showDebug));
-      els.debugToggleButton.textContent = state.showDebug ? "隐藏调试信息" : "显示调试信息";
+      els.debugToggleButton.textContent = state.showDebug ? "隐藏问题详情" : "显示问题详情";
     }
 
     function renderSuggestions() {
@@ -2933,14 +2918,14 @@
     }
 
     function emptyAttachments() {
-      return { text: [], image: [], video: [] };
+      return [];
     }
 
     async function handleImageFileSelection(event) {
       const files = Array.from(event.target.files || []).filter((file) => file.type && file.type.startsWith("image/"));
       event.target.value = "";
       if (!files.length) return;
-      const bucket = state.attachments[state.mode] || [];
+      const bucket = state.attachments || [];
       const remaining = Math.max(0, MAX_ATTACHMENTS - bucket.length);
       if (!remaining) {
         toast("最多可添加 " + MAX_ATTACHMENTS + " 张图片");
@@ -2966,12 +2951,12 @@
           toast("读取图片失败：" + (file.name || "本地图片"));
         }
       }
-      state.attachments[state.mode] = bucket;
+      state.attachments = bucket;
       renderAttachments();
     }
 
     function renderAttachments() {
-      const items = state.attachments[state.mode] || [];
+      const items = state.attachments || [];
       els.clearAttachmentsButton.hidden = !items.length;
       els.uploadImagesLabel.textContent = items.length ? "添加图片 (" + items.length + "/" + MAX_ATTACHMENTS + ")" : "添加图片";
       els.attachmentList.hidden = !items.length;
@@ -2996,25 +2981,25 @@
         remove.title = "移除图片";
         remove.setAttribute("aria-label", "移除图片");
         remove.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>';
-        remove.addEventListener("click", () => removeAttachment(state.mode, item.id));
+        remove.addEventListener("click", () => removeAttachment(item.id));
         chip.append(img, info, remove);
         els.attachmentList.appendChild(chip);
       });
     }
 
-    function removeAttachment(mode, id) {
-      state.attachments[mode] = (state.attachments[mode] || []).filter((item) => item.id !== id);
+    function removeAttachment(id) {
+      state.attachments = (state.attachments || []).filter((item) => item.id !== id);
       renderAttachments();
     }
 
-    function clearModeAttachments(mode) {
-      state.attachments[mode] = [];
+    function clearModeAttachments() {
+      state.attachments = [];
       renderAttachments();
     }
 
     function attachmentMetas(mode, urlText, options = {}) {
       const includeLocal = options.includeLocal !== false;
-      const local = includeLocal ? (state.attachments[mode] || []).map(({ id, name, type, size, dataUrl }) => ({
+      const local = includeLocal ? (state.attachments || []).map(({ id, name, type, size, dataUrl }) => ({
         id,
         name,
         type,
@@ -3031,12 +3016,12 @@
       return [...remote, ...local];
     }
 
-    function attachmentDataUrls(mode) {
-      return (state.attachments[mode] || []).map((item) => item.dataUrl).filter(Boolean);
+    function attachmentDataUrls() {
+      return (state.attachments || []).map((item) => item.dataUrl).filter(Boolean);
     }
 
     function collectImages(mode, urlText) {
-      return [...splitList(urlText || ""), ...attachmentDataUrls(mode)];
+      return [...splitList(urlText || ""), ...attachmentDataUrls()];
     }
 
     function collectImageUrls(urlText) {
@@ -3277,7 +3262,7 @@
       const url = first.url || "";
       const b64 = first.b64_json || "";
       if (!url && !b64) {
-        updateMessage(assistant.id, { status: "done", content: "图片已经处理完成，但这次没有拿到可预览的结果。可以展开调试详情查看。", raw: data });
+        updateMessage(assistant.id, { status: "done", content: "图片已经处理完成，但这次没有拿到可预览的结果。可以在选项里显示问题详情查看。", raw: data });
         return;
       }
       updateMessage(assistant.id, {
@@ -3294,7 +3279,7 @@
 
     async function handleVideo(prompt) {
       const imageFields = [els.videoImage.value, els.videoExtraImages.value].join("\n");
-      const localImages = state.attachments.video || [];
+      const localImages = state.attachments || [];
       const remoteImages = collectImageUrls(imageFields);
       appendMessage({ mode: "video", role: "user", status: "done", content: prompt, attachments: attachmentMetas("video", imageFields) });
       const assistant = appendMessage({
@@ -3337,7 +3322,7 @@
         }
       });
       if (!videoId && !taskId) {
-        updateMessage(assistant.id, { status: "done", content: "视频任务已创建，但没有拿到可自动查询的编号。可以展开调试详情查看。", raw: task });
+        updateMessage(assistant.id, { status: "done", content: "视频任务已创建，但没有拿到可自动查询的编号。可以在选项里显示问题详情查看。", raw: task });
         return;
       }
       await pollVideoResult(assistant.id, videoId, taskId);
@@ -3385,7 +3370,7 @@
         if (status === "failed") {
           updateMessage(messageId, {
             status: "error",
-            content: "视频创作失败了。可以展开调试详情查看 Agnes 返回的详细原因。",
+            content: "视频创作失败了。可以在选项里显示问题详情查看 Agnes 返回的详细原因。",
             raw: data
           });
           return;
@@ -3393,7 +3378,7 @@
       }
       updateMessage(messageId, {
         status: "done",
-        content: "等待时间到了，视频可能还在制作中。可以稍后用调试详情里的 video_id 再查询。",
+        content: "等待时间到了，视频可能还在制作中。可以稍后用问题详情里的 video_id 再查询。",
         raw: last
       });
     }
@@ -3574,7 +3559,7 @@
           urls.push(previewUrl);
         }
       });
-      state.attachments[message.mode] = local.slice(0, MAX_ATTACHMENTS);
+      state.attachments = local.slice(0, MAX_ATTACHMENTS);
       if (message.mode === "text") els.textImageUrl.value = urls.join("\n");
       if (message.mode === "image") els.imageInputs.value = urls.join("\n");
       if (message.mode === "video") {
@@ -3628,7 +3613,7 @@
       if (message.attachments && message.attachments.length) bubble.appendChild(renderMessageAttachments(message.attachments));
       if (message.task) bubble.appendChild(renderTask(message.task));
       if (message.result) bubble.appendChild(renderResult(message.result));
-      if (state.advancedMode && state.showDebug && message.raw) bubble.appendChild(renderRaw(message.raw, message.id));
+      if (state.showDebug && message.raw) bubble.appendChild(renderRaw(message.raw, message.id));
       content.append(bubble, renderMessageFooter(message));
       article.append(avatar, content);
       return article;
@@ -3639,7 +3624,7 @@
       footer.className = "message-footer";
       const info = document.createElement("div");
       info.className = "message-footer-info";
-      if (state.advancedMode) {
+      if (state.showDebug) {
         const tag = document.createElement("span");
         tag.className = "mode-tag";
         tag.textContent = MODE_CONFIG[message.mode].tag;
@@ -3703,7 +3688,7 @@
       if (footer) footer.replaceWith(renderMessageFooter(message));
       const raw = node.querySelector(".raw-block");
       const rawDetails = node.querySelector(".debug-details");
-      if (state.advancedMode && state.showDebug && message.raw) {
+      if (state.showDebug && message.raw) {
         if (raw) {
           raw.textContent = stringify(message.raw);
         } else {
@@ -3871,15 +3856,15 @@
       const details = document.createElement("details");
       details.className = "debug-details";
       const summary = document.createElement("summary");
-      summary.textContent = "调试详情";
+      summary.textContent = "问题详情";
       const pre = document.createElement("pre");
       pre.className = "raw-block";
       pre.textContent = stringify(raw);
       const actions = document.createElement("div");
       actions.className = "message-actions";
-      const button = createTextButton("复制调试详情", async () => {
+      const button = createTextButton("复制问题详情", async () => {
         await copyText(stringify(raw));
-        toast("调试详情已复制");
+        toast("问题详情已复制");
       });
       actions.appendChild(button);
       details.append(summary, pre, actions);
@@ -4091,7 +4076,7 @@
         return "这次没有连上 Agnes。请检查网络连接，稍后再试。";
       }
       if (error && error.status) {
-        return "这次创作没有成功。可以展开调试详情查看 Agnes 返回的信息。";
+        return "这次创作没有成功。可以在选项里显示问题详情查看 Agnes 返回的信息。";
       }
       return message;
     }
