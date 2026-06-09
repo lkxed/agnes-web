@@ -765,6 +765,35 @@
       color: var(--muted);
     }
 
+    .message-quote {
+      display: grid;
+      gap: 4px;
+      margin-bottom: 8px;
+      padding: 8px 10px;
+      border-left: 3px solid color-mix(in srgb, var(--brand), var(--brand-2) 28%);
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--panel), var(--bg) 10%);
+      color: var(--muted);
+      text-align: left;
+    }
+
+    .message-quote strong {
+      color: color-mix(in srgb, var(--text), var(--muted) 20%);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .message-quote span {
+      display: -webkit-box;
+      overflow: hidden;
+      font-size: 13px;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+      white-space: normal;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+    }
+
     .message-footer {
       display: flex;
       flex-wrap: wrap;
@@ -1094,6 +1123,49 @@
     .attachment-panel {
       display: grid;
       gap: 8px;
+    }
+
+    .composer-context {
+      display: grid;
+      gap: 8px;
+    }
+
+    .composer-context[hidden] {
+      display: none;
+    }
+
+    .composer-context-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      min-width: 0;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: color-mix(in srgb, var(--panel), var(--bg) 8%);
+    }
+
+    .composer-context-main {
+      display: grid;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .composer-context-label {
+      color: color-mix(in srgb, var(--brand), white 16%);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .composer-context-text {
+      min-width: 0;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .attachment-actions {
@@ -1678,6 +1750,7 @@
           </div>
 
           <div class="attachment-panel" id="attachmentPanel">
+            <div class="composer-context" id="composerContext" hidden></div>
             <div class="attachment-list" id="attachmentList" aria-label="已添加图片" hidden></div>
           </div>
 
@@ -1958,7 +2031,8 @@
       openHistoryMenuId: null,
       renamingSessionId: null,
       optionsOpen: false,
-      editingMessageId: null
+      editingMessageId: null,
+      quotedMessage: null
     };
 
     const els = {
@@ -1985,6 +2059,7 @@
       promptInput: document.getElementById("promptInput"),
       sendButton: document.getElementById("sendButton"),
       composer: document.getElementById("composer"),
+      composerContext: document.getElementById("composerContext"),
       emptyState: document.getElementById("emptyState"),
       welcomeSuggestions: document.getElementById("welcomeSuggestions"),
       thread: document.getElementById("thread"),
@@ -2149,6 +2224,8 @@
         session.messages = [];
         session.title = "新的对话";
         session.updatedAt = Date.now();
+        state.editingMessageId = null;
+        state.quotedMessage = null;
         saveSessions();
         renderAll();
       });
@@ -2183,9 +2260,12 @@
         try {
           beginGeneration();
           const mode = state.mode;
-          await submitPrompt(prompt, state.editingMessageId);
+          const quote = state.quotedMessage;
+          await submitPrompt(prompt, state.editingMessageId, quote);
           els.promptInput.value = "";
           state.editingMessageId = null;
+          state.quotedMessage = null;
+          renderComposerContext();
           clearModeAttachments(mode);
         } catch (error) {
           if (!isAbortError(error)) showRequestError(error);
@@ -2214,6 +2294,8 @@
       state.activeSessionId = session.id;
       state.mode = session.mode;
       state.attachments = emptyAttachments();
+      state.editingMessageId = null;
+      state.quotedMessage = null;
       applySettings(session.settings);
       saveSessions();
       if (render) {
@@ -2295,6 +2377,7 @@
           ...message,
           raw: sanitizeForStorage(message.raw),
           result: sanitizeResultForStorage(message.result),
+          quote: sanitizeQuote(message.quote),
           thinking: message.thinking || "",
           usage: message.usage || null,
           attachments: (message.attachments || []).map(sanitizeAttachmentForStorage)
@@ -2319,6 +2402,18 @@
         return null;
       }
       return sanitizeForStorage(result);
+    }
+
+    function sanitizeQuote(quote) {
+      if (!quote) return null;
+      const content = String(quote.content || "").trim();
+      return {
+        id: quote.id || "",
+        role: quote.role === "assistant" ? "assistant" : "user",
+        mode: MODE_CONFIG[quote.mode] ? quote.mode : "text",
+        content: content.slice(0, 1200),
+        createdAt: quote.createdAt || new Date().toISOString()
+      };
     }
 
     function sanitizeForStorage(value) {
@@ -2346,6 +2441,7 @@
       state.openHistoryMenuId = null;
       state.renamingSessionId = null;
       state.editingMessageId = null;
+      state.quotedMessage = null;
       state.mode = session.mode;
       state.attachments = emptyAttachments();
       applySettings(session.settings);
@@ -2368,6 +2464,8 @@
       if (session) {
         state.mode = session.mode;
         state.attachments = emptyAttachments();
+        state.editingMessageId = null;
+        state.quotedMessage = null;
         applySettings(session.settings);
       }
       saveSessions();
@@ -2422,17 +2520,18 @@
       }
       saveSessions();
       renderMode();
+      renderComposerContext();
       renderAttachments();
       renderSuggestions();
       renderHistory();
     }
 
-    async function submitPrompt(prompt, replaceFromId) {
+    async function submitPrompt(prompt, replaceFromId, quote) {
       if (replaceFromId) removeMessagesFrom(replaceFromId);
       const mode = state.mode;
-      if (mode === "text") await handleText(prompt);
-      if (mode === "image") await handleImage(prompt);
-      if (mode === "video") await handleVideo(prompt);
+      if (mode === "text") await handleText(prompt, quote);
+      if (mode === "image") await handleImage(prompt, quote);
+      if (mode === "video") await handleVideo(prompt, quote);
     }
 
     function removeMessagesFrom(id) {
@@ -2453,6 +2552,7 @@
       renderHistory();
       renderThread();
       renderAttachments();
+      renderComposerContext();
       renderSuggestions();
       updateChatTitle();
     }
@@ -3078,11 +3178,12 @@
       });
     }
 
-    async function handleText(prompt) {
+    async function handleText(prompt, quote) {
       const textImages = collectImages("text", els.textImageUrl.value);
-      const userMessage = appendMessage({ mode: "text", role: "user", status: "done", content: prompt, attachments: attachmentMetas("text", els.textImageUrl.value) });
+      const promptForApi = promptWithQuote(prompt, quote);
+      const userMessage = appendMessage({ mode: "text", role: "user", status: "done", content: prompt, quote, attachments: attachmentMetas("text", els.textImageUrl.value) });
       const assistant = appendMessage({ mode: "text", role: "assistant", status: "loading", content: "" });
-      const content = buildTextContent(prompt, textImages);
+      const content = buildTextContent(promptForApi, textImages);
       const hasImages = textImages.length > 0;
       const useThinking = !hasImages && els.textThinking.checked;
       const payload = {
@@ -3120,6 +3221,21 @@
         { type: "text", text: prompt },
         ...imageUrls.map((url) => ({ type: "image_url", image_url: { url } }))
       ];
+    }
+
+    function promptWithQuote(prompt, quote) {
+      const cleanPrompt = String(prompt || "").trim();
+      if (!quote) return cleanPrompt;
+      return [
+        "请参考下面这条被引用的消息，再回答我的新消息。",
+        "",
+        "【引用消息】",
+        quoteLabel(quote) + "：",
+        quote.content || "（无文本内容）",
+        "",
+        "【我的新消息】",
+        cleanPrompt
+      ].join("\n");
     }
 
     function buildChatMessages(content, excludeId) {
@@ -3190,14 +3306,15 @@
       });
     }
 
-    async function handleImage(prompt) {
-      appendMessage({ mode: "image", role: "user", status: "done", content: prompt, attachments: attachmentMetas("image", els.imageInputs.value) });
+    async function handleImage(prompt, quote) {
+      const promptForApi = promptWithQuote(prompt, quote);
+      appendMessage({ mode: "image", role: "user", status: "done", content: prompt, quote, attachments: attachmentMetas("image", els.imageInputs.value) });
       const assistant = appendMessage({ mode: "image", role: "assistant", status: "loading", content: "正在创作图片，请稍等..." });
       const inputImages = collectImages("image", els.imageInputs.value);
       const output = els.imageOutput.value;
       const payload = {
         model: "agnes-image-2.1-flash",
-        prompt
+        prompt: promptForApi
       };
       if (els.imageSize.value !== "auto") payload.size = els.imageSize.value;
       if (inputImages.length) {
@@ -3227,11 +3344,12 @@
       });
     }
 
-    async function handleVideo(prompt) {
+    async function handleVideo(prompt, quote) {
+      const promptForApi = promptWithQuote(prompt, quote);
       const imageFields = [els.videoImage.value, els.videoExtraImages.value].join("\n");
       const localImages = state.attachments || [];
       const remoteImages = collectImageUrls(imageFields);
-      appendMessage({ mode: "video", role: "user", status: "done", content: prompt, attachments: attachmentMetas("video", imageFields) });
+      appendMessage({ mode: "video", role: "user", status: "done", content: prompt, quote, attachments: attachmentMetas("video", imageFields) });
       const assistant = appendMessage({
         mode: "video",
         role: "assistant",
@@ -3245,7 +3363,7 @@
       }
       const payload = {
         model: "agnes-video-v2.0",
-        prompt,
+        prompt: promptForApi,
         ...getVideoTiming()
       };
       if (els.videoSize.value !== "auto") {
@@ -3416,6 +3534,7 @@
         raw: partial.raw || null,
         result: partial.result || null,
         task: partial.task || null,
+        quote: sanitizeQuote(partial.quote),
         attachments: Array.isArray(partial.attachments) ? partial.attachments : [],
         thinking: partial.thinking || "",
         usage: partial.usage || null
@@ -3457,6 +3576,7 @@
 
     function messageCopyText(message) {
       const lines = [];
+      if (message.quote) lines.push("引用：" + quoteLabel(message.quote) + "\n" + quotePreviewText(message.quote));
       if (message.content) lines.push(message.content);
       if (message.result && message.result.url) {
         if (message.result.url.startsWith("data:image/")) {
@@ -3476,6 +3596,20 @@
       return lines.join("\n\n") || "空消息";
     }
 
+    function startQuoteMessage(id) {
+      if (state.busy) {
+        toast("当前还在生成中，请稍后再引用");
+        return;
+      }
+      const session = activeSession();
+      const message = session && session.messages.find((item) => item.id === id);
+      if (!message) return;
+      state.quotedMessage = createQuoteSnapshot(message);
+      els.promptInput.focus();
+      renderComposerContext();
+      toast("已引用这条消息");
+    }
+
     function startEditMessage(id) {
       if (state.busy) {
         toast("当前还在生成中，请稍后再编辑");
@@ -3487,10 +3621,92 @@
       setMode(message.mode);
       restoreMessageInputs(message);
       state.editingMessageId = message.id;
+      state.quotedMessage = sanitizeQuote(message.quote);
       els.promptInput.value = message.content || "";
       els.promptInput.focus();
+      renderComposerContext();
       toast("已进入编辑模式，修改后发送即可重新生成");
     }
+
+    function cancelEditMessage() {
+      state.editingMessageId = null;
+      state.quotedMessage = null;
+      els.promptInput.value = "";
+      state.attachments = emptyAttachments();
+      renderAttachments();
+      renderComposerContext();
+      toast("已取消编辑");
+    }
+
+    function clearQuotedMessage() {
+      state.quotedMessage = null;
+      renderComposerContext();
+    }
+
+    function createQuoteSnapshot(message) {
+      return sanitizeQuote({
+        id: message.id,
+        role: message.role,
+        mode: message.mode,
+        content: quotePreviewText(message),
+        createdAt: message.createdAt
+      });
+    }
+
+    function quotePreviewText(messageOrQuote) {
+      if (!messageOrQuote) return "";
+      if (messageOrQuote.content) return String(messageOrQuote.content).trim();
+      const result = messageOrQuote.result;
+      if (result && result.kind === "image") return "图片结果";
+      if (result && result.kind === "video") return "视频结果";
+      if (messageOrQuote.task) return "视频任务：" + statusLabel(messageOrQuote.task.status || "unknown");
+      const attachments = messageOrQuote.attachments || [];
+      if (attachments.length) return "包含 " + attachments.length + " 张参考图";
+      return "（无文本内容）";
+    }
+
+    function quoteLabel(quote) {
+      const role = quote && quote.role === "assistant" ? "Agnes" : "你";
+      const mode = quote && MODE_CONFIG[quote.mode] ? MODE_CONFIG[quote.mode].tag : "消息";
+      return role + " · " + mode;
+    }
+
+    function renderComposerContext() {
+      els.composerContext.innerHTML = "";
+      const cards = [];
+      if (state.quotedMessage) {
+        cards.push(createComposerContextCard("引用 " + quoteLabel(state.quotedMessage), quotePreviewText(state.quotedMessage), clearQuotedMessage, "取消引用"));
+      }
+      if (state.editingMessageId) {
+        cards.push(createComposerContextCard("正在编辑你发送的消息", "发送后会从这条消息开始重新生成后续回复", cancelEditMessage, "取消编辑"));
+      }
+      cards.forEach((card) => els.composerContext.appendChild(card));
+      els.composerContext.hidden = !cards.length;
+    }
+
+    function createComposerContextCard(label, text, onClose, closeLabel) {
+      const card = document.createElement("div");
+      card.className = "composer-context-card";
+      const main = document.createElement("div");
+      main.className = "composer-context-main";
+      const labelEl = document.createElement("div");
+      labelEl.className = "composer-context-label";
+      labelEl.textContent = label;
+      const textEl = document.createElement("div");
+      textEl.className = "composer-context-text";
+      textEl.textContent = text || "（无文本内容）";
+      main.append(labelEl, textEl);
+      const close = document.createElement("button");
+      close.type = "button";
+      close.className = "icon-button";
+      close.title = closeLabel;
+      close.setAttribute("aria-label", closeLabel);
+      close.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>';
+      close.addEventListener("click", onClose);
+      card.append(main, close);
+      return card;
+    }
+
 
     function restoreMessageInputs(message) {
       const urls = [];
@@ -3559,6 +3775,7 @@
       body.className = "message-body";
       body.textContent = message.content || "";
       bubble.appendChild(body);
+      if (message.quote) bubble.insertBefore(renderQuoteBlock(message.quote), body);
       if (message.thinking) bubble.insertBefore(renderThinking(message.thinking), body);
       if (message.attachments && message.attachments.length) bubble.appendChild(renderMessageAttachments(message.attachments));
       if (message.task) bubble.appendChild(renderTask(message.task));
@@ -3585,6 +3802,7 @@
       }
       const actions = document.createElement("div");
       actions.className = "message-footer-actions";
+      actions.appendChild(renderMessageAction("引用", "quote", () => startQuoteMessage(message.id)));
       actions.appendChild(renderMessageAction("复制", "copy", () => copyMessage(message)));
       if (message.role === "user") {
         actions.appendChild(renderMessageAction("编辑", "edit", () => startEditMessage(message.id)));
@@ -3611,9 +3829,12 @@
       button.className = "message-action-button";
       button.title = label;
       button.setAttribute("aria-label", label);
-      button.innerHTML = icon === "copy"
-        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="13" height="13" rx="2"></rect><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path></svg>'
-        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>';
+      const icons = {
+        quote: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 18H9a5 5 0 0 1 0-10h10"></path><path d="m15 4 4 4-4 4"></path></svg>',
+        copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="13" height="13" rx="2"></rect><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path></svg>',
+        edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>'
+      };
+      button.innerHTML = icons[icon] || icons.copy;
       button.addEventListener("click", handler);
       return button;
     }
@@ -3658,6 +3879,17 @@
       const thinkingBlock = renderThinking(thinking);
       bubble.insertBefore(thinkingBlock, body);
       scrollThinkingToLatest(thinkingBlock.querySelector(".thinking-copy"));
+    }
+
+    function renderQuoteBlock(quote) {
+      const block = document.createElement("div");
+      block.className = "message-quote";
+      const label = document.createElement("strong");
+      label.textContent = "引用 " + quoteLabel(quote);
+      const text = document.createElement("span");
+      text.textContent = quotePreviewText(quote);
+      block.append(label, text);
+      return block;
     }
 
     function renderThinking(thinking) {
