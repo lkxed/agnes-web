@@ -27,6 +27,14 @@ python3 -m http.server 8080
 
 然后访问 `http://localhost:8080`。
 
+## 获取 Agnes API Key
+
+1. 访问 [Agnes 平台登录页](https://platform.agnes-ai.com/login)，注册或登录账号。
+2. 登录后进入“设置”。
+3. 在设置里点击“密钥”。
+4. 点击“创建新的密钥”。
+5. 复制并保存好自己的密钥，然后粘贴到网页左下角的“连接 Agnes”输入框。
+
 ## 发布前检查
 
 本项目没有构建步骤。提交前可以运行：

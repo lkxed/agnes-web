@@ -447,10 +447,52 @@
       gap: 8px;
     }
 
+    .connection-title-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      min-width: 0;
+    }
+
     .connection-title {
       color: var(--muted);
       font-size: 12px;
       font-weight: 800;
+    }
+
+    .key-help-button {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+    }
+
+    .key-help-panel {
+      display: grid;
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid color-mix(in srgb, var(--brand), transparent 62%);
+      border-radius: var(--radius);
+      color: var(--muted);
+      background: color-mix(in srgb, var(--panel-2), var(--bg) 12%);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .key-help-panel[hidden] {
+      display: none;
+    }
+
+    .key-help-panel a {
+      color: color-mix(in srgb, var(--brand), white 15%);
+      font-weight: 900;
+      text-decoration: none;
+    }
+
+    .key-help-panel ol {
+      display: grid;
+      gap: 4px;
+      margin: 0;
+      padding-left: 18px;
     }
 
     .status-pill {
@@ -1586,8 +1628,22 @@
       <div class="sidebar-footer">
         <div class="connection-card">
           <div class="connection-head">
-            <span class="connection-title">连接 Agnes</span>
+            <div class="connection-title-wrap">
+              <span class="connection-title">连接 Agnes</span>
+              <button class="icon-button key-help-button" id="keyHelpButton" type="button" title="如何获取 API Key" aria-label="如何获取 API Key" aria-expanded="false" aria-controls="keyHelpPanel">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M9.1 9a3 3 0 1 1 5.2 2c-.9.7-1.3 1.2-1.3 2.2"></path><path d="M12 17h.01"></path></svg>
+              </button>
+            </div>
             <button class="status-pill" id="keyStatus" type="button" title="点击检测 API Key"><span class="status-dot"></span><span>未连接</span></button>
+          </div>
+          <div class="key-help-panel" id="keyHelpPanel" role="note" hidden>
+            <strong>如何获取 API Key</strong>
+            <ol>
+              <li>访问 <a href="https://platform.agnes-ai.com/login" target="_blank" rel="noopener noreferrer">Agnes 平台</a> 并注册或登录账号。</li>
+              <li>进入“设置”，选择“密钥”。</li>
+              <li>点击“创建新的密钥”。</li>
+              <li>复制并保存好自己的密钥，然后粘贴到下方输入框。</li>
+            </ol>
           </div>
           <div class="api-key-row">
             <input class="input" id="apiKeyInput" autocomplete="off" spellcheck="false" type="password" placeholder="粘贴 API Key">
@@ -1948,6 +2004,8 @@
       apiKeyInput: document.getElementById("apiKeyInput"),
       toggleKeyButton: document.getElementById("toggleKeyButton"),
       clearKeyButton: document.getElementById("clearKeyButton"),
+      keyHelpButton: document.getElementById("keyHelpButton"),
+      keyHelpPanel: document.getElementById("keyHelpPanel"),
       keyStatus: document.getElementById("keyStatus"),
       newChatButton: document.getElementById("newChatButton"),
       mobileNewChatButton: document.getElementById("mobileNewChatButton"),
@@ -2038,6 +2096,11 @@
       });
 
       els.keyStatus.addEventListener("click", () => validateApiKey());
+      els.keyHelpButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        toggleKeyHelp();
+      });
+      els.keyHelpPanel.addEventListener("click", (event) => event.stopPropagation());
 
       els.toggleKeyButton.addEventListener("click", () => {
         els.apiKeyInput.type = els.apiKeyInput.type === "text" ? "password" : "text";
@@ -2116,11 +2179,13 @@
         if (event.target === els.imagePreviewModal) closeImagePreview();
       });
       document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") closeKeyHelp();
         if (els.imagePreviewModal.hidden) return;
         if (event.key === "Escape") closeImagePreview();
         if (event.key === "ArrowLeft") showImagePreviewAt(state.previewIndex - 1);
         if (event.key === "ArrowRight") showImagePreviewAt(state.previewIndex + 1);
       });
+      document.addEventListener("click", closeKeyHelp);
 
       els.videoDuration.addEventListener("change", () => {
         applyVideoDurationPreset();
@@ -2743,6 +2808,18 @@
       els.toggleKeyButton.innerHTML = isVisible ? ICONS.eye : ICONS.eyeOff;
       els.toggleKeyButton.title = isVisible ? "隐藏 API Key" : "显示 API Key";
       els.toggleKeyButton.setAttribute("aria-label", els.toggleKeyButton.title);
+    }
+
+    function toggleKeyHelp() {
+      const willOpen = els.keyHelpPanel.hidden;
+      els.keyHelpPanel.hidden = !willOpen;
+      els.keyHelpButton.setAttribute("aria-expanded", String(willOpen));
+    }
+
+    function closeKeyHelp() {
+      if (els.keyHelpPanel.hidden) return;
+      els.keyHelpPanel.hidden = true;
+      els.keyHelpButton.setAttribute("aria-expanded", "false");
     }
 
     function setBusy(next) {
