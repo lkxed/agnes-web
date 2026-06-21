@@ -1771,14 +1771,17 @@
               <button class="composer-options" id="optionsSettings" type="button" aria-expanded="false">选项</button>
                 <div class="simple-settings" id="simpleSettings" hidden>
                   <div class="field" data-simple-param="image" hidden>
-                    <label for="imageSize" data-basic-label="画面比例" data-advanced-label="size">画面比例</label>
+                    <label for="imageSize" data-basic-label="图片尺寸" data-advanced-label="size">图片尺寸</label>
                     <select class="select" id="imageSize">
-                      <option value="auto">保持原比例 · 自动</option>
-                      <option value="1024x768">横版海报 · 1024x768</option>
-                      <option value="768x1024">竖版封面 · 768x1024</option>
-                      <option value="1024x1024">方形头像 · 1024x1024</option>
-                      <option value="1280x720">宽屏封面 · 1280x720</option>
-                      <option value="720x1280">手机竖屏 · 720x1280</option>
+                      <option value="1024x1024">标准方图 · 1024x1024</option>
+                      <option value="1024x768">标准横图 · 1024x768</option>
+                      <option value="768x1024">标准竖图 · 768x1024</option>
+                      <option value="1920x1080">高清横图 · 1920x1080</option>
+                      <option value="1080x1920">高清竖图 · 1080x1920</option>
+                      <option value="2048x2048">高清方图 · 2048x2048</option>
+                      <option value="4096x4096">最大方图 · 4096x4096</option>
+                      <option value="4096x2304">最大横图 · 4096x2304</option>
+                      <option value="2304x4096">最大竖图 · 2304x4096</option>
                     </select>
                   </div>
                   <div class="field wide" data-simple-param="image" hidden>
@@ -1788,19 +1791,20 @@
                   <div class="field" data-simple-param="video" hidden>
                     <label for="videoSize" data-basic-label="画面比例" data-advanced-label="width / height">画面比例</label>
                     <select class="select" id="videoSize">
-                      <option value="auto">保持原比例 · 自动</option>
-                      <option value="1152x768">横版短片 · 1152x768</option>
-                      <option value="1280x768">宽屏展示 · 1280x768</option>
-                      <option value="1024x576">轻量横版 · 1024x576</option>
-                      <option value="768x1152">手机竖屏 · 768x1152</option>
+                      <option value="1280x720">720P 横版 · 1280x720</option>
+                      <option value="720x1280">720P 竖版 · 720x1280</option>
+                      <option value="1920x1080">1080P 横版 · 1920x1080</option>
+                      <option value="1080x1920">1080P 竖版 · 1080x1920</option>
                     </select>
                   </div>
                   <div class="field" data-simple-param="video" hidden>
                     <label for="videoDuration" data-basic-label="视频长度" data-advanced-label="num_frames / frame_rate">视频长度</label>
                     <select class="select" id="videoDuration">
-                      <option value="121:24">标准短片 · 约 5 秒</option>
-                      <option value="81:24">更短更快 · 约 3 秒</option>
-                      <option value="201:24">更长展示 · 约 8 秒</option>
+                      <option value="121:24">5 秒 · 121 帧 / 24 FPS</option>
+                      <option value="241:24">10 秒 · 241 帧 / 24 FPS</option>
+                      <option value="361:24">15 秒 · 361 帧 / 24 FPS</option>
+                      <option value="321:16">20 秒 · 321 帧 / 16 FPS</option>
+                      <option value="401:16">25 秒 · 401 帧 / 16 FPS</option>
                       <option value="custom">自定义长度 · 手动设置</option>
                     </select>
                   </div>
@@ -1916,49 +1920,57 @@
     const OPTION_TEXT = {
       imageSize: {
         basic: {
-          auto: "保持原比例 · 自动",
-          "1024x768": "横版海报 · 1024x768",
-          "768x1024": "竖版封面 · 768x1024",
-          "1024x1024": "方形头像 · 1024x1024",
-          "1280x720": "宽屏封面 · 1280x720",
-          "720x1280": "手机竖屏 · 720x1280"
+          "1024x1024": "标准方图 · 1024x1024",
+          "1024x768": "标准横图 · 1024x768",
+          "768x1024": "标准竖图 · 768x1024",
+          "1920x1080": "高清横图 · 1920x1080",
+          "1080x1920": "高清竖图 · 1080x1920",
+          "2048x2048": "高清方图 · 2048x2048",
+          "4096x4096": "最大方图 · 4096x4096",
+          "4096x2304": "最大横图 · 4096x2304",
+          "2304x4096": "最大竖图 · 2304x4096"
         },
         advanced: {
-          auto: "size omitted · keep ratio",
+          "1024x1024": "size = 1024x1024 · 1:1",
           "1024x768": "size = 1024x768 · 4:3",
           "768x1024": "size = 768x1024 · 3:4",
-          "1024x1024": "size = 1024x1024 · 1:1",
-          "1280x720": "size = 1280x720 · 16:9",
-          "720x1280": "size = 720x1280 · 9:16"
+          "1920x1080": "size = 1920x1080 · 16:9",
+          "1080x1920": "size = 1080x1920 · 9:16",
+          "2048x2048": "size = 2048x2048 · 1:1",
+          "4096x4096": "size = 4096x4096 · 1:1 max",
+          "4096x2304": "size = 4096x2304 · 16:9 max",
+          "2304x4096": "size = 2304x4096 · 9:16 max"
         }
       },
       videoSize: {
         basic: {
-          auto: "保持原比例 · 自动",
-          "1152x768": "横版短片 · 1152x768",
-          "1280x768": "宽屏展示 · 1280x768",
-          "1024x576": "轻量横版 · 1024x576",
-          "768x1152": "手机竖屏 · 768x1152"
+          "1280x720": "720P 横版 · 1280x720",
+          "720x1280": "720P 竖版 · 720x1280",
+          "1920x1080": "1080P 横版 · 1920x1080",
+          "1080x1920": "1080P 竖版 · 1080x1920"
         },
         advanced: {
-          auto: "width / height omitted · keep ratio",
-          "1152x768": "width = 1152 · height = 768",
-          "1280x768": "width = 1280 · height = 768",
-          "1024x576": "width = 1024 · height = 576",
-          "768x1152": "width = 768 · height = 1152"
+          "1280x720": "width = 1280 · height = 720 · 720P landscape",
+          "720x1280": "width = 720 · height = 1280 · 720P portrait",
+          "1920x1080": "width = 1920 · height = 1080 · 1080P landscape",
+          "1080x1920": "width = 1080 · height = 1920 · 1080P portrait"
         }
       },
       videoDuration: {
         basic: {
-          "121:24": "标准短片 · 约 5 秒",
-          "81:24": "更短更快 · 约 3 秒",
-          "201:24": "更长展示 · 约 8 秒",
+          "121:24": "5 秒 · 121 帧 / 24 FPS",
+          "241:24": "10 秒 · 241 帧 / 24 FPS",
+          "361:24": "15 秒 · 361 帧 / 24 FPS",
+          "321:16": "20 秒 · 321 帧 / 16 FPS",
+          "401:16": "25 秒 · 401 帧 / 16 FPS",
           custom: "自定义长度 · 手动设置"
         },
         advanced: {
           "121:24": "num_frames = 121 · frame_rate = 24",
-          "81:24": "num_frames = 81 · frame_rate = 24",
-          "201:24": "num_frames = 201 · frame_rate = 24",
+          "241:24": "num_frames = 241 · frame_rate = 24",
+          "361:24": "num_frames = 361 · frame_rate = 24",
+          "321:16": "num_frames = 321 · frame_rate = 16",
+          "401:16": "num_frames = 401 · frame_rate = 16",
           custom: "custom · use num_frames / frame_rate fields"
         }
       },
@@ -2300,10 +2312,10 @@
         textMaxTokens: "1024",
         textImageUrl: "",
         textThinking: false,
-        imageSize: "auto",
+        imageSize: "1024x1024",
         imageOutput: "url",
         imageInputs: "",
-        videoSize: "auto",
+        videoSize: "1280x720",
         videoDuration: "121:24",
         videoFrames: "121",
         videoFrameRate: "24",
@@ -2940,17 +2952,22 @@
       els.textMaxTokens.value = data.textMaxTokens;
       els.textImageUrl.value = data.textImageUrl;
       els.textThinking.checked = Boolean(data.textThinking);
-      els.imageSize.value = data.imageSize;
-      els.imageOutput.value = data.imageOutput;
+      setSelectValue(els.imageSize, data.imageSize, "1024x1024");
+      setSelectValue(els.imageOutput, data.imageOutput, "url");
       els.imageInputs.value = data.imageInputs;
-      els.videoSize.value = data.videoSize;
-      els.videoDuration.value = data.videoDuration;
+      setSelectValue(els.videoSize, data.videoSize, "1280x720");
+      setSelectValue(els.videoDuration, data.videoDuration, "121:24");
       els.videoFrames.value = data.videoFrames;
       els.videoFrameRate.value = data.videoFrameRate;
       els.videoPollLimit.value = data.videoPollLimit;
       els.videoImage.value = data.videoImage;
       els.videoExtraImages.value = data.videoExtraImages;
       els.videoNegative.value = data.videoNegative;
+    }
+
+    function setSelectValue(select, value, fallback) {
+      const exists = Array.from(select.options).some((option) => option.value === value);
+      select.value = exists ? value : fallback;
     }
 
     function readSettings() {
@@ -3391,9 +3408,9 @@
       const output = els.imageOutput.value;
       const payload = {
         model: "agnes-image-2.1-flash",
-        prompt: promptForApi
+        prompt: promptForApi,
+        size: els.imageSize.value || "1024x1024"
       };
-      if (els.imageSize.value !== "auto") payload.size = els.imageSize.value;
       if (inputImages.length) {
         payload.extra_body = { image: inputImages, response_format: output === "base64" ? "b64_json" : "url" };
       } else if (output === "base64") {
@@ -3444,11 +3461,9 @@
         prompt: promptForApi,
         ...getVideoTiming()
       };
-      if (els.videoSize.value !== "auto") {
-        const [width, height] = els.videoSize.value.split("x").map((value) => parseInt(value, 10));
-        payload.width = width;
-        payload.height = height;
-      }
+      const [width, height] = (els.videoSize.value || "1280x720").split("x").map((value) => parseInt(value, 10));
+      payload.width = width;
+      payload.height = height;
       if (inputImages.length === 1) payload.image = inputImages[0];
       if (inputImages.length > 1) payload.extra_body = { image: inputImages };
       const negative = els.videoNegative.value.trim();
@@ -4155,10 +4170,17 @@
 
     function getVideoTiming() {
       if (els.videoDuration.value !== "custom") applyVideoDurationPreset();
+      const frames = normalizeVideoFrames(parseInt(els.videoFrames.value, 10) || 121);
+      els.videoFrames.value = String(frames);
       return {
-        num_frames: Math.min(441, Math.max(9, parseInt(els.videoFrames.value, 10) || 121)),
+        num_frames: frames,
         frame_rate: Math.min(60, Math.max(1, parseFloat(els.videoFrameRate.value) || 24))
       };
+    }
+
+    function normalizeVideoFrames(value) {
+      const bounded = Math.min(441, Math.max(9, value));
+      return Math.min(441, Math.max(9, Math.round((bounded - 1) / 8) * 8 + 1));
     }
 
     function splitList(value) {
