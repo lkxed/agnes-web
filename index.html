@@ -2483,6 +2483,12 @@
         toast("对话记录已复制");
       });
 
+      els.sendButton.addEventListener("click", (event) => {
+        if (!state.busy) return;
+        event.preventDefault();
+        cancelGeneration();
+      });
+
       els.composer.addEventListener("submit", async (event) => {
         event.preventDefault();
         if (state.busy) {
@@ -3195,6 +3201,8 @@
 
     function setBusy(next) {
       state.busy = next;
+      els.sendButton.type = next ? "button" : "submit";
+      els.sendButton.toggleAttribute("formnovalidate", next);
       els.sendButton.dataset.state = next ? "cancel" : "send";
       els.sendButton.title = next ? "取消回复" : MODE_CONFIG[state.mode].buttonLabel;
       els.sendButton.setAttribute("aria-label", els.sendButton.title);
