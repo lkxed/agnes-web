@@ -3531,7 +3531,7 @@
         if (status === "failed") {
           updateMessage(messageId, {
             status: "error",
-            content: "视频创作失败了。可以调整描述或参考图后再试。",
+            content: formatVideoFailure(data),
             raw: data
           });
           return;
@@ -3594,7 +3594,7 @@
       try {
         const json = JSON.parse(text);
         body = json;
-        detail = json.error && json.error.message ? json.error.message : JSON.stringify(json, null, 2);
+        detail = extractErrorReason(json) || JSON.stringify(json, null, 2);
       } catch (error) {
         detail = text || response.statusText;
       }
@@ -3665,6 +3665,11 @@
     async function copyMessage(message) {
       await copyText(messageCopyText(message));
       toast("消息已复制");
+    }
+
+    async function copyErrorDetails(message) {
+      await copyText(JSON.stringify(message.raw || {}, null, 2));
+      toast("错误详情已复制");
     }
 
     function messageCopyText(message) {
@@ -3900,6 +3905,9 @@
       actions.className = "message-footer-actions";
       actions.appendChild(renderMessageAction("引用", "quote", () => startQuoteMessage(message.id)));
       actions.appendChild(renderMessageAction("复制", "copy", () => copyMessage(message)));
+      if (message.status === "error" && message.raw) {
+        actions.appendChild(createTextButton("复制错误详情", () => copyErrorDetails(message)));
+      }
       if (message.role === "user") {
         actions.appendChild(renderMessageAction("编辑", "edit", () => startEditMessage(message.id)));
       }
@@ -4355,9 +4363,91 @@
         return "这次没有连上 Agnes。请检查网络连接，稍后再试。";
       }
       if (error && error.status) {
-        return "这次创作没有成功。可以调整内容后再试。";
+        const reason = extractErrorReason(error);
+        const prefix = state.mode === "video" ? "视频请求没有成功" : "这次创作没有成功";
+        return reason ? prefix + "： " + reason : prefix + "。可以调整内容后再试。";
       }
       return message;
+    }
+
+    function formatVideoFailure(data) {
+      const reason = extractErrorReason(data);
+      const lines = ["视频创作失败了。"];
+      if (reason) {
+        lines.push("原因：" + reason);
+      } else {
+        lines.push("Agnes 没有返回具体失败原因。可以点击「复制错误详情」保留原始响应，方便排查。");
+      }
+      const hint = videoFailureHint(reason);
+      if (hint) lines.push("建议：" + hint);
+      return lines.join("\n");
+    }
+
+    function videoFailureHint(reason) {
+      const text = String(reason || "").toLowerCase();
+      if (!text) return "";
+      if (text.includes("cannot identify image") || text.includes("image file") || text.includes("invalid image") || text.includes("unsupported image")) {
+        return "参考图可能不是 Agnes 能识别的图片文件。请换一张 PNG/JPG/WebP 图片，或使用可直接访问的公开 HTTPS 图片 URL 后重试。";
+      }
+      if (text.includes("url") || text.includes("access") || text.includes("download") || text.includes("forbidden") || text.includes("not found")) {
+        return "参考图 URL 可能无法被 Agnes 服务端访问。请确认图片不需要登录、Cookie 或私有 Header。";
+      }
+      if (text.includes("num_frames") || text.includes("frame")) {
+        return "视频帧数需要不超过 441，并满足 8n + 1。可以先选择 5 秒或 10 秒重试。";
+      }
+      if (text.includes("width") || text.includes("height") || text.includes("resolution") || text.includes("size")) {
+        return "当前分辨率可能不适合这次生成。可以先切换到 720P 横版或竖版重试。";
+      }
+      if (text.includes("content") || text.includes("policy") || text.includes("safety")) {
+        return "提示词或参考图可能触发内容限制。请换一个更明确、温和的描述后重试。";
+      }
+      if (text.includes("timeout") || text.includes("busy") || text.includes("overload")) {
+        return "服务可能繁忙或生成超时。可以稍后重试，或降低分辨率、缩短时长。";
+      }
+      return "";
+    }
+
+    function extractErrorReason(value) {
+      const seen = new Set();
+      const reason = findErrorReason(value, seen, 0);
+      return cleanErrorReason(reason);
+    }
+
+    function findErrorReason(value, seen, depth) {
+      if (value == null || depth > 6) return "";
+      if (typeof value === "string") return value;
+      if (typeof value !== "object") return "";
+      if (seen.has(value)) return "";
+      seen.add(value);
+      if (value.raw) {
+        const rawReason = findErrorReason(value.raw, seen, depth + 1);
+        if (rawReason) return rawReason;
+      }
+      if (value.error) {
+        const errorReason = findErrorReason(value.error, seen, depth + 1);
+        if (errorReason) return errorReason;
+      }
+      if (value.body) {
+        const bodyReason = findErrorReason(value.body, seen, depth + 1);
+        if (bodyReason) return bodyReason;
+      }
+      const keys = ["message", "detail", "reason", "error_message", "errorMessage", "error_description", "description", "msg"];
+      for (const key of keys) {
+        if (typeof value[key] === "string" && value[key].trim()) return value[key];
+      }
+      for (const key of Object.keys(value)) {
+        if (key === "raw" || key === "error" || key === "body") continue;
+        const nested = findErrorReason(value[key], seen, depth + 1);
+        if (nested) return nested;
+      }
+      return "";
+    }
+
+    function cleanErrorReason(reason) {
+      const text = String(reason || "").trim();
+      if (!text) return "";
+      if (text.length <= 500) return text;
+      return text.slice(0, 500) + "...";
     }
 
     function debugErrorDetails(error) {
