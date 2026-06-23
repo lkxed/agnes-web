@@ -1929,6 +1929,7 @@
                   <div class="field" data-simple-param="image" hidden>
                     <label for="imageSize" data-basic-label="图片尺寸" data-advanced-label="size">图片尺寸</label>
                     <select class="select" id="imageSize">
+                      <option value="auto">保持原比例 · 自动尺寸</option>
                       <option value="1024x1024">标准方图 · 1024x1024</option>
                       <option value="1024x768">标准横图 · 1024x768</option>
                       <option value="768x1024">标准竖图 · 768x1024</option>
@@ -2113,6 +2114,7 @@
     const OPTION_TEXT = {
       imageSize: {
         basic: {
+          "auto": "保持原比例 · 自动尺寸",
           "1024x1024": "标准方图 · 1024x1024",
           "1024x768": "标准横图 · 1024x768",
           "768x1024": "标准竖图 · 768x1024",
@@ -2124,6 +2126,7 @@
           "2304x4096": "最大竖图 · 2304x4096"
         },
         advanced: {
+          "auto": "自动尺寸 · 不指定 size",
           "1024x1024": "size = 1024x1024 · 1:1",
           "1024x768": "size = 1024x768 · 4:3",
           "768x1024": "size = 768x1024 · 3:4",
@@ -2546,7 +2549,7 @@
         textMaxTokens: "1024",
         textImageUrl: "",
         textThinking: false,
-        imageSize: "1024x1024",
+        imageSize: "auto",
         imageOutput: "url",
         imageInputs: "",
         videoSize: "1280x720",
@@ -3206,7 +3209,7 @@
       els.textMaxTokens.value = data.textMaxTokens;
       els.textImageUrl.value = data.textImageUrl;
       els.textThinking.checked = Boolean(data.textThinking);
-      setSelectValue(els.imageSize, data.imageSize, "1024x1024");
+      setSelectValue(els.imageSize, data.imageSize, "auto");
       setSelectValue(els.imageOutput, data.imageOutput, "url");
       els.imageInputs.value = data.imageInputs;
       setSelectValue(els.videoSize, data.videoSize, "1280x720");
@@ -3354,14 +3357,6 @@
       return [...remote, ...local];
     }
 
-    function attachmentDataUrls() {
-      return (state.attachments || []).map((item) => item.dataUrl).filter(Boolean);
-    }
-
-    function collectImages(mode, urlText) {
-      return [...splitList(urlText || ""), ...attachmentDataUrls()];
-    }
-
     function collectImageUrls(urlText) {
       return splitList(urlText || "");
     }
@@ -3471,11 +3466,22 @@
 
     async function handleText(prompt, quote) {
       const textImageUrl = els.textImageUrl.value;
-      const textImages = [...collectImages("text", textImageUrl), ...quoteImageUrls(quote)];
+      const localImages = [...(state.attachments || []), ...quoteLocalImageAttachments(quote)];
+      const remoteImages = [...collectImageUrls(textImageUrl), ...quoteImageUrls(quote).filter((url) => !url.startsWith("data:image/"))];
       const promptForApi = promptWithQuote(prompt, quote);
       const userMessage = appendMessage({ mode: "text", role: "user", status: "done", content: prompt, quote, attachments: attachmentMetas("text", textImageUrl) });
-      const assistant = appendMessage({ mode: "text", role: "assistant", status: "loading", content: "" });
+      const assistant = appendMessage({
+        mode: "text",
+        role: "assistant",
+        status: "loading",
+        content: localImages.length ? "正在准备图片..." : ""
+      });
       clearComposerAfterSend();
+      const uploadedImages = localImages.length ? await uploadReferenceImages(localImages, assistant.id, "图片") : [];
+      const textImages = [...remoteImages, ...uploadedImages.map((item) => item.url)];
+      if (localImages.length) {
+        updateMessage(assistant.id, { content: "图片已准备好，正在回复..." }, true);
+      }
       const content = buildTextContent(promptForApi, textImages);
       const hasImages = textImages.length > 0;
       const useThinking = !hasImages && els.textThinking.checked;
@@ -3675,9 +3681,11 @@
       const output = els.imageOutput.value;
       const payload = {
         model: "agnes-image-2.1-flash",
-        prompt: promptForApi,
-        size: els.imageSize.value || "1024x1024"
+        prompt: promptForApi
       };
+      if (els.imageSize.value && els.imageSize.value !== "auto") {
+        payload.size = els.imageSize.value;
+      }
       if (inputImages.length) {
         payload.extra_body = { image: inputImages, response_format: output === "base64" ? "b64_json" : "url" };
       } else if (output === "base64") {
@@ -3958,7 +3966,7 @@
         .map((item) => item.previewUrl)
         .filter((url) => url && !url.startsWith("data:image/"));
       if (urls.length) lines.push("参考图：\n" + urls.join("\n"));
-      if (message.task) {
+      if (state.debugMode && message.task) {
         const ids = [message.task.videoId ? "video_id: " + message.task.videoId : "", message.task.taskId ? "task_id: " + message.task.taskId : ""].filter(Boolean);
         if (ids.length) lines.push(ids.join("\n"));
       }
@@ -4490,7 +4498,8 @@
       const ids = document.createElement("div");
       ids.className = "meta task-ids";
       ids.textContent = [task.videoId ? "video_id: " + task.videoId : "", task.taskId ? "task_id: " + task.taskId : ""].filter(Boolean).join(" · ");
-      wrap.append(line, bar, ids);
+      wrap.append(line, bar);
+      if (state.debugMode && ids.textContent) wrap.appendChild(ids);
       setTimeout(() => {
         const status = wrap.querySelector("[data-task-status]");
         const progress = wrap.querySelector("[data-task-progress]");
