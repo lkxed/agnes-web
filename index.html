@@ -1600,6 +1600,17 @@
       overflow-wrap: anywhere;
     }
 
+    .field-help {
+      color: var(--subtle);
+      font-size: 11px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .field-help.warning {
+      color: color-mix(in srgb, var(--danger), var(--muted) 20%);
+    }
+
     .option-row {
       display: flex;
       flex-wrap: wrap;
@@ -1952,6 +1963,7 @@
                       <option value="401:16">25 秒 · 401 帧 / 16 FPS</option>
                       <option value="custom">自定义长度 · 手动设置</option>
                     </select>
+                    <div class="field-help" id="videoLimitHint">720P 最多支持 409 帧；1080P 最多支持 169 帧。</div>
                   </div>
                   <div class="field wide" data-simple-param="video" hidden>
                     <label for="videoImage" data-basic-label="首帧参考图 URL" data-advanced-label="image">首帧参考图 URL</label>
@@ -2056,6 +2068,12 @@
     const TEXT_IMAGE_MODEL = "agnes-1.5-flash";
     const MAX_ATTACHMENTS = 8;
     const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
+    const VIDEO_LIMITS = {
+      "1280x720": { label: "720P 横版", maxFrames: 409, recommended: "25 秒以内" },
+      "720x1280": { label: "720P 竖版", maxFrames: 409, recommended: "25 秒以内" },
+      "1920x1080": { label: "1080P 横版", maxFrames: 169, recommended: "5 秒" },
+      "1080x1920": { label: "1080P 竖版", maxFrames: 169, recommended: "5 秒" }
+    };
 
     const ICONS = {
       eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>',
@@ -2236,6 +2254,7 @@
       imageInputs: document.getElementById("imageInputs"),
       videoSize: document.getElementById("videoSize"),
       videoDuration: document.getElementById("videoDuration"),
+      videoLimitHint: document.getElementById("videoLimitHint"),
       videoFrames: document.getElementById("videoFrames"),
       videoFrameRate: document.getElementById("videoFrameRate"),
       videoPollLimit: document.getElementById("videoPollLimit"),
@@ -2267,6 +2286,7 @@
       updateDebugMode();
       setBusy(false);
       applyVideoDurationPreset();
+      updateVideoDurationAvailability();
       bindEvents();
       renderAll();
     }
@@ -2366,12 +2386,24 @@
       });
       document.addEventListener("click", closeKeyHelp);
 
+      els.videoSize.addEventListener("change", () => {
+        updateVideoDurationAvailability();
+        persistActiveSettings();
+      });
+
       els.videoDuration.addEventListener("change", () => {
+        updateVideoDurationAvailability();
         applyVideoDurationPreset();
         persistActiveSettings();
       });
 
-      [els.imageSize, els.imageOutput, els.imageInputs, els.videoSize, els.videoImage, els.videoExtraImages, els.videoNegative, els.textTemperature, els.textMaxTokens, els.textImageUrl, els.textThinking, els.videoFrames, els.videoFrameRate, els.videoPollLimit].forEach((control) => {
+      els.videoFrames.addEventListener("change", () => {
+        els.videoFrames.value = String(normalizeVideoFrames(parseInt(els.videoFrames.value, 10) || 121));
+        updateVideoDurationAvailability();
+        persistActiveSettings();
+      });
+
+      [els.imageSize, els.imageOutput, els.imageInputs, els.videoImage, els.videoExtraImages, els.videoNegative, els.textTemperature, els.textMaxTokens, els.textImageUrl, els.textThinking, els.videoFrameRate, els.videoPollLimit].forEach((control) => {
         control.addEventListener("change", persistActiveSettings);
         control.addEventListener("input", persistActiveSettings);
       });
@@ -2767,6 +2799,7 @@
       });
       renderFieldLabels();
       renderOptionText();
+      updateVideoDurationAvailability();
       renderAttachments();
     }
 
@@ -3134,6 +3167,7 @@
       els.videoImage.value = data.videoImage;
       els.videoExtraImages.value = data.videoExtraImages;
       els.videoNegative.value = data.videoNegative;
+      updateVideoDurationAvailability();
     }
 
     function setSelectValue(select, value, fallback) {
@@ -4440,6 +4474,54 @@
       }
     }
 
+    function currentVideoLimit() {
+      return VIDEO_LIMITS[els.videoSize.value] || VIDEO_LIMITS["1280x720"];
+    }
+
+    function videoDurationFrames(value) {
+      if (!value || value === "custom") return null;
+      return parseInt(String(value).split(":")[0], 10) || null;
+    }
+
+    function bestVideoDurationValue(maxFrames) {
+      const options = Array.from(els.videoDuration.options)
+        .map((option) => ({ value: option.value, frames: videoDurationFrames(option.value) }))
+        .filter((item) => item.frames && item.frames <= maxFrames)
+        .sort((a, b) => b.frames - a.frames);
+      return options.length ? options[0].value : "custom";
+    }
+
+    function updateVideoDurationAvailability() {
+      if (!els.videoDuration || !els.videoFrames) return;
+      const limit = currentVideoLimit();
+      const labels = OPTION_TEXT.videoDuration.basic;
+      Array.from(els.videoDuration.options).forEach((option) => {
+        const frames = videoDurationFrames(option.value);
+        if (!frames) {
+          option.disabled = false;
+          option.textContent = labels[option.value] || option.textContent;
+          return;
+        }
+        const disabled = frames > limit.maxFrames;
+        option.disabled = disabled;
+        option.textContent = (labels[option.value] || option.textContent) + (disabled ? " · 超过 " + limit.label + "上限" : "");
+      });
+      if (els.videoDuration.value !== "custom") {
+        const selectedFrames = videoDurationFrames(els.videoDuration.value) || 0;
+        if (selectedFrames > limit.maxFrames) {
+          els.videoDuration.value = bestVideoDurationValue(limit.maxFrames);
+        }
+        applyVideoDurationPreset();
+      }
+      const normalized = normalizeVideoFrames(parseInt(els.videoFrames.value, 10) || 121, limit.maxFrames);
+      els.videoFrames.max = String(limit.maxFrames);
+      els.videoFrames.value = String(normalized);
+      if (els.videoLimitHint) {
+        els.videoLimitHint.classList.toggle("warning", limit.maxFrames < 409);
+        els.videoLimitHint.textContent = limit.label + "最多支持 " + limit.maxFrames + " 帧，建议选择 " + limit.recommended + (limit.maxFrames < 409 ? "；更长视频请切换到 720P。" : "。");
+      }
+    }
+
     function applyVideoDurationPreset() {
       if (!els.videoDuration || els.videoDuration.value === "custom") return;
       const [frames, fps] = els.videoDuration.value.split(":");
@@ -4448,6 +4530,7 @@
     }
 
     function getVideoTiming() {
+      updateVideoDurationAvailability();
       if (els.videoDuration.value !== "custom") applyVideoDurationPreset();
       const frames = normalizeVideoFrames(parseInt(els.videoFrames.value, 10) || 121);
       els.videoFrames.value = String(frames);
@@ -4457,9 +4540,10 @@
       };
     }
 
-    function normalizeVideoFrames(value) {
-      const bounded = Math.min(441, Math.max(9, value));
-      return Math.min(441, Math.max(9, Math.round((bounded - 1) / 8) * 8 + 1));
+    function normalizeVideoFrames(value, maxFrames = currentVideoLimit().maxFrames) {
+      const safeMax = Math.max(9, maxFrames || 409);
+      const bounded = Math.min(safeMax, Math.max(9, value));
+      return Math.min(safeMax, Math.max(9, Math.round((bounded - 1) / 8) * 8 + 1));
     }
 
     function splitList(value) {
@@ -4661,6 +4745,10 @@
     function videoFailureHint(reason) {
       const text = String(reason || "").toLowerCase();
       if (!text) return "";
+      const limit = parseVideoLimitError(reason);
+      if (limit) {
+        return "当前设置为 " + limit.frames + " 帧，超过 " + limit.resolution.toUpperCase() + " " + limit.ratio + " 的上限 " + limit.maxFrames + " 帧。请改用更短时长，或切换到 720P 后重试。";
+      }
       if (text.includes("cannot identify image") || text.includes("image file") || text.includes("invalid image") || text.includes("unsupported image")) {
         return "参考图可能不是 Agnes 能识别的图片文件。请换一张 PNG/JPG/WebP 图片，或使用可直接访问的公开 HTTPS 图片 URL 后重试。";
       }
@@ -4685,6 +4773,10 @@
     function videoFailureReason(reason) {
       const text = String(reason || "").toLowerCase();
       if (!text) return "";
+      const limit = parseVideoLimitError(reason);
+      if (limit) {
+        return "当前视频长度超过了 " + limit.resolution.toUpperCase() + " " + limit.ratio + " 的接口上限。";
+      }
       if (text.includes("cannot identify image") || text.includes("image file") || text.includes("invalid image") || text.includes("unsupported image")) {
         return "参考图没有被 Agnes 正确识别。";
       }
@@ -4704,6 +4796,18 @@
         return "服务可能繁忙或生成超时。";
       }
       return "";
+    }
+
+    function parseVideoLimitError(reason) {
+      const text = String(reason || "");
+      const match = text.match(/num_frames\s+(\d+)\s+exceeds maximum\s+(\d+)\s+for\s+([0-9]+p)\/([0-9:]+)/i);
+      if (!match) return null;
+      return {
+        frames: parseInt(match[1], 10),
+        maxFrames: parseInt(match[2], 10),
+        resolution: match[3],
+        ratio: match[4]
+      };
     }
 
     function friendlyErrorReason(reason) {
