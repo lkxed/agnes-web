@@ -1980,7 +1980,6 @@
                       <option value="401:16">25 秒 · 401 帧 / 16 FPS</option>
                       <option value="custom">自定义长度 · 手动设置</option>
                     </select>
-                    <div class="field-help" id="videoLimitHint">会根据清晰度和比例自动匹配可用长度。</div>
                   </div>
                   <div class="field wide" data-simple-param="video" hidden>
                     <label for="videoImage" data-basic-label="首帧参考图 URL" data-advanced-label="image">首帧参考图 URL</label>
@@ -2306,7 +2305,6 @@
       imageInputs: document.getElementById("imageInputs"),
       videoSize: document.getElementById("videoSize"),
       videoDuration: document.getElementById("videoDuration"),
-      videoLimitHint: document.getElementById("videoLimitHint"),
       videoFrames: document.getElementById("videoFrames"),
       videoFrameRate: document.getElementById("videoFrameRate"),
       videoPollLimit: document.getElementById("videoPollLimit"),
@@ -4608,10 +4606,6 @@
       const normalized = normalizeVideoFrames(parseInt(els.videoFrames.value, 10) || 121, meta.maxFrames);
       els.videoFrames.max = String(meta.maxFrames);
       els.videoFrames.value = String(normalized);
-      if (els.videoLimitHint) {
-        els.videoLimitHint.classList.remove("warning");
-        els.videoLimitHint.textContent = "已根据 " + meta.label + " 自动匹配长度和帧率。";
-      }
     }
 
     function applyVideoDurationPreset() {
