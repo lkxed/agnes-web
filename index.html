@@ -1947,10 +1947,27 @@
                   <div class="field" data-simple-param="video" hidden>
                     <label for="videoSize" data-basic-label="画面比例" data-advanced-label="width / height">画面比例</label>
                     <select class="select" id="videoSize">
-                      <option value="1280x720">720P 横版 · 1280x720</option>
-                      <option value="720x1280">720P 竖版 · 720x1280</option>
-                      <option value="1920x1080">1080P 横版 · 1920x1080</option>
-                      <option value="1080x1920">1080P 竖版 · 1080x1920</option>
+                      <optgroup label="480P">
+                        <option value="848x480">480P 横版 16:9 · 848x480</option>
+                        <option value="640x480">480P 标准 4:3 · 640x480</option>
+                        <option value="480x480">480P 方形 1:1 · 480x480</option>
+                        <option value="480x640">480P 竖版 3:4 · 480x640</option>
+                        <option value="480x848">480P 竖版 9:16 · 480x848</option>
+                      </optgroup>
+                      <optgroup label="720P">
+                        <option value="1280x720">720P 横版 16:9 · 1280x720</option>
+                        <option value="960x720">720P 标准 4:3 · 960x720</option>
+                        <option value="720x720">720P 方形 1:1 · 720x720</option>
+                        <option value="720x960">720P 竖版 3:4 · 720x960</option>
+                        <option value="720x1280">720P 竖版 9:16 · 720x1280</option>
+                      </optgroup>
+                      <optgroup label="1080P">
+                        <option value="1920x1080">1080P 横版 16:9 · 1920x1080</option>
+                        <option value="1440x1080">1080P 标准 4:3 · 1440x1080</option>
+                        <option value="1080x1080">1080P 方形 1:1 · 1080x1080</option>
+                        <option value="1080x1440">1080P 竖版 3:4 · 1080x1440</option>
+                        <option value="1080x1920">1080P 竖版 9:16 · 1080x1920</option>
+                      </optgroup>
                     </select>
                   </div>
                   <div class="field" data-simple-param="video" hidden>
@@ -1963,7 +1980,7 @@
                       <option value="401:16">25 秒 · 401 帧 / 16 FPS</option>
                       <option value="custom">自定义长度 · 手动设置</option>
                     </select>
-                    <div class="field-help" id="videoLimitHint">720P 最多支持 409 帧；1080P 最多支持 169 帧。</div>
+                    <div class="field-help" id="videoLimitHint">会根据清晰度和比例自动匹配可用长度。</div>
                   </div>
                   <div class="field wide" data-simple-param="video" hidden>
                     <label for="videoImage" data-basic-label="首帧参考图 URL" data-advanced-label="image">首帧参考图 URL</label>
@@ -1995,7 +2012,7 @@
                     </div>
                     <div class="field" data-param="video" hidden>
                       <label for="videoFrames" data-basic-label="视频帧数" data-advanced-label="num_frames">视频帧数</label>
-                      <input class="input" id="videoFrames" type="number" min="9" max="441" step="8" value="121">
+                      <input class="input" id="videoFrames" type="number" min="9" max="961" step="8" value="121">
                     </div>
                     <div class="field" data-param="video" hidden>
                       <label for="videoFrameRate" data-basic-label="帧率" data-advanced-label="frame_rate">帧率</label>
@@ -2068,12 +2085,25 @@
     const TEXT_IMAGE_MODEL = "agnes-1.5-flash";
     const MAX_ATTACHMENTS = 8;
     const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
-    const VIDEO_LIMITS = {
-      "1280x720": { label: "720P 横版", maxFrames: 409, recommended: "25 秒以内" },
-      "720x1280": { label: "720P 竖版", maxFrames: 409, recommended: "25 秒以内" },
-      "1920x1080": { label: "1080P 横版", maxFrames: 169, recommended: "5 秒" },
-      "1080x1920": { label: "1080P 竖版", maxFrames: 169, recommended: "5 秒" }
+    const VIDEO_SIZE_META = {
+      "848x480": { tier: "480P", ratio: "16:9", label: "480P 横版 16:9", maxFrames: 961 },
+      "640x480": { tier: "480P", ratio: "4:3", label: "480P 标准 4:3", maxFrames: 961 },
+      "480x480": { tier: "480P", ratio: "1:1", label: "480P 方形 1:1", maxFrames: 961 },
+      "480x640": { tier: "480P", ratio: "3:4", label: "480P 竖版 3:4", maxFrames: 961 },
+      "480x848": { tier: "480P", ratio: "9:16", label: "480P 竖版 9:16", maxFrames: 961 },
+      "1280x720": { tier: "720P", ratio: "16:9", label: "720P 横版 16:9", maxFrames: 409 },
+      "960x720": { tier: "720P", ratio: "4:3", label: "720P 标准 4:3", maxFrames: 409 },
+      "720x720": { tier: "720P", ratio: "1:1", label: "720P 方形 1:1", maxFrames: 409 },
+      "720x960": { tier: "720P", ratio: "3:4", label: "720P 竖版 3:4", maxFrames: 409 },
+      "720x1280": { tier: "720P", ratio: "9:16", label: "720P 竖版 9:16", maxFrames: 409 },
+      "1920x1080": { tier: "1080P", ratio: "16:9", label: "1080P 横版 16:9", maxFrames: 169 },
+      "1440x1080": { tier: "1080P", ratio: "4:3", label: "1080P 标准 4:3", maxFrames: 169 },
+      "1080x1080": { tier: "1080P", ratio: "1:1", label: "1080P 方形 1:1", maxFrames: 169 },
+      "1080x1440": { tier: "1080P", ratio: "3:4", label: "1080P 竖版 3:4", maxFrames: 169 },
+      "1080x1920": { tier: "1080P", ratio: "9:16", label: "1080P 竖版 9:16", maxFrames: 169 }
     };
+    const VIDEO_TARGET_SECONDS = [5, 10, 15, 20, 25];
+    const VIDEO_FPS_CANDIDATES = [60, 48, 30, 24, 20, 16, 12, 8, 7, 6];
 
     const ICONS = {
       eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>',
@@ -2108,16 +2138,38 @@
       },
       videoSize: {
         basic: {
-          "1280x720": "720P 横版 · 1280x720",
-          "720x1280": "720P 竖版 · 720x1280",
-          "1920x1080": "1080P 横版 · 1920x1080",
-          "1080x1920": "1080P 竖版 · 1080x1920"
+          "848x480": "480P 横版 16:9 · 848x480",
+          "640x480": "480P 标准 4:3 · 640x480",
+          "480x480": "480P 方形 1:1 · 480x480",
+          "480x640": "480P 竖版 3:4 · 480x640",
+          "480x848": "480P 竖版 9:16 · 480x848",
+          "1280x720": "720P 横版 16:9 · 1280x720",
+          "960x720": "720P 标准 4:3 · 960x720",
+          "720x720": "720P 方形 1:1 · 720x720",
+          "720x960": "720P 竖版 3:4 · 720x960",
+          "720x1280": "720P 竖版 9:16 · 720x1280",
+          "1920x1080": "1080P 横版 16:9 · 1920x1080",
+          "1440x1080": "1080P 标准 4:3 · 1440x1080",
+          "1080x1080": "1080P 方形 1:1 · 1080x1080",
+          "1080x1440": "1080P 竖版 3:4 · 1080x1440",
+          "1080x1920": "1080P 竖版 9:16 · 1080x1920"
         },
         advanced: {
-          "1280x720": "width = 1280 · height = 720 · 720P landscape",
-          "720x1280": "width = 720 · height = 1280 · 720P portrait",
-          "1920x1080": "width = 1920 · height = 1080 · 1080P landscape",
-          "1080x1920": "width = 1080 · height = 1920 · 1080P portrait"
+          "848x480": "width = 848 · height = 480 · 480P 16:9",
+          "640x480": "width = 640 · height = 480 · 480P 4:3",
+          "480x480": "width = 480 · height = 480 · 480P 1:1",
+          "480x640": "width = 480 · height = 640 · 480P 3:4",
+          "480x848": "width = 480 · height = 848 · 480P 9:16",
+          "1280x720": "width = 1280 · height = 720 · 720P 16:9",
+          "960x720": "width = 960 · height = 720 · 720P 4:3",
+          "720x720": "width = 720 · height = 720 · 720P 1:1",
+          "720x960": "width = 720 · height = 960 · 720P 3:4",
+          "720x1280": "width = 720 · height = 1280 · 720P 9:16",
+          "1920x1080": "width = 1920 · height = 1080 · 1080P 16:9",
+          "1440x1080": "width = 1440 · height = 1080 · 1080P 4:3",
+          "1080x1080": "width = 1080 · height = 1080 · 1080P 1:1",
+          "1080x1440": "width = 1080 · height = 1440 · 1080P 3:4",
+          "1080x1920": "width = 1080 · height = 1920 · 1080P 9:16"
         }
       },
       videoDuration: {
@@ -2500,9 +2552,9 @@
         imageOutput: "url",
         imageInputs: "",
         videoSize: "1280x720",
-        videoDuration: "121:24",
-        videoFrames: "121",
-        videoFrameRate: "24",
+        videoDuration: "297:60",
+        videoFrames: "297",
+        videoFrameRate: "60",
         videoPollLimit: "60",
         videoImage: "",
         videoExtraImages: "",
@@ -3160,7 +3212,8 @@
       setSelectValue(els.imageOutput, data.imageOutput, "url");
       els.imageInputs.value = data.imageInputs;
       setSelectValue(els.videoSize, data.videoSize, "1280x720");
-      setSelectValue(els.videoDuration, data.videoDuration, "121:24");
+      updateVideoDurationAvailability();
+      setSelectValue(els.videoDuration, data.videoDuration, els.videoDuration.options[0] ? els.videoDuration.options[0].value : "custom");
       els.videoFrames.value = data.videoFrames;
       els.videoFrameRate.value = data.videoFrameRate;
       els.videoPollLimit.value = data.videoPollLimit;
@@ -4474,8 +4527,8 @@
       }
     }
 
-    function currentVideoLimit() {
-      return VIDEO_LIMITS[els.videoSize.value] || VIDEO_LIMITS["1280x720"];
+    function currentVideoMeta() {
+      return VIDEO_SIZE_META[els.videoSize.value] || VIDEO_SIZE_META["1280x720"];
     }
 
     function videoDurationFrames(value) {
@@ -4483,42 +4536,81 @@
       return parseInt(String(value).split(":")[0], 10) || null;
     }
 
-    function bestVideoDurationValue(maxFrames) {
-      const options = Array.from(els.videoDuration.options)
-        .map((option) => ({ value: option.value, frames: videoDurationFrames(option.value) }))
-        .filter((item) => item.frames && item.frames <= maxFrames)
-        .sort((a, b) => b.frames - a.frames);
-      return options.length ? options[0].value : "custom";
+    function buildVideoDurationPresets(meta) {
+      return VIDEO_TARGET_SECONDS
+        .map((seconds) => videoDurationPreset(seconds, meta))
+        .filter(Boolean);
+    }
+
+    function videoDurationPreset(targetSeconds, meta) {
+      for (const fps of VIDEO_FPS_CANDIDATES) {
+        const frames = validFramesForSeconds(targetSeconds, fps, meta.maxFrames);
+        if (!frames) continue;
+        const actualSeconds = frames / fps;
+        return {
+          value: frames + ":" + fps,
+          frames,
+          fps,
+          seconds: actualSeconds,
+          label: formatVideoDurationLabel(targetSeconds, actualSeconds, frames, fps)
+        };
+      }
+      return null;
+    }
+
+    function validFramesForSeconds(seconds, fps, maxFrames) {
+      const rawFrames = seconds * fps;
+      const rounded = Math.round((rawFrames - 1) / 8) * 8 + 1;
+      const floored = Math.floor((rawFrames - 1) / 8) * 8 + 1;
+      const candidates = [rounded, floored]
+        .filter((value) => value >= 9 && value <= maxFrames)
+        .sort((a, b) => Math.abs(a / fps - seconds) - Math.abs(b / fps - seconds));
+      return candidates[0] || null;
+    }
+
+    function formatVideoDurationLabel(targetSeconds, actualSeconds, frames, fps) {
+      const secondsLabel = Math.abs(actualSeconds - targetSeconds) < 0.35
+        ? String(targetSeconds) + " 秒"
+        : "约 " + formatSeconds(actualSeconds) + " 秒";
+      const strategy = videoDurationStrategy(targetSeconds, fps);
+      return secondsLabel + " · " + frames + " 帧 / " + fps + " FPS · " + strategy;
+    }
+
+    function videoDurationStrategy(targetSeconds, fps) {
+      if (targetSeconds <= 5 || (targetSeconds <= 10 && fps >= 24)) return "流畅优先";
+      if (targetSeconds >= 25 || fps <= 8) return "时长优先";
+      return "均衡";
+    }
+
+    function formatSeconds(value) {
+      return Number.isInteger(value) ? String(value) : String(Math.round(value * 10) / 10);
     }
 
     function updateVideoDurationAvailability() {
       if (!els.videoDuration || !els.videoFrames) return;
-      const limit = currentVideoLimit();
-      const labels = OPTION_TEXT.videoDuration.basic;
-      Array.from(els.videoDuration.options).forEach((option) => {
-        const frames = videoDurationFrames(option.value);
-        if (!frames) {
-          option.disabled = false;
-          option.textContent = labels[option.value] || option.textContent;
-          return;
-        }
-        const disabled = frames > limit.maxFrames;
-        option.disabled = disabled;
-        option.textContent = (labels[option.value] || option.textContent) + (disabled ? " · 超过 " + limit.label + "上限" : "");
+      const meta = currentVideoMeta();
+      const previousValue = els.videoDuration.value;
+      const presets = buildVideoDurationPresets(meta);
+      els.videoDuration.innerHTML = "";
+      presets.forEach((preset) => {
+        const option = document.createElement("option");
+        option.value = preset.value;
+        option.textContent = preset.label;
+        els.videoDuration.appendChild(option);
       });
-      if (els.videoDuration.value !== "custom") {
-        const selectedFrames = videoDurationFrames(els.videoDuration.value) || 0;
-        if (selectedFrames > limit.maxFrames) {
-          els.videoDuration.value = bestVideoDurationValue(limit.maxFrames);
-        }
-        applyVideoDurationPreset();
-      }
-      const normalized = normalizeVideoFrames(parseInt(els.videoFrames.value, 10) || 121, limit.maxFrames);
-      els.videoFrames.max = String(limit.maxFrames);
+      const custom = document.createElement("option");
+      custom.value = "custom";
+      custom.textContent = "自定义 · 手动设置帧数和帧率";
+      els.videoDuration.appendChild(custom);
+      const values = presets.map((preset) => preset.value).concat("custom");
+      els.videoDuration.value = values.includes(previousValue) ? previousValue : (presets[0] ? presets[0].value : "custom");
+      if (els.videoDuration.value !== "custom") applyVideoDurationPreset();
+      const normalized = normalizeVideoFrames(parseInt(els.videoFrames.value, 10) || 121, meta.maxFrames);
+      els.videoFrames.max = String(meta.maxFrames);
       els.videoFrames.value = String(normalized);
       if (els.videoLimitHint) {
-        els.videoLimitHint.classList.toggle("warning", limit.maxFrames < 409);
-        els.videoLimitHint.textContent = limit.label + "最多支持 " + limit.maxFrames + " 帧，建议选择 " + limit.recommended + (limit.maxFrames < 409 ? "；更长视频请切换到 720P。" : "。");
+        els.videoLimitHint.classList.remove("warning");
+        els.videoLimitHint.textContent = "已根据 " + meta.label + " 自动匹配长度和帧率。";
       }
     }
 
@@ -4540,7 +4632,7 @@
       };
     }
 
-    function normalizeVideoFrames(value, maxFrames = currentVideoLimit().maxFrames) {
+    function normalizeVideoFrames(value, maxFrames = currentVideoMeta().maxFrames) {
       const safeMax = Math.max(9, maxFrames || 409);
       const bounded = Math.min(safeMax, Math.max(9, value));
       return Math.min(safeMax, Math.max(9, Math.round((bounded - 1) / 8) * 8 + 1));
