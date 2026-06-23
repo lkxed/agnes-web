@@ -3366,11 +3366,11 @@
       return splitList(urlText || "");
     }
 
-    async function uploadVideoReferenceImages(items, messageId) {
+    async function uploadReferenceImages(items, messageId, label) {
       const uploads = [];
       for (let index = 0; index < items.length; index += 1) {
         const item = items[index];
-        updateMessage(messageId, { content: "正在上传参考图 " + String(index + 1) + " / " + String(items.length) + "..." }, true);
+        updateMessage(messageId, { content: "正在上传" + label + " " + String(index + 1) + " / " + String(items.length) + "..." }, true);
         uploads.push(await uploadImageToHost(item));
       }
       return uploads;
@@ -3657,10 +3657,21 @@
     async function handleImage(prompt, quote) {
       const promptForApi = promptWithQuote(prompt, quote);
       const imageInputs = els.imageInputs.value;
-      const inputImages = [...collectImages("image", imageInputs), ...quoteImageUrls(quote)];
+      const localImages = [...(state.attachments || []), ...quoteLocalImageAttachments(quote)];
+      const remoteImages = [...collectImageUrls(imageInputs), ...quoteImageUrls(quote).filter((url) => !url.startsWith("data:image/"))];
       const userMessage = appendMessage({ mode: "image", role: "user", status: "done", content: prompt, quote, attachments: attachmentMetas("image", imageInputs) });
-      const assistant = appendMessage({ mode: "image", role: "assistant", status: "loading", content: "正在创作图片，请稍等..." });
+      const assistant = appendMessage({
+        mode: "image",
+        role: "assistant",
+        status: "loading",
+        content: localImages.length ? "正在准备本地参考图..." : "正在创作图片，请稍等..."
+      });
       clearComposerAfterSend();
+      const uploadedImages = localImages.length ? await uploadReferenceImages(localImages, assistant.id, "参考图") : [];
+      const inputImages = [...remoteImages, ...uploadedImages.map((item) => item.url)];
+      if (localImages.length) {
+        updateMessage(assistant.id, { content: "参考图已准备好，正在创作图片..." }, true);
+      }
       const output = els.imageOutput.value;
       const payload = {
         model: "agnes-image-2.1-flash",
@@ -3709,7 +3720,7 @@
         content: localImages.length ? "正在上传本地参考图..." : "正在开始制作视频..."
       });
       clearComposerAfterSend();
-      const uploadedImages = localImages.length ? await uploadVideoReferenceImages(localImages, assistant.id) : [];
+      const uploadedImages = localImages.length ? await uploadReferenceImages(localImages, assistant.id, "参考图") : [];
       const inputImages = [...remoteImages, ...uploadedImages.map((item) => item.url)];
       if (localImages.length) {
         updateMessage(assistant.id, { content: "参考图已上传，正在开始制作视频..." }, true);
