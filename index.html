@@ -1390,13 +1390,15 @@
       white-space: nowrap;
     }
 
-    .attachment-list {
+    .attachment-list,
+    .text-attachment-list {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
     }
 
     .attachment-chip,
+    .text-attachment-chip,
     .message-attachment {
       display: grid;
       grid-template-columns: 42px minmax(0, 1fr) auto;
@@ -1412,6 +1414,10 @@
     .attachment-chip {
       min-width: min(260px, 100%);
       border-color: color-mix(in srgb, var(--danger), var(--line) 25%);
+    }
+
+    .text-attachment-chip {
+      min-width: min(260px, 100%);
     }
 
     .attachment-chip img {
@@ -1463,7 +1469,8 @@
     }
 
     .message-attachment-preview,
-    .message-attachment-icon {
+    .message-attachment-icon,
+    .attachment-icon {
       display: grid;
       place-items: center;
       width: 42px;
@@ -1474,7 +1481,8 @@
       overflow: hidden;
     }
 
-    .message-attachment-icon svg {
+    .message-attachment-icon svg,
+    .attachment-icon svg {
       width: 17px;
       height: 17px;
     }
@@ -1919,6 +1927,7 @@
           <div class="attachment-panel" id="attachmentPanel">
             <div class="composer-context" id="composerContext" hidden></div>
             <div class="attachment-list" id="attachmentList" aria-label="已添加图片" hidden></div>
+            <div class="text-attachment-list" id="textAttachmentList" aria-label="已添加文本附件" hidden></div>
           </div>
 
           <div class="composer-input-row">
@@ -2053,12 +2062,17 @@
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.6-8.5 8.5a5 5 0 0 1-7.1-7.1l9.2-9.2a3.5 3.5 0 0 1 5 5l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"></path></svg>
                   <span id="uploadImagesLabel">添加图片</span>
                 </button>
-                <button class="tool-button" id="clearAttachmentsButton" type="button" hidden>
+                <button class="tool-button" id="uploadTextButton" type="button" title="添加本地文本文件，内容会随消息一起发送" aria-label="添加本地文本文件，内容会随消息一起发送" hidden>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path><path d="M14 2v6h6"></path><path d="M9 13h6"></path><path d="M9 17h4"></path></svg>
+                  <span id="uploadTextLabel">添加文本</span>
+                </button>
+                <button class="tool-button" id="clearAttachmentsButton" type="button" title="清除已添加的图片和文本附件" hidden>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path></svg>
-                  <span>清除图片</span>
+                  <span>清除附件</span>
                 </button>
               </div>
               <input id="imageFileInput" type="file" accept="image/*" multiple hidden>
+              <input id="textFileInput" type="file" multiple hidden accept=".txt,.text,.md,.markdown,.csv,.tsv,.json,.log,.yml,.yaml,.ini,.conf,.env,.xml,.html,.htm,.css,.js,.ts,.py,.java,.c,.cpp,.go,.rs,.rb,.php,.sh,.sql,.srt,.vtt,text/*">
               <button class="send-button" id="sendButton" type="submit" aria-label="发送">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"></path><path d="m5 12 7-7 7 7"></path></svg>
               </button>
@@ -2111,6 +2125,13 @@
     const VIDEO_POLL_INTERVAL_MS = 2000;
     const MAX_ATTACHMENTS = 8;
     const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
+    // Local text files are read in the browser and sent as prompt text — the model only
+    // accepts text and image URLs, so there is no file upload anywhere.
+    const MAX_TEXT_FILES = 4;
+    const MAX_TEXT_FILE_BYTES = 2 * 1024 * 1024;
+    const MAX_TEXT_TOTAL_CHARS = 200000;
+    // Long bodies are kept in memory in full but trimmed before hitting localStorage.
+    const MAX_STORED_TEXT_CHARS = 20000;
     // Native output sizes documented for agnes-image-2.5-flash, keyed by tier + ratio.
     const IMAGE_SIZE_TIERS = {
       "1K": { "1:1": "1024x1024", "3:4": "864x1152", "4:3": "1152x864", "16:9": "1312x736", "9:16": "736x1312", "2:3": "832x1248", "3:2": "1248x832", "21:9": "1568x672" },
@@ -2133,11 +2154,15 @@
       reference: { label: "参考图 / 音频", hint: "用参考图或参考音频保持角色与风格，图片最多 5 张，音频最多 3 段。" }
     };
     const VIDEO_SECONDS_RANGE = { min: 4, max: 12, fallback: 5 };
+    // Declared up here on purpose: toast() is called during bootstrap (for example when
+    // session storage is already full), so its timer must not be in the temporal dead zone.
+    let toastTimer = null;
 
     const ICONS = {
       eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>',
       eyeOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 2 20 20"></path><path d="M6.7 6.7C3.9 8.7 2 12 2 12s3 7 10 7c1.7 0 3.2-.4 4.5-1"></path><path d="M10.1 5.2A10.8 10.8 0 0 1 12 5c7 0 10 7 10 7a14.2 14.2 0 0 1-3.1 4.2"></path><path d="M14.1 14.1A3 3 0 0 1 9.9 9.9"></path></svg>',
-      image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M21 15l-5-5L5 21"></path></svg>'
+      image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M21 15l-5-5L5 21"></path></svg>',
+      file: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path><path d="M14 2v6h6"></path><path d="M9 13h6"></path><path d="M9 17h4"></path></svg>'
     };
 
     const MODE_CONFIG = {
@@ -2187,6 +2212,8 @@
       cancelRequested: false,
       historyQuery: "",
       attachments: emptyAttachments(),
+      textAttachments: emptyTextAttachments(),
+      storageWarningShown: false,
       previewItems: [],
       previewIndex: 0,
       openHistoryMenuId: null,
@@ -2236,6 +2263,10 @@
       textThinking: document.getElementById("textThinking"),
       uploadImagesButton: document.getElementById("uploadImagesButton"),
       uploadImagesLabel: document.getElementById("uploadImagesLabel"),
+      uploadTextButton: document.getElementById("uploadTextButton"),
+      uploadTextLabel: document.getElementById("uploadTextLabel"),
+      textAttachmentList: document.getElementById("textAttachmentList"),
+      textFileInput: document.getElementById("textFileInput"),
       clearAttachmentsButton: document.getElementById("clearAttachmentsButton"),
       imageFileInput: document.getElementById("imageFileInput"),
       attachmentList: document.getElementById("attachmentList"),
@@ -2361,6 +2392,8 @@
 
       els.uploadImagesButton.addEventListener("click", () => els.imageFileInput.click());
       els.imageFileInput.addEventListener("change", handleImageFileSelection);
+      els.uploadTextButton.addEventListener("click", () => els.textFileInput.click());
+      els.textFileInput.addEventListener("change", handleTextFileSelection);
       els.clearAttachmentsButton.addEventListener("click", () => clearModeAttachments(state.mode));
       els.modalCloseButton.addEventListener("click", closeImagePreview);
       els.modalPrevButton.addEventListener("click", () => showImagePreviewAt(state.previewIndex - 1));
@@ -2477,6 +2510,7 @@
       state.activeSessionId = session.id;
       state.mode = session.mode;
       state.attachments = emptyAttachments();
+      state.textAttachments = emptyTextAttachments();
       state.editingMessageId = null;
       state.quotedMessage = null;
       applySettings(session.settings);
@@ -2549,8 +2583,13 @@
           activeSessionId: state.activeSessionId,
           sessions: state.sessions.slice(0, 80).map(serializeSession)
         }));
+        state.storageWarningShown = false;
       } catch (error) {
         console.warn("Unable to save sessions", error);
+        if (!state.storageWarningShown) {
+          state.storageWarningShown = true;
+          toast("会话历史保存失败：浏览器存储空间可能已满，请删除一些旧对话后重试。");
+        }
       }
     }
 
@@ -2565,8 +2604,25 @@
           quote: sanitizeQuoteForStorage(message.quote),
           thinking: message.thinking || "",
           usage: message.usage || null,
-          attachments: (message.attachments || []).map(sanitizeAttachmentForStorage)
+          attachments: (message.attachments || []).map(sanitizeAttachmentForStorage),
+          textAttachments: (message.textAttachments || []).map(sanitizeTextAttachmentForStorage)
         }))
+      };
+    }
+
+    // The body is kept in full in memory so the current send is complete, but history
+    // stores only a bounded slice to protect the localStorage quota.
+    function sanitizeTextAttachmentForStorage(item) {
+      const text = typeof item.text === "string" ? item.text : "";
+      const overLimit = text.length > MAX_STORED_TEXT_CHARS;
+      return {
+        id: item.id,
+        name: item.name,
+        type: item.type,
+        size: item.size || 0,
+        chars: item.chars || text.length,
+        text: overLimit ? text.slice(0, MAX_STORED_TEXT_CHARS) : text,
+        truncated: overLimit
       };
     }
 
@@ -2599,7 +2655,15 @@
         content: content.slice(0, 1200),
         createdAt: quote.createdAt || new Date().toISOString(),
         attachments: (quote.attachments || []).map(normalizeQuoteAttachment).filter((item) => item.previewUrl),
-        result: normalizeQuoteResult(quote.result)
+        result: normalizeQuoteResult(quote.result),
+        // Only the identity of a text attachment is carried in a quote, never its body.
+        textAttachments: (quote.textAttachments || []).map((item) => ({
+          id: item.id || "",
+          name: item.name || "文本文件",
+          type: item.type || "text/plain",
+          size: item.size || 0,
+          chars: item.chars || 0
+        }))
       };
     }
 
@@ -2661,6 +2725,7 @@
       state.quotedMessage = null;
       state.mode = session.mode;
       state.attachments = emptyAttachments();
+      state.textAttachments = emptyTextAttachments();
       applySettings(session.settings);
       saveSessions();
       renderAll();
@@ -2681,6 +2746,7 @@
       if (session) {
         state.mode = session.mode;
         state.attachments = emptyAttachments();
+        state.textAttachments = emptyTextAttachments();
         state.editingMessageId = null;
         state.quotedMessage = null;
         applySettings(session.settings);
@@ -2769,6 +2835,7 @@
       renderHistory();
       renderThread();
       renderAttachments();
+      renderTextAttachments();
       renderComposerContext();
       renderSuggestions();
       updateChatTitle();
@@ -2802,7 +2869,10 @@
       updateVideoSubFields();
       updateImageSizeHint();
       updateVideoOptionHints();
+      // A text file is inlined into the prompt text, which only chat mode accepts.
+      els.uploadTextButton.hidden = state.mode !== "text";
       renderAttachments();
+      renderTextAttachments();
     }
 
     function renderFieldLabels() {
@@ -3250,6 +3320,157 @@
       return [];
     }
 
+    function emptyTextAttachments() {
+      return [];
+    }
+
+    async function handleTextFileSelection(event) {
+      const files = Array.from(event.target.files || []);
+      event.target.value = "";
+      if (!files.length) return;
+      const bucket = state.textAttachments || [];
+      let totalChars = bucket.reduce((sum, item) => sum + (item.chars || 0), 0);
+      let added = 0;
+      for (const file of files) {
+        if (bucket.length >= MAX_TEXT_FILES) {
+          toast("最多同时添加 " + MAX_TEXT_FILES + " 个文本附件");
+          break;
+        }
+        const label = file.name || "文本文件";
+        if (file.size > MAX_TEXT_FILE_BYTES) {
+          toast(label + " 超过 " + formatBytes(MAX_TEXT_FILE_BYTES) + "，已跳过");
+          continue;
+        }
+        let text = "";
+        try {
+          text = await decodeTextFile(file);
+        } catch (error) {
+          toast("读取失败：" + label);
+          continue;
+        }
+        if (text.includes("\u0000")) {
+          toast(label + " 看起来是二进制文件，已跳过");
+          continue;
+        }
+        if (!text.trim()) {
+          toast(label + " 是空文件，已跳过");
+          continue;
+        }
+        if (totalChars + text.length > MAX_TEXT_TOTAL_CHARS) {
+          toast("文本附件合计不能超过 " + MAX_TEXT_TOTAL_CHARS.toLocaleString() + " 字，已跳过 " + label);
+          continue;
+        }
+        totalChars += text.length;
+        bucket.push({
+          id: makeId(),
+          name: label,
+          type: file.type || "text/plain",
+          size: file.size || 0,
+          chars: text.length,
+          text
+        });
+        added += 1;
+      }
+      state.textAttachments = bucket;
+      renderTextAttachments();
+      if (added) toast("已添加 " + added + " 个文本附件");
+    }
+
+    // Reads a local file as text. Legacy Chinese .txt files saved on Windows are often
+    // GBK, so a UTF-8 decode that produces replacement characters is retried as GBK.
+    async function decodeTextFile(file) {
+      const bytes = new Uint8Array(await fileToArrayBuffer(file));
+      if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe) return decodeBytes("utf-16le", bytes.subarray(2));
+      if (bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) return decodeBytes("utf-16be", bytes.subarray(2));
+      const start = bytes.length >= 3 && bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf ? 3 : 0;
+      const body = bytes.subarray(start);
+      const utf8 = decodeBytes("utf-8", body);
+      if (!utf8.includes("\uFFFD")) return utf8;
+      const gbk = decodeBytes("gbk", body);
+      return gbk && countReplacements(gbk) < countReplacements(utf8) ? gbk : utf8;
+    }
+
+    function decodeBytes(encoding, bytes) {
+      try {
+        return new TextDecoder(encoding, { fatal: false }).decode(bytes);
+      } catch (error) {
+        return "";
+      }
+    }
+
+    function countReplacements(text) {
+      let count = 0;
+      for (const char of text) if (char === "\uFFFD") count += 1;
+      return count;
+    }
+
+    function fileToArrayBuffer(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error || new Error("File read failed"));
+        reader.readAsArrayBuffer(file);
+      });
+    }
+
+    // Local text files are inlined into the prompt: the API accepts text and image URLs
+    // only, so the file never leaves the browser as a file.
+    function promptWithTextDocuments(prompt, docs) {
+      if (!docs.length) return prompt;
+      const blocks = docs.map((item) => "【文本附件：" + (item.name || "文本文件") + "】\n" + item.text);
+      return blocks.join("\n\n") + "\n\n【我的问题 / 指令】\n" + prompt;
+    }
+
+    function renderTextAttachments() {
+      const items = state.textAttachments || [];
+      // The add button is hidden outside chat mode, so the chips must be too — otherwise an
+      // inert "will not be sent" attachment stays on screen in image and video mode.
+      els.textAttachmentList.hidden = !items.length || state.mode !== "text";
+      els.textAttachmentList.innerHTML = "";
+      els.uploadTextLabel.textContent = items.length ? "添加文本 (" + items.length + "/" + MAX_TEXT_FILES + ")" : "添加文本";
+      items.forEach((item) => {
+        const chip = document.createElement("div");
+        chip.className = "text-attachment-chip";
+        const icon = document.createElement("div");
+        icon.className = "attachment-icon";
+        icon.innerHTML = ICONS.file;
+        const info = document.createElement("div");
+        const name = document.createElement("div");
+        name.className = "attachment-name";
+        name.textContent = item.name || "文本文件";
+        name.title = item.name || "文本文件";
+        const meta = document.createElement("div");
+        meta.className = "attachment-size";
+        meta.textContent = (item.chars || 0).toLocaleString() + " 字";
+        info.append(name, meta);
+        const remove = document.createElement("button");
+        remove.className = "icon-button";
+        remove.type = "button";
+        remove.title = "移除文本附件";
+        remove.setAttribute("aria-label", "移除文本附件");
+        remove.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>';
+        remove.addEventListener("click", () => removeTextAttachment(item.id));
+        chip.append(icon, info, remove);
+        els.textAttachmentList.appendChild(chip);
+      });
+      updateClearAttachmentsButton();
+    }
+
+    function removeTextAttachment(id) {
+      state.textAttachments = (state.textAttachments || []).filter((item) => item.id !== id);
+      renderTextAttachments();
+    }
+
+    function updateClearAttachmentsButton() {
+      const images = (state.attachments || []).length;
+      // Text files only ever feed the chat prompt, so other modes neither show nor count them.
+      const docs = state.mode === "text" ? (state.textAttachments || []).length : 0;
+      els.clearAttachmentsButton.hidden = !(images + docs);
+      els.clearAttachmentsButton.title = docs && images
+        ? "清除已添加的图片和文本附件"
+        : docs ? "清除已添加的文本附件" : "清除已添加的图片";
+    }
+
     async function handleImageFileSelection(event) {
       const files = Array.from(event.target.files || []).filter((file) => file.type && file.type.startsWith("image/"));
       event.target.value = "";
@@ -3286,7 +3507,6 @@
 
     function renderAttachments() {
       const items = state.attachments || [];
-      els.clearAttachmentsButton.hidden = !items.length;
       els.uploadImagesLabel.textContent = items.length ? "添加图片 (" + items.length + "/" + MAX_ATTACHMENTS + ")" : "添加图片";
       els.attachmentList.hidden = !items.length;
       els.attachmentList.innerHTML = "";
@@ -3314,6 +3534,9 @@
         chip.append(img, info, remove);
         els.attachmentList.appendChild(chip);
       });
+      // The clear button is shared by images and text files, so both renderers must
+      // refresh it — otherwise adding only an image leaves the button hidden.
+      updateClearAttachmentsButton();
     }
 
     function removeAttachment(id) {
@@ -3321,9 +3544,15 @@
       renderAttachments();
     }
 
-    function clearModeAttachments() {
+    // Called both from the clear button (passing the visible mode) and from the post-send
+    // reset, so the mode must default to the active one.
+    function clearModeAttachments(mode = state.mode) {
       state.attachments = [];
+      // Pending text files are only meaningful in chat mode, so clearing images elsewhere
+      // must not silently throw them away.
+      if (mode === "text") state.textAttachments = [];
       renderAttachments();
+      renderTextAttachments();
     }
 
     function attachmentMetas(mode, urlText, options = {}) {
@@ -3458,10 +3687,12 @@
 
     async function handleText(prompt, quote) {
       const textImageUrl = els.textImageUrl.value;
+      // Capture the pending attachments before the composer is cleared.
+      const textDocs = (state.textAttachments || []).slice();
       const localImages = [...(state.attachments || []), ...quoteLocalImageAttachments(quote)];
       const remoteImages = [...collectImageUrls(textImageUrl), ...quoteImageUrls(quote).filter((url) => !url.startsWith("data:image/"))];
-      const promptForApi = promptWithQuote(prompt, quote);
-      const userMessage = appendMessage({ mode: "text", role: "user", status: "done", content: prompt, quote, attachments: attachmentMetas("text", textImageUrl) });
+      const promptForApi = promptWithQuote(promptWithTextDocuments(prompt, textDocs), quote);
+      const userMessage = appendMessage({ mode: "text", role: "user", status: "done", content: prompt, quote, attachments: attachmentMetas("text", textImageUrl), textAttachments: textDocs });
       const assistant = appendMessage({
         mode: "text",
         role: "assistant",
@@ -3983,6 +4214,7 @@
         task: partial.task || null,
         quote: sanitizeQuote(partial.quote),
         attachments: Array.isArray(partial.attachments) ? partial.attachments : [],
+        textAttachments: Array.isArray(partial.textAttachments) ? partial.textAttachments : [],
         thinking: partial.thinking || "",
         usage: partial.usage || null
       };
@@ -4041,6 +4273,10 @@
         .map((item) => item.previewUrl)
         .filter((url) => url && !url.startsWith("data:image/"));
       if (urls.length) lines.push("参考图：\n" + urls.join("\n"));
+      const docs = message.textAttachments || [];
+      if (docs.length) {
+        lines.push("文本附件：\n" + docs.map((item) => item.name + "（" + (item.chars || 0).toLocaleString() + " 字）").join("\n"));
+      }
       if (state.debugMode && message.task) {
         const ids = [message.task.videoId ? "video_id: " + message.task.videoId : "", message.task.taskId ? "task_id: " + message.task.taskId : ""].filter(Boolean);
         if (ids.length) lines.push(ids.join("\n"));
@@ -4085,7 +4321,9 @@
       state.quotedMessage = null;
       els.promptInput.value = "";
       state.attachments = emptyAttachments();
+      state.textAttachments = emptyTextAttachments();
       renderAttachments();
+      renderTextAttachments();
       renderComposerContext();
       toast("已取消编辑");
     }
@@ -4103,19 +4341,25 @@
         content: quotePreviewText(message),
         createdAt: message.createdAt,
         attachments: message.attachments || [],
-        result: message.result || null
+        result: message.result || null,
+        textAttachments: message.textAttachments || []
       });
     }
 
     function quotePreviewText(messageOrQuote) {
       if (!messageOrQuote) return "";
-      if (messageOrQuote.content) return String(messageOrQuote.content).trim();
+      const docs = messageOrQuote.textAttachments || [];
+      const docNote = docs.length
+        ? "（另含文本附件：" + docs.map((item) => item.name || "文本文件").join("、") + "）"
+        : "";
+      if (messageOrQuote.content) return (String(messageOrQuote.content).trim() + (docNote ? "\n" + docNote : "")).trim();
       const result = messageOrQuote.result;
       if (result && result.kind === "image") return "图片结果";
       if (result && result.kind === "video") return "视频结果";
       if (messageOrQuote.task) return "视频任务：" + statusLabel(messageOrQuote.task.status || "unknown");
       const attachments = messageOrQuote.attachments || [];
       if (attachments.length) return "包含 " + attachments.length + " 张参考图";
+      if (docs.length) return "包含 " + docs.length + " 个文本附件：" + docs.map((item) => item.name || "文本文件").join("、");
       return "（无文本内容）";
     }
 
@@ -4181,10 +4425,24 @@
         }
       });
       state.attachments = local.slice(0, MAX_ATTACHMENTS);
+      const docs = message.textAttachments || [];
+      state.textAttachments = docs.map((item) => ({
+        id: makeId(),
+        name: item.name || "文本文件",
+        type: item.type || "text/plain",
+        size: item.size || 0,
+        chars: item.chars || (item.text || "").length,
+        text: item.text || "",
+        truncated: Boolean(item.truncated)
+      }));
       if (message.mode === "text") els.textImageUrl.value = urls.join("\n");
       if (message.mode === "image") els.imageInputs.value = urls.join("\n");
       if (message.mode === "video") restoreVideoInputs(message, urls);
       renderAttachments();
+      renderTextAttachments();
+      if (docs.some((item) => item.truncated || !item.text)) {
+        toast("文本附件的正文没有完整保存，重新发送前请再次选择文件");
+      }
       if ((message.attachments || []).length && !local.length && !urls.length) {
         toast("这条消息里的本地图片没有长期保存，需要重新上传");
       }
@@ -4251,6 +4509,7 @@
       if (message.quote) bubble.insertBefore(renderQuoteBlock(message.quote), body);
       if (message.thinking) bubble.insertBefore(renderThinking(message.thinking), body);
       if (message.attachments && message.attachments.length) bubble.appendChild(renderMessageAttachments(message.attachments));
+      if (message.textAttachments && message.textAttachments.length) bubble.appendChild(renderMessageTextAttachments(message.textAttachments));
       if (message.task) bubble.appendChild(renderTask(message.task));
       if (message.result) bubble.appendChild(renderResult(message.result));
       content.append(bubble, renderMessageFooter(message));
@@ -4572,6 +4831,30 @@
         size.textContent = hasPreview ? "点击预览" : formatBytes(item.size || 0);
         text.append(name, size);
         row.append(preview, text);
+        wrap.appendChild(row);
+      });
+      return wrap;
+    }
+
+    function renderMessageTextAttachments(items) {
+      const wrap = document.createElement("div");
+      wrap.className = "message-attachments";
+      items.forEach((item) => {
+        const row = document.createElement("div");
+        row.className = "message-attachment";
+        const icon = document.createElement("div");
+        icon.className = "message-attachment-icon";
+        icon.innerHTML = ICONS.file;
+        const text = document.createElement("div");
+        const name = document.createElement("div");
+        name.className = "message-attachment-name";
+        name.textContent = item.name || "文本文件";
+        name.title = item.name || "文本文件";
+        const meta = document.createElement("div");
+        meta.className = "message-attachment-size";
+        meta.textContent = (item.chars || 0).toLocaleString() + " 字" + (item.truncated ? " · 历史中仅保留前 " + MAX_STORED_TEXT_CHARS.toLocaleString() + " 字" : "");
+        text.append(name, meta);
+        row.append(icon, text);
         wrap.appendChild(row);
       });
       return wrap;
@@ -5099,7 +5382,6 @@
       document.body.removeChild(ta);
     }
 
-    let toastTimer = null;
     function toast(message) {
       els.toast.textContent = message;
       els.toast.classList.add("show");
