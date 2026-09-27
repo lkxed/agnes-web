@@ -2,3 +2,5 @@
 Thumbs.db
 *.log
 .playwright-mcp/
+# Agent workspace data (memory logs, skills) — never publish to GitHub Pages.
+.workbuddy/
