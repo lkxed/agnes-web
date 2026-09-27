@@ -10,7 +10,8 @@
 - 用户发送的参考图会在消息中显示为缩略图，点击缩略图会在页面内模态窗口中预览；同一条消息内有多张图时可前后切换，模态窗口内可选择新标签页打开、下载或另存为。
 - 本地会话历史：自动保存标题、消息和非敏感设置，支持搜索、恢复、重命名、置顶和删除单个会话。
 - 消息操作：可以引用自己或 Agnes 的任意消息，引用会随新消息一起发送并显示为引用块；被引用消息里的图片或视频也会保留预览。也可以编辑自己已发送的消息，发送后会从该消息开始重新生成后续回复。
-- 图片和视频的常用选项靠近输入框：图片尺寸最高提供 `4096x4096`，视频提供 720P/1080P 横版和竖版；视频长度提供 5s、10s、15s、20s、25s，并映射到 Agnes 文档要求的 `num_frames / frame_rate`。
+- 图片和视频的常用选项靠近输入框：图片先选 `1K / 2K / 3K / 4K` 尺寸档位，再选 `1:1`、`16:9`、`21:9` 等画面比例，页面会实时显示对应的输出像素；视频固定 720P，通过画面比例决定横竖屏，时长可选 4 到 12 秒。
+- 视频生成方式可选「文生视频」「首尾帧」「参考图 / 音频」：选项面板会跟着切换对应的输入框。选择会以你为准，素材缺失时发送前就会提示；只有默认的「文生视频」会按你填的图片自动升级，不会让素材被悄悄忽略。
 - 选项面板：一个“选项”按钮集中管理当前模式的设置，所有文案保持用户友好。
 - 思考：聊天模式开启“思考”后会自动使用流式输出，思考内容显示在可展开/收起的引用块中，默认只露出 3 行；不开启时使用普通非流式回复。
 - 取消回复：生成中发送按钮会变成停止按钮，可中止当前浏览器请求、流式输出或视频轮询；公开视频任务如果已经提交到 Agnes，当前官方文档未提供服务端取消接口，前端只能停止等待结果。
@@ -99,14 +100,19 @@ https://<user>.github.io/
 
 ## 技术说明
 
-- 文本默认使用 `agnes-2.0-flash`；当用户添加图片或填写图片 URL 时，会自动使用支持文本+图片输入的 `agnes-1.5-flash`。
-- 文本流式响应会拆分 `delta.content` 与 `delta.reasoning_content`，正文和思考过程分开渲染。
-- 图片使用 `agnes-image-2.1-flash`，请求始终传入 `size`，选项里提供最高 `4096x4096` 的尺寸、参考图 URL、本地参考图上传和结果保存方式。
-- 视频使用 `agnes-video-v2.0`，创建任务使用 `POST /v1/videos`，查询优先使用推荐的 `video_id` 接口 `/agnesapi?video_id=...`，`task_id` 查询仅作兼容兜底；选项里提供 720P/1080P 横竖屏、5s 到 25s 时长、公开参考图 URL、视频帧数、帧率、结果检查次数和不想出现的内容。
+- 文本使用 `agnes-3.0-flash`。同一个模型既支持纯文本，也支持「文本 + 图像 URL」输入，所以不再按“是否带图”切换模型；上下文窗口 `512K`，单次最多输出 `65,536` tokens。
+- 文本流式响应会拆分 `delta.content` 与 `delta.reasoning_content`，正文和思考过程分开渲染；开启「思考」时会带上 `chat_template_kwargs.enable_thinking = true` 并自动切换为流式输出。
+- 图片使用 `agnes-image-2.5-flash`。请求必带 `prompt` 和 `size`（`1K` / `2K` / `3K` / `4K` 档位），再配合 `ratio` 指定画面比例；返回格式只在 `extra_body.response_format` 里指定（`url` 或 `b64_json`），顶层不放 `response_format`，也不要传 `tags: ["img2img"]`。图生图和多图合成通过 `extra_body.image` 传入参考图，前 3 张参考图不额外计费。
+- 视频使用 `agnes-video-2.5-flash`。创建任务用 `POST /v1/videos`，查询用官方推荐的 `GET /agnesapi?video_id=...&model_name=agnes-video-2.5-flash`（`task_id` 路径仅作兼容兜底，每 2 秒轮询一次）。`size` 固定为字符串 `"720P"`，画面由 `aspect_ratio` 决定，`seconds` 支持 `"4"` 到 `"12"`。
+- 视频生成方式由 `mode` 控制：`text` 只用文字；`keyframe` 用 `first_frame` / `last_frame` 控制起止画面（至少一张）；`reference` 用 `images`（最多 5 张）和 `audios`（最多 3 段）保持角色与风格，该模型不支持参考视频。
+- 生成方式以你的选择为准：选「首尾帧」需要至少一张首帧或尾帧图片，选「参考图 / 音频」需要至少一项参考图或参考音频，缺少素材时会在发送前给出提示，不会发出接口一定会拒绝的请求。只有默认的「文生视频」会按你实际填写的图片自动升级为「首尾帧」或「参考图 / 音频」，避免素材被悄悄忽略。参考图超过 5 张、参考音频超过 3 段时会自动截断并提示。
+- 多个参考图的 URL 输入框使用多行文本域：每行一个 URL，也可以用逗号分隔（普通单行输入框会把换行直接吃掉，导致多个 URL 粘成一个）。
 - 本地历史使用 `agnes_chat_sessions_v1` 作为 `localStorage` key；Agnes API Key 使用 `agnes_api_key` 作为 `localStorage` key。
 
 ## API 文档
 
-- 文本：https://agnes-ai.com/doc/agnes-20-flash
-- 图像：https://agnes-ai.com/doc/agnes-image-21-flash
-- 视频：https://agnes-ai.com/doc/agnes-video-v20
+- 文档索引：https://wiki.agnes-ai.com/llms.txt
+- 文本 Agnes 3.0 Flash：https://wiki.agnes-ai.com/zh-Hans/docs/agnes-30-flash
+- 图像 Agnes Image 2.5 Flash：https://wiki.agnes-ai.com/zh-Hans/docs/agnes-image-25-flash
+- 视频 Agnes Video 2.5 Flash：https://wiki.agnes-ai.com/zh-Hans/docs/agnes-video-25-flash
+- 模型定价：https://wiki.agnes-ai.com/zh-Hans/docs/pricing

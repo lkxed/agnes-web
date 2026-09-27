@@ -255,6 +255,14 @@
       padding: 8px 10px;
     }
 
+    /* Multi-value URL fields use a textarea: a plain <input> silently strips newlines,
+       which would merge a pasted list of URLs into one broken value. */
+    .input.url-list {
+      min-height: 64px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
     .search-input {
       padding-left: 36px;
       background: color-mix(in srgb, var(--panel), var(--bg) 16%);
@@ -1589,6 +1597,7 @@
 
     .field {
       display: grid;
+      align-content: start;
       gap: 6px;
       min-width: 0;
     }
@@ -1927,68 +1936,83 @@
               <button class="composer-options" id="optionsSettings" type="button" aria-expanded="false">选项</button>
                 <div class="simple-settings" id="simpleSettings" hidden>
                   <div class="field" data-simple-param="image" hidden>
-                    <label for="imageSize" data-basic-label="图片尺寸" data-advanced-label="size">图片尺寸</label>
-                    <select class="select" id="imageSize">
-                      <option value="auto">保持原比例 · 自动尺寸</option>
-                      <option value="1024x1024">标准方图 · 1024x1024</option>
-                      <option value="1024x768">标准横图 · 1024x768</option>
-                      <option value="768x1024">标准竖图 · 768x1024</option>
-                      <option value="1920x1080">高清横图 · 1920x1080</option>
-                      <option value="1080x1920">高清竖图 · 1080x1920</option>
-                      <option value="2048x2048">高清方图 · 2048x2048</option>
-                      <option value="4096x4096">最大方图 · 4096x4096</option>
-                      <option value="4096x2304">最大横图 · 4096x2304</option>
-                      <option value="2304x4096">最大竖图 · 2304x4096</option>
+                    <label for="imageSizeTier" data-basic-label="尺寸档位" data-advanced-label="size">尺寸档位</label>
+                    <select class="select" id="imageSizeTier">
+                      <option value="1K">1K · 标准</option>
+                      <option value="2K">2K · 高清</option>
+                      <option value="3K">3K · 超高清</option>
+                      <option value="4K">4K · 最大</option>
+                    </select>
+                    <div class="field-help" id="imageSizeHint">将输出 1024x1024</div>
+                  </div>
+                  <div class="field" data-simple-param="image" hidden>
+                    <label for="imageRatio" data-basic-label="画面比例" data-advanced-label="ratio">画面比例</label>
+                    <select class="select" id="imageRatio">
+                      <option value="1:1">1:1 · 方形</option>
+                      <option value="3:4">3:4 · 竖版</option>
+                      <option value="4:3">4:3 · 横版</option>
+                      <option value="16:9">16:9 · 宽屏</option>
+                      <option value="9:16">9:16 · 竖屏</option>
+                      <option value="2:3">2:3 · 竖版海报</option>
+                      <option value="3:2">3:2 · 横版照片</option>
+                      <option value="21:9">21:9 · 超宽</option>
                     </select>
                   </div>
                   <div class="field wide" data-simple-param="image" hidden>
                     <label for="imageInputs" data-basic-label="公开参考图 URL" data-advanced-label="extra_body.image[]">公开参考图 URL</label>
-                    <input class="input" id="imageInputs" spellcheck="false" placeholder="公开图片 URL，多个可用换行分隔">
+                    <textarea class="input url-list" id="imageInputs" spellcheck="false" placeholder="公开图片 URL，每行一个，也可用逗号分隔"></textarea>
+                    <div class="field-help">前 3 张参考图不额外计费；当前参考图与全部尺寸档位均为 $0。</div>
                   </div>
                   <div class="field" data-simple-param="video" hidden>
-                    <label for="videoSize" data-basic-label="画面比例" data-advanced-label="width / height">画面比例</label>
-                    <select class="select" id="videoSize">
-                      <optgroup label="480P">
-                        <option value="848x480">480P 横版 16:9 · 848x480</option>
-                        <option value="640x480">480P 标准 4:3 · 640x480</option>
-                        <option value="480x480">480P 方形 1:1 · 480x480</option>
-                        <option value="480x640">480P 竖版 3:4 · 480x640</option>
-                        <option value="480x848">480P 竖版 9:16 · 480x848</option>
-                      </optgroup>
-                      <optgroup label="720P">
-                        <option value="1280x720">720P 横版 16:9 · 1280x720</option>
-                        <option value="960x720">720P 标准 4:3 · 960x720</option>
-                        <option value="720x720">720P 方形 1:1 · 720x720</option>
-                        <option value="720x960">720P 竖版 3:4 · 720x960</option>
-                        <option value="720x1280">720P 竖版 9:16 · 720x1280</option>
-                      </optgroup>
-                      <optgroup label="1080P">
-                        <option value="1920x1080">1080P 横版 16:9 · 1920x1080</option>
-                        <option value="1440x1080">1080P 标准 4:3 · 1440x1080</option>
-                        <option value="1080x1080">1080P 方形 1:1 · 1080x1080</option>
-                        <option value="1080x1440">1080P 竖版 3:4 · 1080x1440</option>
-                        <option value="1080x1920">1080P 竖版 9:16 · 1080x1920</option>
-                      </optgroup>
+                    <label for="videoMode" data-basic-label="生成方式" data-advanced-label="mode">生成方式</label>
+                    <select class="select" id="videoMode">
+                      <option value="text">文生视频</option>
+                      <option value="keyframe">首尾帧</option>
+                      <option value="reference">参考图 / 音频</option>
                     </select>
+                    <div class="field-help" id="videoModeHint">只根据文字描述生成视频。</div>
                   </div>
                   <div class="field" data-simple-param="video" hidden>
-                    <label for="videoDuration" data-basic-label="视频长度" data-advanced-label="num_frames / frame_rate">视频长度</label>
-                    <select class="select" id="videoDuration">
-                      <option value="121:24">5 秒 · 121 帧 / 24 FPS</option>
-                      <option value="241:24">10 秒 · 241 帧 / 24 FPS</option>
-                      <option value="361:24">15 秒 · 361 帧 / 24 FPS</option>
-                      <option value="321:16">20 秒 · 321 帧 / 16 FPS</option>
-                      <option value="401:16">25 秒 · 401 帧 / 16 FPS</option>
-                      <option value="custom">自定义长度 · 手动设置</option>
+                    <label for="videoAspect" data-basic-label="画面比例" data-advanced-label="aspect_ratio">画面比例</label>
+                    <select class="select" id="videoAspect">
+                      <option value="16:9">16:9 · 横版</option>
+                      <option value="21:9">21:9 · 宽银幕</option>
+                      <option value="4:3">4:3 · 标准横版</option>
+                      <option value="1:1">1:1 · 方形</option>
+                      <option value="3:4">3:4 · 标准竖版</option>
+                      <option value="9:16">9:16 · 竖屏</option>
+                    </select>
+                    <div class="field-help" id="videoAspectHint">输出 1280x704</div>
+                  </div>
+                  <div class="field" data-simple-param="video" hidden>
+                    <label for="videoSeconds" data-basic-label="视频长度" data-advanced-label="seconds">视频长度</label>
+                    <select class="select" id="videoSeconds">
+                      <option value="4">4 秒</option>
+                      <option value="5">5 秒</option>
+                      <option value="6">6 秒</option>
+                      <option value="7">7 秒</option>
+                      <option value="8">8 秒</option>
+                      <option value="9">9 秒</option>
+                      <option value="10">10 秒</option>
+                      <option value="11">11 秒</option>
+                      <option value="12">12 秒</option>
                     </select>
                   </div>
-                  <div class="field wide" data-simple-param="video" hidden>
-                    <label for="videoImage" data-basic-label="首帧参考图 URL" data-advanced-label="image">首帧参考图 URL</label>
-                    <input class="input" id="videoImage" type="url" placeholder="公开图片 URL">
+                  <div class="field wide" data-simple-param="video" data-video-mode="keyframe" hidden>
+                    <label for="videoFirstFrame" data-basic-label="首帧图片 URL" data-advanced-label="first_frame">首帧图片 URL</label>
+                    <input class="input" id="videoFirstFrame" spellcheck="false" placeholder="公开图片 URL，留空则使用上传的图片">
                   </div>
-                  <div class="field wide" data-simple-param="video" hidden>
-                    <label for="videoExtraImages" data-basic-label="更多关键帧 URL" data-advanced-label="extra_body.image[]">更多关键帧 URL</label>
-                    <input class="input" id="videoExtraImages" spellcheck="false" placeholder="多张公开图片 URL，可用换行分隔">
+                  <div class="field wide" data-simple-param="video" data-video-mode="keyframe" hidden>
+                    <label for="videoLastFrame" data-basic-label="尾帧图片 URL" data-advanced-label="last_frame">尾帧图片 URL</label>
+                    <input class="input" id="videoLastFrame" spellcheck="false" placeholder="公开图片 URL，可留空">
+                  </div>
+                  <div class="field wide" data-simple-param="video" data-video-mode="reference" hidden>
+                    <label for="videoImages" data-basic-label="参考图片 URL" data-advanced-label="images[]">参考图片 URL</label>
+                    <textarea class="input url-list" id="videoImages" spellcheck="false" placeholder="公开图片 URL，最多 5 张，每行一个"></textarea>
+                  </div>
+                  <div class="field wide" data-simple-param="video" data-video-mode="reference" hidden>
+                    <label for="videoAudios" data-basic-label="参考音频 URL" data-advanced-label="audios[]">参考音频 URL</label>
+                    <textarea class="input url-list" id="videoAudios" spellcheck="false" placeholder="公开音频 URL，最多 3 段，每行一个"></textarea>
                   </div>
                   <div class="advanced-fields" id="advancedFields">
                     <div class="field" data-param="text">
@@ -1997,11 +2021,12 @@
                     </div>
                     <div class="field" data-param="text">
                       <label for="textMaxTokens" data-basic-label="最大回复长度" data-advanced-label="max_tokens">最大回复长度</label>
-                      <input class="input" id="textMaxTokens" type="number" min="1" step="1" value="1024">
+                      <input class="input" id="textMaxTokens" type="number" min="1" max="65536" step="1" value="4096">
+                      <div class="field-help">上限 65,536 tokens，上下文窗口 512K。</div>
                     </div>
                     <div class="field wide" data-param="text">
                       <label for="textImageUrl" data-basic-label="公开图片 URL" data-advanced-label="messages.content[].image_url.url">公开图片 URL</label>
-                      <input class="input" id="textImageUrl" spellcheck="false" placeholder="公开图片 URL，多个可用换行分隔">
+                      <textarea class="input url-list" id="textImageUrl" spellcheck="false" placeholder="公开图片 URL，每行一个，也可用逗号分隔"></textarea>
                     </div>
                     <div class="field" data-param="image" hidden>
                       <label for="imageOutput" data-basic-label="返回格式" data-advanced-label="response_format / return_base64">返回格式</label>
@@ -2011,20 +2036,13 @@
                       </select>
                     </div>
                     <div class="field" data-param="video" hidden>
-                      <label for="videoFrames" data-basic-label="视频帧数" data-advanced-label="num_frames">视频帧数</label>
-                      <input class="input" id="videoFrames" type="number" min="9" max="961" step="8" value="121">
-                    </div>
-                    <div class="field" data-param="video" hidden>
-                      <label for="videoFrameRate" data-basic-label="帧率" data-advanced-label="frame_rate">帧率</label>
-                      <input class="input" id="videoFrameRate" type="number" min="1" max="60" step="1" value="24">
+                      <label for="videoSeed" data-basic-label="随机种子" data-advanced-label="seed">随机种子</label>
+                      <input class="input" id="videoSeed" type="number" min="0" step="1" placeholder="留空表示每次随机">
                     </div>
                     <div class="field" data-param="video" hidden>
                       <label for="videoPollLimit" data-basic-label="结果检查次数" data-advanced-label="poll_limit">结果检查次数</label>
-                      <input class="input" id="videoPollLimit" type="number" min="1" max="120" step="1" value="60">
-                    </div>
-                    <div class="field full" data-param="video" hidden>
-                      <label for="videoNegative" data-basic-label="不想出现的内容" data-advanced-label="negative_prompt">不想出现的内容</label>
-                      <input class="input" id="videoNegative" spellcheck="false" placeholder="例如：低清晰度、变形、杂乱背景">
+                      <input class="input" id="videoPollLimit" type="number" min="1" max="300" step="1" value="60">
+                      <div class="field-help">每 2 秒查询一次，60 次约 2 分钟。</div>
                     </div>
                   </div>
                 </div>
@@ -2081,127 +2099,45 @@
     const STORAGE_KEY = "agnes_chat_sessions_v1";
     const API_KEY_STORAGE_KEY = "agnes_api_key";
     const DEBUG_MODE_STORAGE_KEY = "agnes_debug_mode";
-    const TEXT_DEFAULT_MODEL = "agnes-2.0-flash";
-    const TEXT_IMAGE_MODEL = "agnes-1.5-flash";
+    // agnes-3.0-flash handles both text-only and text+image input, so a single
+    // model id is used for every chat request regardless of attachments.
+    const TEXT_MODEL = "agnes-3.0-flash";
+    const TEXT_MAX_OUTPUT_TOKENS = 65536;
+    const IMAGE_MODEL = "agnes-image-2.5-flash";
+    const VIDEO_MODEL = "agnes-video-2.5-flash";
+    const VIDEO_SIZE = "720P";
+    const MAX_VIDEO_REFERENCE_IMAGES = 5;
+    const MAX_VIDEO_REFERENCE_AUDIOS = 3;
+    const VIDEO_POLL_INTERVAL_MS = 2000;
     const MAX_ATTACHMENTS = 8;
     const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
-    const VIDEO_SIZE_META = {
-      "848x480": { tier: "480P", ratio: "16:9", label: "480P 横版 16:9", maxFrames: 961 },
-      "640x480": { tier: "480P", ratio: "4:3", label: "480P 标准 4:3", maxFrames: 961 },
-      "480x480": { tier: "480P", ratio: "1:1", label: "480P 方形 1:1", maxFrames: 961 },
-      "480x640": { tier: "480P", ratio: "3:4", label: "480P 竖版 3:4", maxFrames: 961 },
-      "480x848": { tier: "480P", ratio: "9:16", label: "480P 竖版 9:16", maxFrames: 961 },
-      "1280x720": { tier: "720P", ratio: "16:9", label: "720P 横版 16:9", maxFrames: 409 },
-      "960x720": { tier: "720P", ratio: "4:3", label: "720P 标准 4:3", maxFrames: 409 },
-      "720x720": { tier: "720P", ratio: "1:1", label: "720P 方形 1:1", maxFrames: 409 },
-      "720x960": { tier: "720P", ratio: "3:4", label: "720P 竖版 3:4", maxFrames: 409 },
-      "720x1280": { tier: "720P", ratio: "9:16", label: "720P 竖版 9:16", maxFrames: 409 },
-      "1920x1080": { tier: "1080P", ratio: "16:9", label: "1080P 横版 16:9", maxFrames: 169 },
-      "1440x1080": { tier: "1080P", ratio: "4:3", label: "1080P 标准 4:3", maxFrames: 169 },
-      "1080x1080": { tier: "1080P", ratio: "1:1", label: "1080P 方形 1:1", maxFrames: 169 },
-      "1080x1440": { tier: "1080P", ratio: "3:4", label: "1080P 竖版 3:4", maxFrames: 169 },
-      "1080x1920": { tier: "1080P", ratio: "9:16", label: "1080P 竖版 9:16", maxFrames: 169 }
+    // Native output sizes documented for agnes-image-2.5-flash, keyed by tier + ratio.
+    const IMAGE_SIZE_TIERS = {
+      "1K": { "1:1": "1024x1024", "3:4": "864x1152", "4:3": "1152x864", "16:9": "1312x736", "9:16": "736x1312", "2:3": "832x1248", "3:2": "1248x832", "21:9": "1568x672" },
+      "2K": { "1:1": "2048x2048", "3:4": "1728x2304", "4:3": "2304x1728", "16:9": "2624x1472", "9:16": "1472x2624", "2:3": "1664x2496", "3:2": "2496x1664", "21:9": "3136x1344" },
+      "3K": { "1:1": "3072x3072", "3:4": "2592x3456", "4:3": "3456x2592", "16:9": "3936x2208", "9:16": "2208x3936", "2:3": "2496x3744", "3:2": "3744x2496", "21:9": "4704x2016" },
+      "4K": { "1:1": "4096x4096", "3:4": "3456x4608", "4:3": "4608x3456", "16:9": "5248x2944", "9:16": "2944x5248", "2:3": "3328x4992", "3:2": "4992x3328", "21:9": "6272x2688" }
     };
-    const VIDEO_TARGET_SECONDS = [5, 10, 15, 20, 25];
-    const VIDEO_FPS_CANDIDATES = [60, 48, 30, 24, 20, 16, 12, 8, 7, 6];
+    // 720P output sizes documented for agnes-video-2.5-flash, keyed by aspect_ratio.
+    const VIDEO_ASPECT_META = {
+      "16:9": { label: "16:9 · 横版", output: "1280x704" },
+      "21:9": { label: "21:9 · 宽银幕", output: "1680x720" },
+      "4:3": { label: "4:3 · 标准横版", output: "960x720" },
+      "1:1": { label: "1:1 · 方形", output: "720x720" },
+      "3:4": { label: "3:4 · 标准竖版", output: "720x960" },
+      "9:16": { label: "9:16 · 竖屏", output: "720x1280" }
+    };
+    const VIDEO_MODE_META = {
+      text: { label: "文生视频", hint: "只根据文字描述生成视频，不接受参考图或参考音频。" },
+      keyframe: { label: "首尾帧", hint: "用首帧、尾帧图片控制起止画面，至少提供其中一张。" },
+      reference: { label: "参考图 / 音频", hint: "用参考图或参考音频保持角色与风格，图片最多 5 张，音频最多 3 段。" }
+    };
+    const VIDEO_SECONDS_RANGE = { min: 4, max: 12, fallback: 5 };
 
     const ICONS = {
       eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>',
       eyeOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 2 20 20"></path><path d="M6.7 6.7C3.9 8.7 2 12 2 12s3 7 10 7c1.7 0 3.2-.4 4.5-1"></path><path d="M10.1 5.2A10.8 10.8 0 0 1 12 5c7 0 10 7 10 7a14.2 14.2 0 0 1-3.1 4.2"></path><path d="M14.1 14.1A3 3 0 0 1 9.9 9.9"></path></svg>',
       image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M21 15l-5-5L5 21"></path></svg>'
-    };
-
-    const OPTION_TEXT = {
-      imageSize: {
-        basic: {
-          "auto": "保持原比例 · 自动尺寸",
-          "1024x1024": "标准方图 · 1024x1024",
-          "1024x768": "标准横图 · 1024x768",
-          "768x1024": "标准竖图 · 768x1024",
-          "1920x1080": "高清横图 · 1920x1080",
-          "1080x1920": "高清竖图 · 1080x1920",
-          "2048x2048": "高清方图 · 2048x2048",
-          "4096x4096": "最大方图 · 4096x4096",
-          "4096x2304": "最大横图 · 4096x2304",
-          "2304x4096": "最大竖图 · 2304x4096"
-        },
-        advanced: {
-          "auto": "自动尺寸 · 不指定 size",
-          "1024x1024": "size = 1024x1024 · 1:1",
-          "1024x768": "size = 1024x768 · 4:3",
-          "768x1024": "size = 768x1024 · 3:4",
-          "1920x1080": "size = 1920x1080 · 16:9",
-          "1080x1920": "size = 1080x1920 · 9:16",
-          "2048x2048": "size = 2048x2048 · 1:1",
-          "4096x4096": "size = 4096x4096 · 1:1 max",
-          "4096x2304": "size = 4096x2304 · 16:9 max",
-          "2304x4096": "size = 2304x4096 · 9:16 max"
-        }
-      },
-      videoSize: {
-        basic: {
-          "848x480": "480P 横版 16:9 · 848x480",
-          "640x480": "480P 标准 4:3 · 640x480",
-          "480x480": "480P 方形 1:1 · 480x480",
-          "480x640": "480P 竖版 3:4 · 480x640",
-          "480x848": "480P 竖版 9:16 · 480x848",
-          "1280x720": "720P 横版 16:9 · 1280x720",
-          "960x720": "720P 标准 4:3 · 960x720",
-          "720x720": "720P 方形 1:1 · 720x720",
-          "720x960": "720P 竖版 3:4 · 720x960",
-          "720x1280": "720P 竖版 9:16 · 720x1280",
-          "1920x1080": "1080P 横版 16:9 · 1920x1080",
-          "1440x1080": "1080P 标准 4:3 · 1440x1080",
-          "1080x1080": "1080P 方形 1:1 · 1080x1080",
-          "1080x1440": "1080P 竖版 3:4 · 1080x1440",
-          "1080x1920": "1080P 竖版 9:16 · 1080x1920"
-        },
-        advanced: {
-          "848x480": "width = 848 · height = 480 · 480P 16:9",
-          "640x480": "width = 640 · height = 480 · 480P 4:3",
-          "480x480": "width = 480 · height = 480 · 480P 1:1",
-          "480x640": "width = 480 · height = 640 · 480P 3:4",
-          "480x848": "width = 480 · height = 848 · 480P 9:16",
-          "1280x720": "width = 1280 · height = 720 · 720P 16:9",
-          "960x720": "width = 960 · height = 720 · 720P 4:3",
-          "720x720": "width = 720 · height = 720 · 720P 1:1",
-          "720x960": "width = 720 · height = 960 · 720P 3:4",
-          "720x1280": "width = 720 · height = 1280 · 720P 9:16",
-          "1920x1080": "width = 1920 · height = 1080 · 1080P 16:9",
-          "1440x1080": "width = 1440 · height = 1080 · 1080P 4:3",
-          "1080x1080": "width = 1080 · height = 1080 · 1080P 1:1",
-          "1080x1440": "width = 1080 · height = 1440 · 1080P 3:4",
-          "1080x1920": "width = 1080 · height = 1920 · 1080P 9:16"
-        }
-      },
-      videoDuration: {
-        basic: {
-          "121:24": "5 秒 · 121 帧 / 24 FPS",
-          "241:24": "10 秒 · 241 帧 / 24 FPS",
-          "361:24": "15 秒 · 361 帧 / 24 FPS",
-          "321:16": "20 秒 · 321 帧 / 16 FPS",
-          "401:16": "25 秒 · 401 帧 / 16 FPS",
-          custom: "自定义长度 · 手动设置"
-        },
-        advanced: {
-          "121:24": "num_frames = 121 · frame_rate = 24",
-          "241:24": "num_frames = 241 · frame_rate = 24",
-          "361:24": "num_frames = 361 · frame_rate = 24",
-          "321:16": "num_frames = 321 · frame_rate = 16",
-          "401:16": "num_frames = 401 · frame_rate = 16",
-          custom: "custom · use num_frames / frame_rate fields"
-        }
-      },
-      imageOutput: {
-        basic: {
-          url: "直接预览",
-          base64: "嵌入页面数据"
-        },
-        advanced: {
-          url: 'response_format = "url"',
-          base64: 'response_format = "b64_json"'
-        }
-      }
     };
 
     const MODE_CONFIG = {
@@ -2233,9 +2169,9 @@
         buttonLabel: "生成视频",
         tag: "视频",
         suggestions: [
-          { title: "产品展示短片", desc: "镜头缓慢推进，专业光效。", prompt: "一个 5 秒左右的产品展示短片：镜头缓慢推进到一块简洁的 AI 创作界面，文字、图片、视频三个能力依次亮起，光线柔和，现代专业" },
-          { title: "让参考图动起来", desc: "人物或产品自然运动。", prompt: "让参考图里的主体轻微移动，镜头缓慢推进，保持自然、真实、稳定" },
-          { title: "关键帧转场", desc: "两张图之间平滑过渡。", prompt: "在两张关键帧之间生成平滑转场，保持视觉一致和自然镜头运动" }
+          { title: "产品展示短片", desc: "文生视频，镜头缓慢推进。", prompt: "一个 5 秒左右的产品展示短片：镜头缓慢推进到一块简洁的 AI 创作界面，文字、图片、视频三个能力依次亮起，光线柔和，现代专业" },
+          { title: "让参考图动起来", desc: "参考图模式，保持角色与风格。", prompt: "以参考图中的角色和美术风格为准，角色在花田中自然奔跑，镜头平稳跟随，保持外观一致" },
+          { title: "首尾帧转场", desc: "首尾帧模式，两图之间平滑过渡。", prompt: "人物从首帧姿态自然转身走向窗边，镜头缓慢推进并平滑过渡到尾帧" }
         ]
       }
     };
@@ -2303,17 +2239,22 @@
       clearAttachmentsButton: document.getElementById("clearAttachmentsButton"),
       imageFileInput: document.getElementById("imageFileInput"),
       attachmentList: document.getElementById("attachmentList"),
-      imageSize: document.getElementById("imageSize"),
+      imageSizeTier: document.getElementById("imageSizeTier"),
+      imageRatio: document.getElementById("imageRatio"),
+      imageSizeHint: document.getElementById("imageSizeHint"),
       imageOutput: document.getElementById("imageOutput"),
       imageInputs: document.getElementById("imageInputs"),
-      videoSize: document.getElementById("videoSize"),
-      videoDuration: document.getElementById("videoDuration"),
-      videoFrames: document.getElementById("videoFrames"),
-      videoFrameRate: document.getElementById("videoFrameRate"),
+      videoMode: document.getElementById("videoMode"),
+      videoModeHint: document.getElementById("videoModeHint"),
+      videoAspect: document.getElementById("videoAspect"),
+      videoAspectHint: document.getElementById("videoAspectHint"),
+      videoSeconds: document.getElementById("videoSeconds"),
+      videoFirstFrame: document.getElementById("videoFirstFrame"),
+      videoLastFrame: document.getElementById("videoLastFrame"),
+      videoImages: document.getElementById("videoImages"),
+      videoAudios: document.getElementById("videoAudios"),
+      videoSeed: document.getElementById("videoSeed"),
       videoPollLimit: document.getElementById("videoPollLimit"),
-      videoImage: document.getElementById("videoImage"),
-      videoExtraImages: document.getElementById("videoExtraImages"),
-      videoNegative: document.getElementById("videoNegative"),
       imagePreviewModal: document.getElementById("imagePreviewModal"),
       imagePreviewTitle: document.getElementById("imagePreviewTitle"),
       imagePreviewCounter: document.getElementById("imagePreviewCounter"),
@@ -2338,8 +2279,8 @@
       updateKeyVisibilityIcon();
       updateDebugMode();
       setBusy(false);
-      applyVideoDurationPreset();
-      updateVideoDurationAvailability();
+      updateImageSizeHint();
+      updateVideoOptionHints();
       bindEvents();
       renderAll();
     }
@@ -2439,24 +2380,23 @@
       });
       document.addEventListener("click", closeKeyHelp);
 
-      els.videoSize.addEventListener("change", () => {
-        updateVideoDurationAvailability();
+      els.videoMode.addEventListener("change", () => {
+        updateVideoSubFields();
+        updateVideoOptionHints();
         persistActiveSettings();
       });
 
-      els.videoDuration.addEventListener("change", () => {
-        updateVideoDurationAvailability();
-        applyVideoDurationPreset();
+      els.videoAspect.addEventListener("change", () => {
+        updateVideoOptionHints();
         persistActiveSettings();
       });
 
-      els.videoFrames.addEventListener("change", () => {
-        els.videoFrames.value = String(normalizeVideoFrames(parseInt(els.videoFrames.value, 10) || 121));
-        updateVideoDurationAvailability();
+      els.imageSizeTier.addEventListener("change", () => {
+        updateImageSizeHint();
         persistActiveSettings();
       });
 
-      [els.imageSize, els.imageOutput, els.imageInputs, els.videoImage, els.videoExtraImages, els.videoNegative, els.textTemperature, els.textMaxTokens, els.textImageUrl, els.textThinking, els.videoFrameRate, els.videoPollLimit].forEach((control) => {
+      [els.imageRatio, els.imageOutput, els.imageInputs, els.videoSeconds, els.videoFirstFrame, els.videoLastFrame, els.videoImages, els.videoAudios, els.videoSeed, els.textTemperature, els.textMaxTokens, els.textImageUrl, els.textThinking, els.videoPollLimit].forEach((control) => {
         control.addEventListener("change", persistActiveSettings);
         control.addEventListener("input", persistActiveSettings);
       });
@@ -2552,20 +2492,22 @@
     function defaultSettings() {
       return {
         textTemperature: "0.7",
-        textMaxTokens: "1024",
+        textMaxTokens: "4096",
         textImageUrl: "",
         textThinking: false,
-        imageSize: "auto",
+        imageSizeTier: "1K",
+        imageRatio: "1:1",
         imageOutput: "url",
         imageInputs: "",
-        videoSize: "1280x720",
-        videoDuration: "297:60",
-        videoFrames: "297",
-        videoFrameRate: "60",
-        videoPollLimit: "60",
-        videoImage: "",
-        videoExtraImages: "",
-        videoNegative: ""
+        videoMode: "text",
+        videoAspect: "16:9",
+        videoSeconds: "5",
+        videoFirstFrame: "",
+        videoLastFrame: "",
+        videoImages: "",
+        videoAudios: "",
+        videoSeed: "",
+        videoPollLimit: "60"
       };
     }
 
@@ -2857,8 +2799,9 @@
         el.hidden = el.dataset.param !== state.mode;
       });
       renderFieldLabels();
-      renderOptionText();
-      updateVideoDurationAvailability();
+      updateVideoSubFields();
+      updateImageSizeHint();
+      updateVideoOptionHints();
       renderAttachments();
     }
 
@@ -2868,15 +2811,48 @@
       });
     }
 
-    function renderOptionText() {
-      Object.entries(OPTION_TEXT).forEach(([id, modes]) => {
-        const select = document.getElementById(id);
-        if (!select) return;
-        const labels = modes.basic;
-        Array.from(select.options).forEach((option) => {
-          option.textContent = labels[option.value] || option.textContent;
-        });
+    // Video fields depend on two dimensions: the global mode must be "video", and the
+    // selected generation mode decides which media fields apply.
+    function updateVideoSubFields() {
+      if (state.mode !== "video") return;
+      const mode = currentVideoMode();
+      Array.from(els.simpleSettings.querySelectorAll("[data-video-mode]")).forEach((el) => {
+        el.hidden = el.dataset.videoMode !== mode;
       });
+      Array.from(els.advancedFields.querySelectorAll("[data-video-mode]")).forEach((el) => {
+        el.hidden = el.dataset.videoMode !== mode;
+      });
+    }
+
+    function currentVideoMode() {
+      const value = els.videoMode.value;
+      return VIDEO_MODE_META[value] ? value : "text";
+    }
+
+    function currentVideoAspect() {
+      const value = els.videoAspect.value;
+      return VIDEO_ASPECT_META[value] ? value : "16:9";
+    }
+
+    function updateImageSizeHint() {
+      if (!els.imageSizeHint) return;
+      els.imageSizeHint.textContent = "将输出 " + imageOutputSize(els.imageSizeTier.value, els.imageRatio.value);
+    }
+
+    function imageOutputSize(tier, ratio) {
+      const sizes = IMAGE_SIZE_TIERS[tier] || IMAGE_SIZE_TIERS["1K"];
+      return sizes[ratio] || sizes["1:1"];
+    }
+
+    function updateVideoOptionHints() {
+      if (els.videoModeHint) {
+        const meta = VIDEO_MODE_META[currentVideoMode()];
+        els.videoModeHint.textContent = meta ? meta.hint : "";
+      }
+      if (els.videoAspectHint) {
+        const aspect = VIDEO_ASPECT_META[currentVideoAspect()];
+        els.videoAspectHint.textContent = "固定 720P · 输出 " + (aspect ? aspect.output : "1280x704");
+      }
     }
 
     function renderSuggestions() {
@@ -3123,7 +3099,7 @@
         await fetchAgnes("/v1/chat/completions", {
           method: "POST",
           body: {
-            model: TEXT_DEFAULT_MODEL,
+            model: TEXT_MODEL,
             messages: [{ role: "user", content: "ping" }],
             max_tokens: 1,
             temperature: 0
@@ -3217,19 +3193,21 @@
       els.textMaxTokens.value = data.textMaxTokens;
       els.textImageUrl.value = data.textImageUrl;
       els.textThinking.checked = Boolean(data.textThinking);
-      setSelectValue(els.imageSize, data.imageSize, "auto");
+      setSelectValue(els.imageSizeTier, data.imageSizeTier, "1K");
+      setSelectValue(els.imageRatio, data.imageRatio, "1:1");
       setSelectValue(els.imageOutput, data.imageOutput, "url");
       els.imageInputs.value = data.imageInputs;
-      setSelectValue(els.videoSize, data.videoSize, "1280x720");
-      updateVideoDurationAvailability();
-      setSelectValue(els.videoDuration, data.videoDuration, els.videoDuration.options[0] ? els.videoDuration.options[0].value : "custom");
-      els.videoFrames.value = data.videoFrames;
-      els.videoFrameRate.value = data.videoFrameRate;
+      setSelectValue(els.videoMode, data.videoMode, "text");
+      setSelectValue(els.videoAspect, data.videoAspect, "16:9");
+      setSelectValue(els.videoSeconds, data.videoSeconds, String(VIDEO_SECONDS_RANGE.fallback));
+      els.videoFirstFrame.value = data.videoFirstFrame;
+      els.videoLastFrame.value = data.videoLastFrame;
+      els.videoImages.value = data.videoImages;
+      els.videoAudios.value = data.videoAudios;
+      els.videoSeed.value = data.videoSeed;
       els.videoPollLimit.value = data.videoPollLimit;
-      els.videoImage.value = data.videoImage;
-      els.videoExtraImages.value = data.videoExtraImages;
-      els.videoNegative.value = data.videoNegative;
-      updateVideoDurationAvailability();
+      updateImageSizeHint();
+      updateVideoOptionHints();
     }
 
     function setSelectValue(select, value, fallback) {
@@ -3243,17 +3221,19 @@
         textMaxTokens: els.textMaxTokens.value,
         textImageUrl: els.textImageUrl.value,
         textThinking: els.textThinking.checked,
-        imageSize: els.imageSize.value,
+        imageSizeTier: els.imageSizeTier.value,
+        imageRatio: els.imageRatio.value,
         imageOutput: els.imageOutput.value,
         imageInputs: els.imageInputs.value,
-        videoSize: els.videoSize.value,
-        videoDuration: els.videoDuration.value,
-        videoFrames: els.videoFrames.value,
-        videoFrameRate: els.videoFrameRate.value,
-        videoPollLimit: els.videoPollLimit.value,
-        videoImage: els.videoImage.value,
-        videoExtraImages: els.videoExtraImages.value,
-        videoNegative: els.videoNegative.value
+        videoMode: els.videoMode.value,
+        videoAspect: els.videoAspect.value,
+        videoSeconds: els.videoSeconds.value,
+        videoFirstFrame: els.videoFirstFrame.value,
+        videoLastFrame: els.videoLastFrame.value,
+        videoImages: els.videoImages.value,
+        videoAudios: els.videoAudios.value,
+        videoSeed: els.videoSeed.value,
+        videoPollLimit: els.videoPollLimit.value
       };
     }
 
@@ -3366,6 +3346,10 @@
     }
 
     function collectImageUrls(urlText) {
+      return splitList(urlText || "");
+    }
+
+    function collectAudioUrls(urlText) {
       return splitList(urlText || "");
     }
 
@@ -3491,13 +3475,12 @@
         updateMessage(assistant.id, { content: "图片已准备好，正在回复..." }, true);
       }
       const content = buildTextContent(promptForApi, textImages);
-      const hasImages = textImages.length > 0;
-      const useThinking = !hasImages && els.textThinking.checked;
+      const useThinking = els.textThinking.checked;
       const payload = {
-        model: hasImages ? TEXT_IMAGE_MODEL : TEXT_DEFAULT_MODEL,
+        model: TEXT_MODEL,
         messages: buildChatMessages(content, userMessage.id),
         temperature: numberOrDefault(els.textTemperature.value, 0.7),
-        max_tokens: Math.max(1, parseInt(els.textMaxTokens.value, 10) || 1024)
+        max_tokens: clampInt(els.textMaxTokens.value, 1, TEXT_MAX_OUTPUT_TOKENS, 4096)
       };
       if (useThinking) {
         payload.stream = true;
@@ -3687,13 +3670,16 @@
         updateMessage(assistant.id, { content: "参考图已准备好，正在创作图片..." }, true);
       }
       const output = els.imageOutput.value;
+      const tier = IMAGE_SIZE_TIERS[els.imageSizeTier.value] ? els.imageSizeTier.value : "1K";
+      const ratio = IMAGE_SIZE_TIERS[tier][els.imageRatio.value] ? els.imageRatio.value : "1:1";
+      // `size` is required for every image request; `ratio` refines the output shape.
+      // `response_format` must live inside extra_body, never at the top level.
       const payload = {
-        model: "agnes-image-2.1-flash",
-        prompt: promptForApi
+        model: IMAGE_MODEL,
+        prompt: promptForApi,
+        size: tier,
+        ratio
       };
-      if (els.imageSize.value && els.imageSize.value !== "auto") {
-        payload.size = els.imageSize.value;
-      }
       if (inputImages.length) {
         payload.extra_body = { image: inputImages, response_format: output === "base64" ? "b64_json" : "url" };
       } else if (output === "base64") {
@@ -3723,12 +3709,54 @@
       });
     }
 
+    // `text` mode forbids all media, `keyframe` forbids reference media, and
+    // `reference` forbids frame images. An explicitly chosen mode is always honoured so
+    // the user's intent is never overridden; only the default `text` mode infers a
+    // richer mode from the media the user actually supplied.
+    function resolveVideoRequestMode() {
+      const explicit = currentVideoMode();
+      if (explicit === "keyframe" || explicit === "reference") return explicit;
+      const hasFrames = Boolean(els.videoFirstFrame.value.trim() || els.videoLastFrame.value.trim());
+      const hasReference = Boolean(collectImageUrls(els.videoImages.value).length || collectAudioUrls(els.videoAudios.value).length);
+      const hasAttachments = (state.attachments || []).length > 0;
+      if (hasFrames) return "keyframe";
+      if (hasReference || hasAttachments) return "reference";
+      return "text";
+    }
+
+    function syncVideoModeSelection(mode) {
+      if (els.videoMode.value === mode) return;
+      els.videoMode.value = mode;
+      updateVideoSubFields();
+      updateVideoOptionHints();
+      const meta = VIDEO_MODE_META[mode];
+      if (meta) toast("已按素材自动切换生成方式：" + meta.label);
+    }
+
+    function videoMediaFieldText(mode) {
+      if (mode === "keyframe") return [els.videoFirstFrame.value, els.videoLastFrame.value].join("\n");
+      // Audio URLs are not rendered as attachments, so only images are listed here.
+      if (mode === "reference") return els.videoImages.value;
+      return "";
+    }
+
+    function dedupeUrls(urls) {
+      const seen = new Set();
+      return urls.filter((url) => {
+        if (!url || seen.has(url)) return false;
+        seen.add(url);
+        return true;
+      });
+    }
+
     async function handleVideo(prompt, quote) {
       const promptForApi = promptWithQuote(prompt, quote);
-      const imageFields = [els.videoImage.value, els.videoExtraImages.value].join("\n");
+      const mode = resolveVideoRequestMode();
+      syncVideoModeSelection(mode);
+      const mediaFields = videoMediaFieldText(mode);
       const localImages = [...(state.attachments || []), ...quoteLocalImageAttachments(quote)];
-      const remoteImages = [...collectImageUrls(imageFields), ...quoteImageUrls(quote).filter((url) => !url.startsWith("data:image/"))];
-      const userMessage = appendMessage({ mode: "video", role: "user", status: "done", content: prompt, quote, attachments: attachmentMetas("video", imageFields) });
+      const remoteImages = [...collectImageUrls(mediaFields), ...quoteImageUrls(quote).filter((url) => !url.startsWith("data:image/"))];
+      const userMessage = appendMessage({ mode: "video", role: "user", status: "done", content: prompt, quote, attachments: attachmentMetas("video", mediaFields) });
       const assistant = appendMessage({
         mode: "video",
         role: "assistant",
@@ -3737,22 +3765,59 @@
       });
       clearComposerAfterSend();
       const uploadedImages = localImages.length ? await uploadReferenceImages(localImages, assistant.id, "参考图") : [];
-      const inputImages = [...remoteImages, ...uploadedImages.map((item) => item.url)];
       if (localImages.length) {
         updateMessage(assistant.id, { content: "参考图已上传，正在开始制作视频..." }, true);
       }
+      const uploadedUrls = uploadedImages.map((item) => item.url);
+
       const payload = {
-        model: "agnes-video-v2.0",
+        model: VIDEO_MODEL,
         prompt: promptForApi,
-        ...getVideoTiming()
+        mode,
+        seconds: String(clampSeconds(els.videoSeconds.value)),
+        size: VIDEO_SIZE,
+        aspect_ratio: currentVideoAspect()
       };
-      const [width, height] = (els.videoSize.value || "1280x720").split("x").map((value) => parseInt(value, 10));
-      payload.width = width;
-      payload.height = height;
-      if (inputImages.length === 1) payload.image = inputImages[0];
-      if (inputImages.length > 1) payload.extra_body = { image: inputImages };
-      const negative = els.videoNegative.value.trim();
-      if (negative) payload.negative_prompt = negative;
+
+      if (mode === "keyframe") {
+        let firstFrame = els.videoFirstFrame.value.trim();
+        let lastFrame = els.videoLastFrame.value.trim();
+        const pool = dedupeUrls([...uploadedUrls, ...remoteImages]).filter((url) => url !== firstFrame && url !== lastFrame);
+        if (!firstFrame && pool.length) firstFrame = pool.shift();
+        if (!lastFrame && pool.length) lastFrame = pool.shift();
+        if (!firstFrame && !lastFrame) {
+          updateMessage(assistant.id, { status: "error", content: "首尾帧模式需要至少提供一张首帧或尾帧图片。请填写图片 URL，或直接在输入框旁上传图片。", raw: sanitizeForStorage(payload) });
+          return;
+        }
+        if (pool.length) {
+          toast("首尾帧模式最多使用两张图片，多余的 " + pool.length + " 张已忽略");
+        }
+        if (firstFrame) payload.first_frame = firstFrame;
+        if (lastFrame) payload.last_frame = lastFrame;
+      }
+
+      if (mode === "reference") {
+        let images = dedupeUrls([...collectImageUrls(els.videoImages.value), ...remoteImages, ...uploadedUrls]);
+        let audios = dedupeUrls(collectAudioUrls(els.videoAudios.value));
+        if (images.length > MAX_VIDEO_REFERENCE_IMAGES) {
+          images = images.slice(0, MAX_VIDEO_REFERENCE_IMAGES);
+          toast("参考图片最多 " + MAX_VIDEO_REFERENCE_IMAGES + " 张，已保留前 " + MAX_VIDEO_REFERENCE_IMAGES + " 张");
+        }
+        if (audios.length > MAX_VIDEO_REFERENCE_AUDIOS) {
+          audios = audios.slice(0, MAX_VIDEO_REFERENCE_AUDIOS);
+          toast("参考音频最多 " + MAX_VIDEO_REFERENCE_AUDIOS + " 段，已保留前 " + MAX_VIDEO_REFERENCE_AUDIOS + " 段");
+        }
+        if (!images.length && !audios.length) {
+          updateMessage(assistant.id, { status: "error", content: "参考图 / 音频模式需要至少提供一张参考图或一段参考音频。请填写公开 URL，或直接在输入框旁上传图片。", raw: sanitizeForStorage(payload) });
+          return;
+        }
+        if (images.length) payload.images = images;
+        if (audios.length) payload.audios = audios;
+      }
+
+      const seed = parseInt(els.videoSeed.value, 10);
+      if (Number.isFinite(seed) && seed >= 0) payload.seed = seed;
+
       userMessage.raw = sanitizeForStorage(payload);
       saveActive();
       const task = await fetchAgnes("/v1/videos", { method: "POST", body: payload });
@@ -3777,12 +3842,14 @@
     }
 
     async function pollVideoResult(messageId, videoId, taskId) {
-      const limit = Math.min(120, Math.max(1, parseInt(els.videoPollLimit.value, 10) || 60));
+      const limit = clampInt(els.videoPollLimit.value, 1, 300, 60);
       let last = null;
       for (let attempt = 1; attempt <= limit; attempt += 1) {
-        await wait(attempt === 1 ? 1500 : 5000, currentSignal());
+        await wait(VIDEO_POLL_INTERVAL_MS, currentSignal());
+        // The documented lookup is video_id + model_name. keyframe and reference modes
+        // require model_name, so it is always sent.
         const path = videoId
-          ? "/agnesapi?video_id=" + encodeURIComponent(videoId) + "&model_name=agnes-video-v2.0"
+          ? "/agnesapi?video_id=" + encodeURIComponent(videoId) + "&model_name=" + encodeURIComponent(VIDEO_MODEL)
           : "/v1/videos/" + encodeURIComponent(taskId);
         const data = await fetchAgnes(path, { method: "GET" });
         last = data;
@@ -3800,7 +3867,7 @@
           }
         }, true);
         if (status === "completed") {
-          const videoUrl = data.remixed_from_video_id || data.video_url || data.url || "";
+          const videoUrl = data.url || data.video_url || "";
           updateMessage(messageId, {
             status: "done",
             content: videoUrl ? "视频创作完成。" : "视频创作完成，但这次没有拿到可播放地址。",
@@ -4116,14 +4183,32 @@
       state.attachments = local.slice(0, MAX_ATTACHMENTS);
       if (message.mode === "text") els.textImageUrl.value = urls.join("\n");
       if (message.mode === "image") els.imageInputs.value = urls.join("\n");
-      if (message.mode === "video") {
-        els.videoImage.value = urls[0] || "";
-        els.videoExtraImages.value = urls.slice(1).join("\n");
-      }
+      if (message.mode === "video") restoreVideoInputs(message, urls);
       renderAttachments();
       if ((message.attachments || []).length && !local.length && !urls.length) {
         toast("这条消息里的本地图片没有长期保存，需要重新上传");
       }
+    }
+
+    // The stored video request carries its resolved generation mode, so every reference
+    // URL can be put back into the field it originally came from.
+    function restoreVideoInputs(message, urls) {
+      const stored = message.raw && typeof message.raw === "object" ? message.raw : {};
+      const mode = VIDEO_MODE_META[stored.mode] ? stored.mode : (urls.length ? "reference" : "text");
+      els.videoMode.value = mode;
+      els.videoFirstFrame.value = "";
+      els.videoLastFrame.value = "";
+      els.videoImages.value = "";
+      els.videoAudios.value = "";
+      if (mode === "keyframe") {
+        els.videoFirstFrame.value = urls[0] || "";
+        els.videoLastFrame.value = urls[1] || "";
+      } else if (mode === "reference") {
+        els.videoImages.value = urls.join("\n");
+      }
+      if (Array.isArray(stored.audios)) els.videoAudios.value = stored.audios.join("\n");
+      updateVideoSubFields();
+      updateVideoOptionHints();
     }
 
     function showRequestError(error) {
@@ -4553,113 +4638,6 @@
       }
     }
 
-    function currentVideoMeta() {
-      return VIDEO_SIZE_META[els.videoSize.value] || VIDEO_SIZE_META["1280x720"];
-    }
-
-    function videoDurationFrames(value) {
-      if (!value || value === "custom") return null;
-      return parseInt(String(value).split(":")[0], 10) || null;
-    }
-
-    function buildVideoDurationPresets(meta) {
-      return VIDEO_TARGET_SECONDS
-        .map((seconds) => videoDurationPreset(seconds, meta))
-        .filter(Boolean);
-    }
-
-    function videoDurationPreset(targetSeconds, meta) {
-      for (const fps of VIDEO_FPS_CANDIDATES) {
-        const frames = validFramesForSeconds(targetSeconds, fps, meta.maxFrames);
-        if (!frames) continue;
-        const actualSeconds = frames / fps;
-        return {
-          value: frames + ":" + fps,
-          frames,
-          fps,
-          seconds: actualSeconds,
-          label: formatVideoDurationLabel(targetSeconds, actualSeconds, frames, fps)
-        };
-      }
-      return null;
-    }
-
-    function validFramesForSeconds(seconds, fps, maxFrames) {
-      const rawFrames = seconds * fps;
-      const rounded = Math.round((rawFrames - 1) / 8) * 8 + 1;
-      const floored = Math.floor((rawFrames - 1) / 8) * 8 + 1;
-      const candidates = [rounded, floored]
-        .filter((value) => value >= 9 && value <= maxFrames)
-        .sort((a, b) => Math.abs(a / fps - seconds) - Math.abs(b / fps - seconds));
-      return candidates[0] || null;
-    }
-
-    function formatVideoDurationLabel(targetSeconds, actualSeconds, frames, fps) {
-      const secondsLabel = Math.abs(actualSeconds - targetSeconds) < 0.35
-        ? String(targetSeconds) + " 秒"
-        : "约 " + formatSeconds(actualSeconds) + " 秒";
-      const strategy = videoDurationStrategy(targetSeconds, fps);
-      return secondsLabel + " · " + frames + " 帧 / " + fps + " FPS · " + strategy;
-    }
-
-    function videoDurationStrategy(targetSeconds, fps) {
-      if (targetSeconds <= 5 || (targetSeconds <= 10 && fps >= 24)) return "流畅优先";
-      if (targetSeconds >= 25 || fps <= 8) return "时长优先";
-      return "均衡";
-    }
-
-    function formatSeconds(value) {
-      return Number.isInteger(value) ? String(value) : String(Math.round(value * 10) / 10);
-    }
-
-    function updateVideoDurationAvailability() {
-      if (!els.videoDuration || !els.videoFrames) return;
-      const meta = currentVideoMeta();
-      const previousValue = els.videoDuration.value;
-      const presets = buildVideoDurationPresets(meta);
-      els.videoDuration.innerHTML = "";
-      presets.forEach((preset) => {
-        const option = document.createElement("option");
-        option.value = preset.value;
-        option.textContent = preset.label;
-        els.videoDuration.appendChild(option);
-      });
-      const custom = document.createElement("option");
-      custom.value = "custom";
-      custom.textContent = "自定义 · 手动设置帧数和帧率";
-      els.videoDuration.appendChild(custom);
-      const values = presets.map((preset) => preset.value).concat("custom");
-      els.videoDuration.value = values.includes(previousValue) ? previousValue : (presets[0] ? presets[0].value : "custom");
-      if (els.videoDuration.value !== "custom") applyVideoDurationPreset();
-      const normalized = normalizeVideoFrames(parseInt(els.videoFrames.value, 10) || 121, meta.maxFrames);
-      els.videoFrames.max = String(meta.maxFrames);
-      els.videoFrames.value = String(normalized);
-    }
-
-    function applyVideoDurationPreset() {
-      if (!els.videoDuration || els.videoDuration.value === "custom") return;
-      const [frames, fps] = els.videoDuration.value.split(":");
-      els.videoFrames.value = frames;
-      els.videoFrameRate.value = fps;
-    }
-
-    function getVideoTiming() {
-      updateVideoDurationAvailability();
-      if (els.videoDuration.value !== "custom") applyVideoDurationPreset();
-      const frames = normalizeVideoFrames(parseInt(els.videoFrames.value, 10) || 121);
-      els.videoFrames.value = String(frames);
-      return {
-        num_frames: frames,
-        frame_rate: Math.min(60, Math.max(1, parseFloat(els.videoFrameRate.value) || 24))
-      };
-    }
-
-    function normalizeVideoFrames(value, maxFrames = currentVideoMeta().maxFrames) {
-      const safeMax = Math.max(9, maxFrames || 409);
-      const bounded = Math.min(safeMax, Math.max(9, value));
-      return Math.min(safeMax, Math.max(9, Math.round((bounded - 1) / 8) * 8 + 1));
-    }
-
     function splitList(value) {
       return value.split(/[\n,]+/).map((item) => item.trim()).filter(Boolean);
     }
@@ -4801,6 +4779,16 @@
       return Number.isFinite(num) ? num : fallback;
     }
 
+    function clampInt(value, min, max, fallback) {
+      const num = parseInt(value, 10);
+      if (!Number.isFinite(num)) return fallback;
+      return Math.min(max, Math.max(min, num));
+    }
+
+    function clampSeconds(value) {
+      return clampInt(value, VIDEO_SECONDS_RANGE.min, VIDEO_SECONDS_RANGE.max, VIDEO_SECONDS_RANGE.fallback);
+    }
+
     function formatBytes(bytes) {
       if (!bytes) return "本地图片";
       if (bytes < 1024) return bytes + " B";
@@ -4859,27 +4847,35 @@
     function videoFailureHint(reason) {
       const text = String(reason || "").toLowerCase();
       if (!text) return "";
-      const limit = parseVideoLimitError(reason);
-      if (limit) {
-        return "当前设置为 " + limit.frames + " 帧，超过 " + limit.resolution.toUpperCase() + " " + limit.ratio + " 的上限 " + limit.maxFrames + " 帧。请改用更短时长，或切换到 720P 后重试。";
+      if (text.includes("size must be")) {
+        return "这个模型只支持 720P 输出。请在“画面比例”里重新选择比例后重试。";
+      }
+      if (text.includes("images length")) {
+        return "参考图片最多 5 张。请减少参考图后重试。";
+      }
+      if (text.includes("audios length")) {
+        return "参考音频最多 3 段。请减少参考音频后重试。";
+      }
+      if (text.includes("videos is not supported")) {
+        return "这个模型不支持参考视频，请改用参考图片或参考音频。";
       }
       if (text.includes("cannot identify image") || text.includes("image file") || text.includes("invalid image") || text.includes("unsupported image")) {
         return "参考图可能不是 Agnes 能识别的图片文件。请换一张 PNG/JPG/WebP 图片，或使用可直接访问的公开 HTTPS 图片 URL 后重试。";
       }
       if (text.includes("url") || text.includes("access") || text.includes("download") || text.includes("forbidden") || text.includes("not found")) {
-        return "参考图 URL 可能无法被 Agnes 服务端访问。请确认图片不需要登录、Cookie 或私有 Header。";
+        return "素材地址可能无法被 Agnes 服务端访问。请确认链接不需要登录、Cookie 或私有 Header，并在任务完成前保持有效。";
       }
-      if (text.includes("num_frames") || text.includes("frame")) {
-        return "视频帧数需要不超过 441，并满足 8n + 1。可以先选择 5 秒或 10 秒重试。";
+      if (text.includes("seconds") || text.includes("duration")) {
+        return "视频长度需要是 4 到 12 秒。请调整时长后重试。";
       }
-      if (text.includes("width") || text.includes("height") || text.includes("resolution") || text.includes("size")) {
-        return "当前分辨率可能不适合这次生成。可以先切换到 720P 横版或竖版重试。";
+      if (text.includes("first_frame") || text.includes("last_frame") || text.includes("keyframe") || text.includes("frame")) {
+        return "首尾帧模式至少需要一张首帧或尾帧图片。请补齐图片后重试。";
       }
       if (text.includes("content") || text.includes("policy") || text.includes("safety")) {
-        return "提示词或参考图可能触发内容限制。请换一个更明确、温和的描述后重试。";
+        return "提示词或参考素材可能触发内容限制。请换一个更明确、温和的描述后重试。";
       }
       if (text.includes("timeout") || text.includes("busy") || text.includes("overload")) {
-        return "服务可能繁忙或生成超时。可以稍后重试，或降低分辨率、缩短时长。";
+        return "服务可能繁忙或生成超时。可以稍后重试，或缩短视频时长。";
       }
       return "";
     }
@@ -4887,41 +4883,27 @@
     function videoFailureReason(reason) {
       const text = String(reason || "").toLowerCase();
       if (!text) return "";
-      const limit = parseVideoLimitError(reason);
-      if (limit) {
-        return "当前视频长度超过了 " + limit.resolution.toUpperCase() + " " + limit.ratio + " 的接口上限。";
-      }
+      if (text.includes("size must be")) return "这个模型只支持 720P 输出。";
+      if (text.includes("images length")) return "参考图片数量超过了 5 张的上限。";
+      if (text.includes("audios length")) return "参考音频数量超过了 3 段的上限。";
+      if (text.includes("videos is not supported")) return "这个模型不支持参考视频输入。";
       if (text.includes("cannot identify image") || text.includes("image file") || text.includes("invalid image") || text.includes("unsupported image")) {
         return "参考图没有被 Agnes 正确识别。";
       }
       if (text.includes("url") || text.includes("access") || text.includes("download") || text.includes("forbidden") || text.includes("not found")) {
-        return "参考图地址可能无法被 Agnes 服务端访问。";
+        return "素材地址可能无法被 Agnes 服务端访问。";
       }
-      if (text.includes("num_frames") || text.includes("frame")) {
-        return "视频长度或帧数设置不符合接口要求。";
-      }
-      if (text.includes("width") || text.includes("height") || text.includes("resolution") || text.includes("size")) {
-        return "当前分辨率设置不适合这次生成。";
+      if (text.includes("seconds") || text.includes("duration")) return "视频长度不在 4 到 12 秒的范围内。";
+      if (text.includes("first_frame") || text.includes("last_frame") || text.includes("keyframe") || text.includes("frame")) {
+        return "首尾帧素材不完整。";
       }
       if (text.includes("content") || text.includes("policy") || text.includes("safety")) {
-        return "提示词或参考图可能触发了内容限制。";
+        return "提示词或参考素材可能触发了内容限制。";
       }
       if (text.includes("timeout") || text.includes("busy") || text.includes("overload")) {
         return "服务可能繁忙或生成超时。";
       }
       return "";
-    }
-
-    function parseVideoLimitError(reason) {
-      const text = String(reason || "");
-      const match = text.match(/num_frames\s+(\d+)\s+exceeds maximum\s+(\d+)\s+for\s+([0-9]+p)\/([0-9:]+)/i);
-      if (!match) return null;
-      return {
-        frames: parseInt(match[1], 10),
-        maxFrames: parseInt(match[2], 10),
-        resolution: match[3],
-        ratio: match[4]
-      };
     }
 
     function friendlyErrorReason(reason) {
@@ -4997,8 +4979,12 @@
         canceled: "已取消",
         error: "需要处理",
         queued: "排队中",
+        pending: "排队中",
+        processing: "生成中",
+        running: "生成中",
         in_progress: "生成中",
         completed: "完成",
+        succeeded: "完成",
         failed: "失败",
         unknown: "处理中"
       }[status] || status;
