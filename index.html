@@ -255,6 +255,14 @@
       padding: 8px 10px;
     }
 
+    /* A select is disabled when the chosen model makes the setting a no-op (for
+       example the video aspect ratio at the fixed 1K size). Without this it looks
+       fully interactive, so the user keeps trying to change it. */
+    select:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
     /* Multi-value URL fields use a textarea: a plain <input> silently strips newlines,
        which would merge a pasted list of URLs into one broken value. */
     .input.url-list {
@@ -1944,6 +1952,16 @@
               </div>
               <button class="composer-options" id="optionsSettings" type="button" aria-expanded="false">选项</button>
                 <div class="simple-settings" id="simpleSettings" hidden>
+                  <div class="field" data-simple-param="text" hidden>
+                    <label for="textModel" data-basic-label="模型" data-advanced-label="model">模型</label>
+                    <select class="select" id="textModel"></select>
+                    <div class="field-help" id="textModelHint"></div>
+                  </div>
+                  <div class="field" data-simple-param="image" hidden>
+                    <label for="imageModel" data-basic-label="模型" data-advanced-label="model">模型</label>
+                    <select class="select" id="imageModel"></select>
+                    <div class="field-help" id="imageModelHint"></div>
+                  </div>
                   <div class="field" data-simple-param="image" hidden>
                     <label for="imageSizeTier" data-basic-label="尺寸档位" data-advanced-label="size">尺寸档位</label>
                     <select class="select" id="imageSizeTier">
@@ -1971,6 +1989,16 @@
                     <label for="imageInputs" data-basic-label="公开参考图 URL" data-advanced-label="extra_body.image[]">公开参考图 URL</label>
                     <textarea class="input url-list" id="imageInputs" spellcheck="false" placeholder="公开图片 URL，每行一个，也可用逗号分隔"></textarea>
                     <div class="field-help">前 3 张参考图不额外计费；当前参考图与全部尺寸档位均为 $0。</div>
+                  </div>
+                  <div class="field" data-simple-param="video" hidden>
+                    <label for="videoModel" data-basic-label="模型" data-advanced-label="model">模型</label>
+                    <select class="select" id="videoModel"></select>
+                    <div class="field-help" id="videoModelHint"></div>
+                  </div>
+                  <div class="field" data-simple-param="video" hidden>
+                    <label for="videoSize" data-basic-label="清晰度" data-advanced-label="size">清晰度</label>
+                    <select class="select" id="videoSize"></select>
+                    <div class="field-help" id="videoSizeHint"></div>
                   </div>
                   <div class="field" data-simple-param="video" hidden>
                     <label for="videoMode" data-basic-label="生成方式" data-advanced-label="mode">生成方式</label>
@@ -2031,7 +2059,7 @@
                     <div class="field" data-param="text">
                       <label for="textMaxTokens" data-basic-label="最大回复长度" data-advanced-label="max_tokens">最大回复长度</label>
                       <input class="input" id="textMaxTokens" type="number" min="1" max="65536" step="1" value="4096">
-                      <div class="field-help">上限 65,536 tokens，上下文窗口 512K。</div>
+                      <div class="field-help" id="textMaxTokensHint">上限 65,536 tokens，上下文窗口 512K。</div>
                     </div>
                     <div class="field wide" data-param="text">
                       <label for="textImageUrl" data-basic-label="公开图片 URL" data-advanced-label="messages.content[].image_url.url">公开图片 URL</label>
@@ -2113,14 +2141,39 @@
     const STORAGE_KEY = "agnes_chat_sessions_v1";
     const API_KEY_STORAGE_KEY = "agnes_api_key";
     const DEBUG_MODE_STORAGE_KEY = "agnes_debug_mode";
-    // agnes-3.0-flash handles both text-only and text+image input, so a single
-    // model id is used for every chat request regardless of attachments.
-    const TEXT_MODEL = "agnes-3.0-flash";
+    // ---------------------------------------------------------------------
+    // Model catalog. Every modality offers more than one model and their
+    // request schemas are not identical, so each entry carries the
+    // capabilities the UI and the payload builders have to honour.
+    // ---------------------------------------------------------------------
+    // All four text models take the same request shape (text and image_url
+    // content blocks, chat_template_kwargs.enable_thinking) and share the
+    // 65,536 token output ceiling; only the context window and the price differ.
+    const TEXT_MODELS = [
+      { id: "agnes-3.0-flash", label: "Agnes 3.0 Flash", context: "512K", hint: "新一代文本模型，512K 上下文，当前免费。" },
+      { id: "agnes-2.5-flash", label: "Agnes 2.5 Flash", context: "512K", hint: "上一代 Flash，512K 上下文，当前免费。" },
+      { id: "agnes-2.5-pro-beta", label: "Agnes 2.5 Pro Beta", context: "1M", hint: "推理更强，1M 上下文，按 Beta 价计费。" },
+      { id: "agnes-2.5-pro", label: "Agnes 2.5 Pro", context: "1M", hint: "推理稳定版，1M 上下文，按 Pro 价计费。" }
+    ];
+    const DEFAULT_TEXT_MODEL = "agnes-3.0-flash";
     const TEXT_MAX_OUTPUT_TOKENS = 65536;
-    const IMAGE_MODEL = "agnes-image-2.5-flash";
-    const VIDEO_MODEL = "agnes-video-2.5-flash";
-    const VIDEO_SIZE = "720P";
-    const MAX_VIDEO_REFERENCE_IMAGES = 5;
+    // `tier` means `size` is one of 1K/2K/3K/4K refined by `ratio`. `pixels`
+    // means the model wants an exact "WxH" string and documents no `ratio`,
+    // so the tier and ratio are folded into the pixel string instead.
+    const IMAGE_MODELS = [
+      { id: "agnes-image-2.5-flash", label: "Agnes Image 2.5 Flash", sizeMode: "tier", hint: "最新一代，档位 + 画面比例。" },
+      { id: "agnes-image-2.1-flash", label: "Agnes Image 2.1 Flash", sizeMode: "tier", hint: "上一代，接入方式与 2.5 一致。" },
+      { id: "agnes-image-2.0-flash", label: "Agnes Image 2.0 Flash", sizeMode: "pixels", hint: "更早一代，按精确像素提交，不发送 ratio。" }
+    ];
+    const DEFAULT_IMAGE_MODEL = "agnes-image-2.5-flash";
+    // Reference media caps differ per model, and `agnes-video-2.5-flash` rejects
+    // any `size` other than 720P while `agnes-video-2.5` accepts four tiers.
+    const VIDEO_MODELS = [
+      { id: "agnes-video-2.5-flash", label: "Agnes Video 2.5 Flash", sizes: ["720P"], maxImages: 5, maxAudios: 3, hint: "当前免费，固定 720P，参考图最多 5 张、音频最多 3 段。" },
+      { id: "agnes-video-2.5", label: "Agnes Video 2.5", sizes: ["720P", "1080P", "1K", "2K"], maxImages: 8, maxAudios: 3, hint: "最高 2K 输出，参考图最多 8 张、音频最多 3 段。" }
+    ];
+    const DEFAULT_VIDEO_MODEL = "agnes-video-2.5-flash";
+    const VIDEO_SIZE_LABELS = { "720P": "720P · 标准", "1080P": "1080P · 高清", "1K": "1K · 固定方形", "2K": "2K · 最高" };
     const MAX_VIDEO_REFERENCE_AUDIOS = 3;
     const VIDEO_POLL_INTERVAL_MS = 2000;
     const MAX_ATTACHMENTS = 8;
@@ -2139,19 +2192,33 @@
       "3K": { "1:1": "3072x3072", "3:4": "2592x3456", "4:3": "3456x2592", "16:9": "3936x2208", "9:16": "2208x3936", "2:3": "2496x3744", "3:2": "3744x2496", "21:9": "4704x2016" },
       "4K": { "1:1": "4096x4096", "3:4": "3456x4608", "4:3": "4608x3456", "16:9": "5248x2944", "9:16": "2944x5248", "2:3": "3328x4992", "3:2": "4992x3328", "21:9": "6272x2688" }
     };
-    // 720P output sizes documented for agnes-video-2.5-flash, keyed by aspect_ratio.
-    const VIDEO_ASPECT_META = {
-      "16:9": { label: "16:9 · 横版", output: "1280x704" },
-      "21:9": { label: "21:9 · 宽银幕", output: "1680x720" },
-      "4:3": { label: "4:3 · 标准横版", output: "960x720" },
-      "1:1": { label: "1:1 · 方形", output: "720x720" },
-      "3:4": { label: "3:4 · 标准竖版", output: "720x960" },
-      "9:16": { label: "9:16 · 竖屏", output: "720x1280" }
+    // Documented video output sizes, keyed by model, then `size`, then
+    // aspect_ratio. `1K` on agnes-video-2.5 is a fixed 1024x1024 square, so it
+    // has no aspect column; callers must not send aspect_ratio for it.
+    const VIDEO_OUTPUT_SIZES = {
+      "agnes-video-2.5-flash": {
+        "720P": { "21:9": "1680x720", "16:9": "1280x704", "4:3": "960x720", "1:1": "720x720", "3:4": "720x960", "9:16": "720x1280" }
+      },
+      "agnes-video-2.5": {
+        "720P": { "21:9": "1470x630", "16:9": "1280x720", "4:3": "1112x834", "1:1": "960x960", "3:4": "834x1112", "9:16": "720x1280" },
+        "1080P": { "21:9": "2206x946", "16:9": "1920x1080", "4:3": "1664x1248", "1:1": "1440x1440", "3:4": "1248x1664", "9:16": "1080x1920" },
+        "1K": { "1:1": "1024x1024" },
+        "2K": { "21:9": "2940x1260", "16:9": "2560x1440", "4:3": "2224x1668", "1:1": "1920x1920", "3:4": "1668x2224", "9:16": "1440x2560" }
+      }
+    };
+    const VIDEO_ASPECT_LABELS = {
+      "16:9": "16:9 · 横版",
+      "21:9": "21:9 · 宽银幕",
+      "4:3": "4:3 · 标准横版",
+      "1:1": "1:1 · 方形",
+      "3:4": "3:4 · 标准竖版",
+      "9:16": "9:16 · 竖屏"
     };
     const VIDEO_MODE_META = {
       text: { label: "文生视频", hint: "只根据文字描述生成视频，不接受参考图或参考音频。" },
       keyframe: { label: "首尾帧", hint: "用首帧、尾帧图片控制起止画面，至少提供其中一张。" },
-      reference: { label: "参考图 / 音频", hint: "用参考图或参考音频保持角色与风格，图片最多 5 张，音频最多 3 段。" }
+      // The reference hint is rebuilt per model because the image cap differs.
+      reference: { label: "参考图 / 音频", hint: "用参考图或参考音频保持角色与风格。" }
     };
     const VIDEO_SECONDS_RANGE = { min: 4, max: 12, fallback: 5 };
     // Declared up here on purpose: toast() is called during bootstrap (for example when
@@ -2259,6 +2326,15 @@
       toast: document.getElementById("toast"),
       textTemperature: document.getElementById("textTemperature"),
       textMaxTokens: document.getElementById("textMaxTokens"),
+      textMaxTokensHint: document.getElementById("textMaxTokensHint"),
+      textModel: document.getElementById("textModel"),
+      textModelHint: document.getElementById("textModelHint"),
+      imageModel: document.getElementById("imageModel"),
+      imageModelHint: document.getElementById("imageModelHint"),
+      videoModel: document.getElementById("videoModel"),
+      videoModelHint: document.getElementById("videoModelHint"),
+      videoSize: document.getElementById("videoSize"),
+      videoSizeHint: document.getElementById("videoSizeHint"),
       textImageUrl: document.getElementById("textImageUrl"),
       textThinking: document.getElementById("textThinking"),
       uploadImagesButton: document.getElementById("uploadImagesButton"),
@@ -2301,6 +2377,9 @@
     bootstrap();
 
     function bootstrap() {
+      // The model selects have to exist before any settings are applied, because
+      // applySettings restores the saved choice through setSelectValue.
+      renderModelOptions();
       loadSessions();
       if (!state.sessions.length) createSession(false);
       state.apiKey = loadStoredApiKey();
@@ -2310,8 +2389,7 @@
       updateKeyVisibilityIcon();
       updateDebugMode();
       setBusy(false);
-      updateImageSizeHint();
-      updateVideoOptionHints();
+      updateModelHints();
       bindEvents();
       renderAll();
     }
@@ -2429,6 +2507,29 @@
         persistActiveSettings();
       });
 
+      // Switching the video model changes which `size` values are legal, so the
+      // size options have to be rebuilt before anything reads the current value.
+      els.videoModel.addEventListener("change", () => {
+        renderVideoSizeOptions();
+        updateModelHints();
+        persistActiveSettings();
+      });
+
+      els.videoSize.addEventListener("change", () => {
+        updateModelHints();
+        persistActiveSettings();
+      });
+
+      els.imageModel.addEventListener("change", () => {
+        updateModelHints();
+        persistActiveSettings();
+      });
+
+      els.textModel.addEventListener("change", () => {
+        updateModelHints();
+        persistActiveSettings();
+      });
+
       [els.imageRatio, els.imageOutput, els.imageInputs, els.videoSeconds, els.videoFirstFrame, els.videoLastFrame, els.videoImages, els.videoAudios, els.videoSeed, els.textTemperature, els.textMaxTokens, els.textImageUrl, els.textThinking, els.videoPollLimit].forEach((control) => {
         control.addEventListener("change", persistActiveSettings);
         control.addEventListener("input", persistActiveSettings);
@@ -2525,14 +2626,18 @@
 
     function defaultSettings() {
       return {
+        textModel: DEFAULT_TEXT_MODEL,
         textTemperature: "0.7",
         textMaxTokens: "4096",
         textImageUrl: "",
         textThinking: false,
+        imageModel: DEFAULT_IMAGE_MODEL,
         imageSizeTier: "1K",
         imageRatio: "1:1",
         imageOutput: "url",
         imageInputs: "",
+        videoModel: DEFAULT_VIDEO_MODEL,
+        videoSize: "720P",
         videoMode: "text",
         videoAspect: "16:9",
         videoSeconds: "5",
@@ -2867,8 +2972,7 @@
       });
       renderFieldLabels();
       updateVideoSubFields();
-      updateImageSizeHint();
-      updateVideoOptionHints();
+      updateModelHints();
       // A text file is inlined into the prompt text, which only chat mode accepts.
       els.uploadTextButton.hidden = state.mode !== "text";
       renderAttachments();
@@ -2901,12 +3005,86 @@
 
     function currentVideoAspect() {
       const value = els.videoAspect.value;
-      return VIDEO_ASPECT_META[value] ? value : "16:9";
+      return VIDEO_ASPECT_LABELS[value] ? value : "16:9";
     }
 
+    function findModel(models, id, fallbackId) {
+      return models.find((model) => model.id === id) || models.find((model) => model.id === fallbackId);
+    }
+
+    function currentTextModelMeta() {
+      return findModel(TEXT_MODELS, els.textModel.value, DEFAULT_TEXT_MODEL);
+    }
+
+    function currentImageModelMeta() {
+      return findModel(IMAGE_MODELS, els.imageModel.value, DEFAULT_IMAGE_MODEL);
+    }
+
+    function currentVideoModelMeta() {
+      return findModel(VIDEO_MODELS, els.videoModel.value, DEFAULT_VIDEO_MODEL);
+    }
+
+    function currentVideoSize() {
+      const meta = currentVideoModelMeta();
+      const value = els.videoSize.value;
+      return meta.sizes.includes(value) ? value : meta.sizes[0];
+    }
+
+    function videoOutputSize(modelId, size, aspect) {
+      const bySize = VIDEO_OUTPUT_SIZES[modelId] || VIDEO_OUTPUT_SIZES[DEFAULT_VIDEO_MODEL];
+      const byAspect = bySize[size] || bySize[Object.keys(bySize)[0]] || {};
+      // `1K` is a fixed square, so every aspect maps to the same documented size.
+      if (size === "1K") return byAspect["1:1"] || "1024x1024";
+      return byAspect[aspect] || "";
+    }
+
+    // The three model selects are generated from the catalogs so the ids, the
+    // labels and the capability tables can never drift apart.
+    function renderModelOptions() {
+      fillModelSelect(els.textModel, TEXT_MODELS);
+      fillModelSelect(els.imageModel, IMAGE_MODELS);
+      fillModelSelect(els.videoModel, VIDEO_MODELS);
+      renderVideoSizeOptions();
+    }
+
+    function fillModelSelect(select, models) {
+      if (!select) return;
+      select.innerHTML = "";
+      models.forEach((model) => {
+        const option = document.createElement("option");
+        option.value = model.id;
+        option.textContent = model.label;
+        select.appendChild(option);
+      });
+    }
+
+    // Only the selected video model knows which `size` values are legal, so the
+    // options are rebuilt on every model change and the value is kept if it survives.
+    // The disabled state belongs here too, so callers cannot rebuild the options and
+    // leave a stale enabled/disabled state behind.
+    function renderVideoSizeOptions() {
+      if (!els.videoSize) return;
+      const meta = currentVideoModelMeta();
+      const previous = els.videoSize.value;
+      els.videoSize.innerHTML = "";
+      meta.sizes.forEach((size) => {
+        const option = document.createElement("option");
+        option.value = size;
+        option.textContent = VIDEO_SIZE_LABELS[size] || size;
+        els.videoSize.appendChild(option);
+      });
+      els.videoSize.value = meta.sizes.includes(previous) ? previous : meta.sizes[0];
+      els.videoSize.disabled = meta.sizes.length === 1;
+    }
+
+    // Echoes the resolved output size, which is the only place the user can see
+    // how a tier and a ratio combine into real pixels.
     function updateImageSizeHint() {
       if (!els.imageSizeHint) return;
-      els.imageSizeHint.textContent = "将输出 " + imageOutputSize(els.imageSizeTier.value, els.imageRatio.value);
+      const pixels = imageOutputSize(els.imageSizeTier.value, els.imageRatio.value);
+      els.imageSizeHint.textContent = currentImageModelMeta().sizeMode === "pixels"
+        ? "将输出 " + pixels + "（按精确像素提交，不发送 ratio）"
+        : "将输出 " + pixels;
     }
 
     function imageOutputSize(tier, ratio) {
@@ -2914,14 +3092,49 @@
       return sizes[ratio] || sizes["1:1"];
     }
 
+    // Keeps every model-dependent label, hint and disabled state in one place.
+    function updateModelHints() {
+      const textMeta = currentTextModelMeta();
+      if (els.textModelHint) els.textModelHint.textContent = textMeta.hint;
+      if (els.textMaxTokensHint) {
+        els.textMaxTokensHint.textContent = "上限 65,536 tokens，上下文窗口 " + textMeta.context + "。";
+      }
+      if (els.imageModelHint) els.imageModelHint.textContent = currentImageModelMeta().hint;
+      const videoMeta = currentVideoModelMeta();
+      if (els.videoModelHint) els.videoModelHint.textContent = videoMeta.hint;
+      if (els.videoSizeHint) {
+        els.videoSizeHint.textContent = videoMeta.sizes.length === 1
+          ? "该模型只支持 720P，清晰度不可调。"
+          : "可选 " + videoMeta.sizes.join(" / ") + "；1K 为固定方形。";
+      }
+      updateImageSizeHint();
+      updateVideoOptionHints();
+    }
+
     function updateVideoOptionHints() {
+      const videoMeta = currentVideoModelMeta();
+      const size = currentVideoSize();
+      const fixedSquare = size === "1K";
       if (els.videoModeHint) {
         const meta = VIDEO_MODE_META[currentVideoMode()];
-        els.videoModeHint.textContent = meta ? meta.hint : "";
+        // The reference image cap is per model, so the static hint is not enough.
+        els.videoModeHint.textContent = currentVideoMode() === "reference"
+          ? "用参考图或参考音频保持角色与风格，图片最多 " + videoMeta.maxImages + " 张，音频最多 " + videoMeta.maxAudios + " 段。"
+          : (meta ? meta.hint : "");
       }
+      // `1K` is a fixed square, so the ratio has no effect and must not be sent.
+      if (els.videoAspect) els.videoAspect.disabled = fixedSquare;
       if (els.videoAspectHint) {
-        const aspect = VIDEO_ASPECT_META[currentVideoAspect()];
-        els.videoAspectHint.textContent = "固定 720P · 输出 " + (aspect ? aspect.output : "1280x704");
+        const output = videoOutputSize(videoMeta.id, size, currentVideoAspect());
+        els.videoAspectHint.textContent = fixedSquare
+          ? "1K 档位固定输出 " + output + "，画面比例不生效。"
+          : "输出 " + output;
+      }
+      if (els.videoImages) {
+        els.videoImages.placeholder = "公开图片 URL，最多 " + videoMeta.maxImages + " 张，每行一个";
+      }
+      if (els.videoAudios) {
+        els.videoAudios.placeholder = "公开音频 URL，最多 " + videoMeta.maxAudios + " 段，每行一个";
       }
     }
 
@@ -3169,7 +3382,9 @@
         await fetchAgnes("/v1/chat/completions", {
           method: "POST",
           body: {
-            model: TEXT_MODEL,
+            // The connectivity probe deliberately uses the free default model so it
+            // never depends on the user having credit for a paid selection.
+            model: DEFAULT_TEXT_MODEL,
             messages: [{ role: "user", content: "ping" }],
             max_tokens: 1,
             temperature: 0
@@ -3259,14 +3474,21 @@
 
     function applySettings(settings) {
       const data = { ...defaultSettings(), ...(settings || {}) };
+      setSelectValue(els.textModel, data.textModel, DEFAULT_TEXT_MODEL);
       els.textTemperature.value = data.textTemperature;
       els.textMaxTokens.value = data.textMaxTokens;
       els.textImageUrl.value = data.textImageUrl;
       els.textThinking.checked = Boolean(data.textThinking);
+      setSelectValue(els.imageModel, data.imageModel, DEFAULT_IMAGE_MODEL);
       setSelectValue(els.imageSizeTier, data.imageSizeTier, "1K");
       setSelectValue(els.imageRatio, data.imageRatio, "1:1");
       setSelectValue(els.imageOutput, data.imageOutput, "url");
       els.imageInputs.value = data.imageInputs;
+      setSelectValue(els.videoModel, data.videoModel, DEFAULT_VIDEO_MODEL);
+      // Which `size` values are legal depends on the model, so the options have to
+      // be rebuilt from the restored model before the saved size can be applied.
+      renderVideoSizeOptions();
+      setSelectValue(els.videoSize, data.videoSize, currentVideoModelMeta().sizes[0]);
       setSelectValue(els.videoMode, data.videoMode, "text");
       setSelectValue(els.videoAspect, data.videoAspect, "16:9");
       setSelectValue(els.videoSeconds, data.videoSeconds, String(VIDEO_SECONDS_RANGE.fallback));
@@ -3276,8 +3498,7 @@
       els.videoAudios.value = data.videoAudios;
       els.videoSeed.value = data.videoSeed;
       els.videoPollLimit.value = data.videoPollLimit;
-      updateImageSizeHint();
-      updateVideoOptionHints();
+      updateModelHints();
     }
 
     function setSelectValue(select, value, fallback) {
@@ -3287,14 +3508,18 @@
 
     function readSettings() {
       return {
+        textModel: els.textModel.value,
         textTemperature: els.textTemperature.value,
         textMaxTokens: els.textMaxTokens.value,
         textImageUrl: els.textImageUrl.value,
         textThinking: els.textThinking.checked,
+        imageModel: els.imageModel.value,
         imageSizeTier: els.imageSizeTier.value,
         imageRatio: els.imageRatio.value,
         imageOutput: els.imageOutput.value,
         imageInputs: els.imageInputs.value,
+        videoModel: els.videoModel.value,
+        videoSize: els.videoSize.value,
         videoMode: els.videoMode.value,
         videoAspect: els.videoAspect.value,
         videoSeconds: els.videoSeconds.value,
@@ -3708,7 +3933,7 @@
       const content = buildTextContent(promptForApi, textImages);
       const useThinking = els.textThinking.checked;
       const payload = {
-        model: TEXT_MODEL,
+        model: currentTextModelMeta().id,
         messages: buildChatMessages(content, userMessage.id),
         temperature: numberOrDefault(els.textTemperature.value, 0.7),
         max_tokens: clampInt(els.textMaxTokens.value, 1, TEXT_MAX_OUTPUT_TOKENS, 4096)
@@ -3901,16 +4126,19 @@
         updateMessage(assistant.id, { content: "参考图已准备好，正在创作图片..." }, true);
       }
       const output = els.imageOutput.value;
+      const imageMeta = currentImageModelMeta();
       const tier = IMAGE_SIZE_TIERS[els.imageSizeTier.value] ? els.imageSizeTier.value : "1K";
       const ratio = IMAGE_SIZE_TIERS[tier][els.imageRatio.value] ? els.imageRatio.value : "1:1";
-      // `size` is required for every image request; `ratio` refines the output shape.
+      // `size` is required for every image request. 2.1/2.5 take a tier refined by a
+      // separate `ratio`; 2.0 documents neither `ratio` nor the tier syntax, so the two
+      // are folded into the exact pixel string that its documentation does show.
       // `response_format` must live inside extra_body, never at the top level.
       const payload = {
-        model: IMAGE_MODEL,
+        model: imageMeta.id,
         prompt: promptForApi,
-        size: tier,
-        ratio
+        size: imageMeta.sizeMode === "pixels" ? imageOutputSize(tier, ratio) : tier
       };
+      if (imageMeta.sizeMode !== "pixels") payload.ratio = ratio;
       if (inputImages.length) {
         payload.extra_body = { image: inputImages, response_format: output === "base64" ? "b64_json" : "url" };
       } else if (output === "base64") {
@@ -4001,14 +4229,17 @@
       }
       const uploadedUrls = uploadedImages.map((item) => item.url);
 
+      const videoMeta = currentVideoModelMeta();
+      const videoSize = currentVideoSize();
       const payload = {
-        model: VIDEO_MODEL,
+        model: videoMeta.id,
         prompt: promptForApi,
         mode,
         seconds: String(clampSeconds(els.videoSeconds.value)),
-        size: VIDEO_SIZE,
-        aspect_ratio: currentVideoAspect()
+        size: videoSize
       };
+      // `1K` is a fixed 1024x1024 square, so aspect_ratio has no effect and is omitted.
+      if (videoSize !== "1K") payload.aspect_ratio = currentVideoAspect();
 
       if (mode === "keyframe") {
         let firstFrame = els.videoFirstFrame.value.trim();
@@ -4030,13 +4261,14 @@
       if (mode === "reference") {
         let images = dedupeUrls([...collectImageUrls(els.videoImages.value), ...remoteImages, ...uploadedUrls]);
         let audios = dedupeUrls(collectAudioUrls(els.videoAudios.value));
-        if (images.length > MAX_VIDEO_REFERENCE_IMAGES) {
-          images = images.slice(0, MAX_VIDEO_REFERENCE_IMAGES);
-          toast("参考图片最多 " + MAX_VIDEO_REFERENCE_IMAGES + " 张，已保留前 " + MAX_VIDEO_REFERENCE_IMAGES + " 张");
+        // Both caps are per model: 2.5 Flash allows 5 images, 2.5 allows 8.
+        if (images.length > videoMeta.maxImages) {
+          images = images.slice(0, videoMeta.maxImages);
+          toast("参考图片最多 " + videoMeta.maxImages + " 张，已保留前 " + videoMeta.maxImages + " 张");
         }
-        if (audios.length > MAX_VIDEO_REFERENCE_AUDIOS) {
-          audios = audios.slice(0, MAX_VIDEO_REFERENCE_AUDIOS);
-          toast("参考音频最多 " + MAX_VIDEO_REFERENCE_AUDIOS + " 段，已保留前 " + MAX_VIDEO_REFERENCE_AUDIOS + " 段");
+        if (audios.length > videoMeta.maxAudios) {
+          audios = audios.slice(0, videoMeta.maxAudios);
+          toast("参考音频最多 " + videoMeta.maxAudios + " 段，已保留前 " + videoMeta.maxAudios + " 段");
         }
         if (!images.length && !audios.length) {
           updateMessage(assistant.id, { status: "error", content: "参考图 / 音频模式需要至少提供一张参考图或一段参考音频。请填写公开 URL，或直接在输入框旁上传图片。", raw: sanitizeForStorage(payload) });
@@ -4069,18 +4301,22 @@
         updateMessage(assistant.id, { status: "done", content: "视频任务已创建，但没有拿到可自动查询的编号。可以稍后重新尝试。", raw: task });
         return;
       }
-      await pollVideoResult(assistant.id, videoId, taskId);
+      await pollVideoResult(assistant.id, videoId, taskId, videoMeta.id);
     }
 
-    async function pollVideoResult(messageId, videoId, taskId) {
+    // The model that created the task has to be echoed back when polling: `model_name`
+    // is mandatory for keyframe and reference tasks, and the user may well have switched
+    // the video model in the meantime.
+    async function pollVideoResult(messageId, videoId, taskId, modelId) {
       const limit = clampInt(els.videoPollLimit.value, 1, 300, 60);
       let last = null;
       for (let attempt = 1; attempt <= limit; attempt += 1) {
         await wait(VIDEO_POLL_INTERVAL_MS, currentSignal());
         // The documented lookup is video_id + model_name. keyframe and reference modes
         // require model_name, so it is always sent.
+        const lookupModel = modelId || DEFAULT_VIDEO_MODEL;
         const path = videoId
-          ? "/agnesapi?video_id=" + encodeURIComponent(videoId) + "&model_name=" + encodeURIComponent(VIDEO_MODEL)
+          ? "/agnesapi?video_id=" + encodeURIComponent(videoId) + "&model_name=" + encodeURIComponent(lookupModel)
           : "/v1/videos/" + encodeURIComponent(taskId);
         const data = await fetchAgnes(path, { method: "GET" });
         last = data;
@@ -4116,7 +4352,7 @@
         if (status === "failed") {
           updateMessage(messageId, {
             status: "error",
-            content: formatVideoFailure(data),
+            content: formatVideoFailure(data, modelId),
             raw: data
           });
           return;
@@ -5111,10 +5347,10 @@
       return message;
     }
 
-    function formatVideoFailure(data) {
+    function formatVideoFailure(data, modelId) {
       const reason = extractErrorReason(data);
       const lines = ["视频创作失败了。"];
-      const friendly = videoFailureReason(reason);
+      const friendly = videoFailureReason(reason, modelId);
       if (friendly) {
         lines.push("原因：" + friendly);
       } else if (reason) {
@@ -5122,25 +5358,28 @@
       } else {
         lines.push("Agnes 没有返回具体失败原因。可以开启调试模式查看原始响应，方便排查。");
       }
-      const hint = videoFailureHint(reason);
+      const hint = videoFailureHint(reason, modelId);
       if (hint) lines.push("建议：" + hint);
       return lines.join("\n");
     }
 
-    function videoFailureHint(reason) {
+    // The caps and the legal `size` values belong to the model that created the task,
+    // so every hint is resolved against that model rather than the current selection.
+    function videoFailureHint(reason, modelId) {
       const text = String(reason || "").toLowerCase();
       if (!text) return "";
+      const meta = findModel(VIDEO_MODELS, modelId, DEFAULT_VIDEO_MODEL);
       if (text.includes("size must be")) {
-        return "这个模型只支持 720P 输出。请在“画面比例”里重新选择比例后重试。";
+        return "这个模型只支持 " + meta.sizes.join(" / ") + " 输出。请在「清晰度」里重新选择后重试。";
       }
       if (text.includes("images length")) {
-        return "参考图片最多 5 张。请减少参考图后重试。";
+        return "参考图片最多 " + meta.maxImages + " 张。请减少参考图后重试。";
       }
       if (text.includes("audios length")) {
-        return "参考音频最多 3 段。请减少参考音频后重试。";
+        return "参考音频最多 " + meta.maxAudios + " 段。请减少参考音频后重试。";
       }
       if (text.includes("videos is not supported")) {
-        return "这个模型不支持参考视频，请改用参考图片或参考音频。";
+        return "这个模型不接受参考视频输入（Agnes Video 2.5 才支持）。请改用参考图片或参考音频。";
       }
       if (text.includes("cannot identify image") || text.includes("image file") || text.includes("invalid image") || text.includes("unsupported image")) {
         return "参考图可能不是 Agnes 能识别的图片文件。请换一张 PNG/JPG/WebP 图片，或使用可直接访问的公开 HTTPS 图片 URL 后重试。";
@@ -5163,12 +5402,13 @@
       return "";
     }
 
-    function videoFailureReason(reason) {
+    function videoFailureReason(reason, modelId) {
       const text = String(reason || "").toLowerCase();
       if (!text) return "";
-      if (text.includes("size must be")) return "这个模型只支持 720P 输出。";
-      if (text.includes("images length")) return "参考图片数量超过了 5 张的上限。";
-      if (text.includes("audios length")) return "参考音频数量超过了 3 段的上限。";
+      const meta = findModel(VIDEO_MODELS, modelId, DEFAULT_VIDEO_MODEL);
+      if (text.includes("size must be")) return "这个模型只支持 " + meta.sizes.join(" / ") + " 输出。";
+      if (text.includes("images length")) return "参考图片数量超过了 " + meta.maxImages + " 张的上限。";
+      if (text.includes("audios length")) return "参考音频数量超过了 " + meta.maxAudios + " 段的上限。";
       if (text.includes("videos is not supported")) return "这个模型不支持参考视频输入。";
       if (text.includes("cannot identify image") || text.includes("image file") || text.includes("invalid image") || text.includes("unsupported image")) {
         return "参考图没有被 Agnes 正确识别。";
